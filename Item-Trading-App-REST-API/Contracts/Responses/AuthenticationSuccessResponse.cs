@@ -2,5 +2,6 @@
 {
     public class AuthenticationSuccessResponse
     {
+        public string Token { get; set; }
     }
 }

@@ -33,7 +33,10 @@ namespace Item_Trading_App_REST_API.Controllers
                     Errors = authResponse.Errors
                 });
 
-            return Ok(new AuthenticationSuccessResponse());
+            return Ok(new AuthenticationSuccessResponse
+            {
+                Token = authResponse.Token
+            });
         }
 
         [HttpPost("/identity/login")]
@@ -50,7 +53,10 @@ namespace Item_Trading_App_REST_API.Controllers
                     Errors = authResponse.Errors
                 });
 
-            return Ok(new AuthenticationSuccessResponse());
+            return Ok(new AuthenticationSuccessResponse
+            {
+                Token = authResponse.Token
+            });
         }
     }
 }
