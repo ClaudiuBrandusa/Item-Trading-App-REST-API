@@ -25,6 +25,8 @@ namespace Item_Trading_App_REST_API.Installers
                 ValidateLifetime = true
             };
 
+            services.AddSingleton(tokenValidationParameters);
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

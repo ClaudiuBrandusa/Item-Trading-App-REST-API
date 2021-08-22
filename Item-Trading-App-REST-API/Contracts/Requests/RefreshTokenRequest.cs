@@ -1,6 +1,6 @@
-﻿namespace Item_Trading_App_REST_API.Contracts.Responses
+﻿namespace Item_Trading_App_REST_API.Contracts.Requests
 {
-    public class AuthenticationSuccessResponse
+    public class RefreshTokenRequest
     {
         public string Token { get; set; }
 
