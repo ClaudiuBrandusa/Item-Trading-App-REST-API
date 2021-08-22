@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Linq;
 
 namespace Item_Trading_App_REST_API
 {
@@ -35,6 +33,24 @@ namespace Item_Trading_App_REST_API
             {
                 app.UseExceptionHandler("/Error");
             }
+
+            app.UseAuthentication();
+
+            var swaggerOptions = new Options.SwaggerOptions();
+
+            Configuration.GetSection(nameof(Options.SwaggerOptions)).Bind(swaggerOptions);
+
+            app.UseSwagger(option =>
+            {
+                option.RouteTemplate = swaggerOptions.JsonRoute;
+            });
+
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint(swaggerOptions.UIEndPoint, swaggerOptions.Description);
+            });
+
+            app.UseStaticFiles();
 
             app.UseRouting();
 
