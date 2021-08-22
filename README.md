@@ -22,3 +22,7 @@ Or you could try the following command in Powershell.
 - Microsoft.EntityFrameworkCore.Tools (5.0.9)
 - Microsoft.AspNetCore.Identity.EntityFrameworkCore (5.0.9)
 - Microsoft.AspNetCore.Authentication.JwtBearer (5.0.9)
+- Swashbuckle.AspNetCore (6.1.5)
+- Swashbuckle.AspNetCore.Swagger (6.1.5)
+- Swashbuckle.AspNetCore.SwaggerUI (6.1.5)
+- Swashbuckle.Core (5.6.0)
