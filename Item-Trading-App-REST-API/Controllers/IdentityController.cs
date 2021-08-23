@@ -1,4 +1,5 @@
-﻿using Item_Trading_App_Contracts.Requests.Identity;
+﻿using Item_Trading_App_Contracts;
+using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Models;
 using Item_Trading_App_REST_API.Services.Identity;
@@ -17,7 +18,7 @@ namespace Item_Trading_App_REST_API.Controllers
             _identityService = identityService;
         }
 
-        [HttpPost("/identity/register")]
+        [HttpPost(Endpoints.Identity.Register)]
         public async Task<IActionResult> Register([FromBody] UserRegisterRequest request)
         {
             if (!ModelState.IsValid)
@@ -34,7 +35,7 @@ namespace Item_Trading_App_REST_API.Controllers
             return Ok(ReturnSuccessResponse(authResponse));
         }
 
-        [HttpPost("/identity/login")]
+        [HttpPost(Endpoints.Identity.Login)]
         public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
         {
             if (!ModelState.IsValid)
@@ -51,7 +52,7 @@ namespace Item_Trading_App_REST_API.Controllers
             return Ok(ReturnSuccessResponse(authResponse));
         }
 
-        [HttpPost("/identity/refresh")]
+        [HttpPost(Endpoints.Identity.Refresh)]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
         {
             if (!ModelState.IsValid)
