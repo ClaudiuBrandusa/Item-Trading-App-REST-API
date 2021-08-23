@@ -1,0 +1,3 @@
+[submodule "Item-Trading-App-Contracts"]
+	path = Item-Trading-App-Contracts
+	url = https://github.com/ClaudiuBrandusa/Item-Trading-App-Contracts.git

@@ -1,5 +1,5 @@
-﻿using Item_Trading_App_REST_API.Contracts.Requests;
-using Item_Trading_App_REST_API.Contracts.Responses;
+﻿using Item_Trading_App_Contracts.Requests.Identity;
+using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Models;
 using Item_Trading_App_REST_API.Services.Identity;
 using Microsoft.AspNetCore.Mvc;

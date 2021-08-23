@@ -24,4 +24,8 @@
     <Folder Include="Data\Migrations\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Item-Trading-App-Contracts\Item-Trading-App-Contracts\Item-Trading-App-Contracts.csproj" />
+  </ItemGroup>
+
 </Project>
