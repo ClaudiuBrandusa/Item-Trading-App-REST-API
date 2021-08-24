@@ -17,12 +17,12 @@ namespace Item_Trading_App_REST_API.Services.Identity
 {
     public class IdentityService : IIdentityService
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<User> _userManager;
         private readonly JwtSettings _jwtSettings;
         private readonly DatabaseContext _context;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
-        public IdentityService(UserManager<IdentityUser> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters)
+        public IdentityService(UserManager<User> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters)
         {
             _userManager = userManager;
             _jwtSettings = jwtSettings;
@@ -44,7 +44,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
 
             var newUserId = Guid.NewGuid();
 
-            var newUser = new IdentityUser
+            var newUser = new User
             {
                 Id = newUserId.ToString(),
                 UserName = username
@@ -169,7 +169,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return (validatedToken is JwtSecurityToken jwtSecurityToken) && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private async Task<AuthenticationResult> GetAuthenticationResultForUser(IdentityUser newUser)
+        private async Task<AuthenticationResult> GetAuthenticationResultForUser(User newUser)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
