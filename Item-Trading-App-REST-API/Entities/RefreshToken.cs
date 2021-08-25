@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Entities
 {
@@ -27,6 +23,6 @@ namespace Item_Trading_App_REST_API.Entities
         public string UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
-        public IdentityUser User { get; set; }
+        public User User { get; set; }
     }
 }
