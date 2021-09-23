@@ -1,6 +1,6 @@
 ﻿using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
-using Item_Trading_App_REST_API.Models;
+using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

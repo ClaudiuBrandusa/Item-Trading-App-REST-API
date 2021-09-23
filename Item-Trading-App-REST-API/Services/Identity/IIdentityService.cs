@@ -1,4 +1,4 @@
-﻿using Item_Trading_App_REST_API.Models;
+﻿using Item_Trading_App_REST_API.Models.Identity;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Identity

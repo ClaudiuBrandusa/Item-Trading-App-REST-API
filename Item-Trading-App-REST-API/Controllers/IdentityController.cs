@@ -1,7 +1,7 @@
 ﻿using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Identity;
-using Item_Trading_App_REST_API.Models;
+using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Services.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers
 {
-    public class IdentityController : Controller
+    public class IdentityController : BaseController
     {
         private readonly IIdentityService _identityService;
 

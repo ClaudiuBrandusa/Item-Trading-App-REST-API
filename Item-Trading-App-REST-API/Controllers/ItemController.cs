@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Item_Trading_App_REST_API.Controllers
 {
     [Authorize]
-    public class ItemController : Controller
+    public class ItemController : BaseController
     {
         [HttpGet(Endpoints.Item.Get)]
         public IActionResult Get(string itemId)
