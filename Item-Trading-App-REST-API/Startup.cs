@@ -54,6 +54,8 @@ namespace Item_Trading_App_REST_API
 
             app.UseRouting();
 
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
