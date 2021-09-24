@@ -1,53 +1,200 @@
 ﻿using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Item;
+using Item_Trading_App_Contracts.Responses.Base;
+using Item_Trading_App_Contracts.Responses.Item;
+using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Services.Item;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers
 {
     [Authorize]
     public class ItemController : BaseController
     {
-        [HttpGet(Endpoints.Item.Get)]
-        public IActionResult Get(string itemId)
+        private readonly IItemService _itemService;
+
+        public ItemController(IItemService itemService)
         {
-            return Ok();
+            _itemService = itemService;
+        }
+
+        [HttpGet(Endpoints.Item.Get)]
+        public async Task<IActionResult> Get(string itemId)
+        {
+            if(string.IsNullOrEmpty(itemId))
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Item ID not provided" }
+                });
+            }
+
+            var result = await _itemService.GetItemAsync(itemId);
+
+            if (result == null)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
+
+            if(!result.Success)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = result.Errors
+                });
+            }
+
+            return Ok(new ItemResponse
+            {
+                Id = result.ItemId,
+                Name = result.ItemName,
+                Description = result.ItemDescription
+            });
         }
 
         [HttpGet(Endpoints.Item.List)]
-        public IActionResult List()
+        public async Task<IActionResult> List()
         {
-            return Ok();
+            var result = _itemService.ListItems();
+
+            if(result == null)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }    
+
+            return Ok(new ItemsResponse
+            {
+                Items = result.Select(i => new ItemResponse { Id = i.ItemId, Name = i.ItemName, Description = i.ItemDescription })
+            });
         }
 
         [HttpPost(Endpoints.Item.Create)]
-        public IActionResult Create([FromBody] CreateItemRequest request)
+        public async Task<IActionResult> Create([FromBody] CreateItemRequest request)
         {
-            return Ok();
-        }
+            if (request == null || string.IsNullOrEmpty(request.ItemName) || string.IsNullOrEmpty(request.ItemDescription))
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
 
-        [HttpPut(Endpoints.Item.Add)]
-        public IActionResult Add([FromBody] AddItemRequest request)
-        {
-            return Ok();
+            var result = await _itemService.CreateItemAsync(new CreateItem { ItemName = request.ItemName, ItemDescription = request.ItemDescription });
+
+            if(result == null)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
+
+            if(!result.Success)
+            {
+                return BadRequest(new CreateItemFailedResponse
+                {
+                    ItemName = request.ItemName,
+                    Errors = result.Errors
+                });
+            }
+
+            return Ok(new CreateItemSuccessResponse
+            {
+                ItemId = result.ItemId,
+                ItemName = result.ItemName,
+                ItemDescription = result.ItemDescription
+            });
         }
 
         [HttpPatch(Endpoints.Item.Update)]
-        public IActionResult Update([FromBody] UpdateItemRequest request)
+        public async Task<IActionResult> Update([FromBody] UpdateItemRequest request)
         {
-            return Ok();
+            if(request == null || string.IsNullOrEmpty(request.ItemId) || string.IsNullOrEmpty(request.ItemName))
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
+
+            var result = await _itemService.UpdateItemAsync(new UpdateItem
+            {
+                ItemId = request.ItemId,
+                ItemName = request.ItemName,
+                ItemDescription = request.ItemDescription
+            });
+
+            if(result == null)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
+
+            if(!result.Success)
+            {
+                return BadRequest(new UpdateItemFailedResponse
+                {
+                    ItemId = result.ItemId,
+                    ItemName = result.ItemName,
+                    Errors = result.Errors
+                });
+            }
+
+            return Ok(new UpdateItemSuccessResponse
+            {
+                ItemId = result.ItemId,
+                ItemName = result.ItemName,
+                ItemDescription = result.ItemDescription
+            });
         }
 
         [HttpDelete(Endpoints.Item.Delete)]
-        public IActionResult Delete([FromBody] DeleteItemRequest request)
+        public async Task<IActionResult> Delete([FromBody] DeleteItemRequest request)
         {
-            return Ok();
-        }
+            if(request == null || string.IsNullOrEmpty(request.ItemId))
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
 
-        [HttpPost(Endpoints.Item.Drop)]
-        public IActionResult Drop([FromBody] DropItemRequest request)
-        {
-            return Ok();
+            var result = await _itemService.DeleteItemAsync(request.ItemId);
+
+            if(result == null)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
+
+            if(!result.Success)
+            {
+                return BadRequest(new DeleteItemFailedResponse
+                {
+                    ItemId = result.ItemId,
+                    ItemName = result.ItemName,
+                    Errors = result.Errors
+                });
+            }
+
+            return Ok(new DeleteItemSuccessResponse
+            {
+                ItemId = result.ItemId,
+                ItemName = result.ItemName
+            });
         }
     }
 }

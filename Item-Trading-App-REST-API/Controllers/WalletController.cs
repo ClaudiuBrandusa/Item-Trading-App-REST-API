@@ -22,7 +22,7 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Wallet.Get)]
         public async Task<IActionResult> Get()
         {
-            string userId = GetUserId();
+            string userId = UserId;
 
             if(string.IsNullOrEmpty(userId))
             {
@@ -59,7 +59,7 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpPatch(Endpoints.Wallet.Update)]
         public async Task<IActionResult> Update([FromBody] UpdateWalletRequest request)
         {
-            var userId = GetUserId();
+            var userId = UserId;
 
             if (string.IsNullOrEmpty(userId) || request == null)
             {

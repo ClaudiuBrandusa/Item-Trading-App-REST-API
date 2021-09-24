@@ -5,9 +5,9 @@ namespace Item_Trading_App_REST_API.Controllers
 {
     public class BaseController : Controller
     {
-        protected string GetUserId()
+        protected string UserId
         {
-            return User.Claims.First(c => Equals(c.Type, "id"))?.Value;
+            get => User.Claims.First(c => Equals(c.Type, "id"))?.Value;
         }
     }
 }
