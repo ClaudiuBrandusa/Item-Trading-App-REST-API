@@ -144,6 +144,23 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return await GetAuthenticationResultForUser(user);
         }
 
+        public async Task<string> GetUsername(string userId)
+        {
+            if(string.IsNullOrEmpty(userId))
+            {
+                return "";
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if(user == null)
+            {
+                return "";
+            }
+
+            return user.UserName;
+        }
+
         private ClaimsPrincipal GetPrincipalFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

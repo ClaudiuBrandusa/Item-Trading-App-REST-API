@@ -2,7 +2,7 @@
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Inventory;
-using Item_Trading_App_REST_API.Services.Item;
+using Item_Trading_App_REST_API.Services.Inventory;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;

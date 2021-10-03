@@ -1,11 +1,13 @@
 ﻿using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
+using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Services.Item;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Item_Trading_App_REST_API.Services.Item
+namespace Item_Trading_App_REST_API.Services.Inventory
 {
     public class InventoryService : IInventoryService
     {
@@ -18,9 +20,21 @@ namespace Item_Trading_App_REST_API.Services.Item
             _itemService = itemService;
         }
 
+        public bool HasItem(string userId, string itemId, int quantity)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
+            {
+                return false;
+            }
+
+            var amount = GetAmountOfFreeItem(userId, itemId);
+
+            return amount >= quantity;
+        }
+
         public async Task<QuantifiedItemResult> AddItemAsync(string userId, string itemId, int quantity)
         {
-            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
             {
                 return new QuantifiedItemResult
                 {
@@ -38,7 +52,7 @@ namespace Item_Trading_App_REST_API.Services.Item
                 {
                     Errors = new[] { "Item not found" }
                 };
-            }    
+            }
 
             if (quantity < 0)
             {
@@ -70,10 +84,10 @@ namespace Item_Trading_App_REST_API.Services.Item
 
             var updated = await _context.SaveChangesAsync();
 
-            if(updated == 0)
+            if (updated == 0)
             {
                 return new QuantifiedItemResult
-                { 
+                {
                     ItemId = item.ItemId,
                     ItemName = itemData.ItemName,
                     ItemDescription = itemData.ItemDescription,
@@ -112,20 +126,21 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            if(quantity < 0)
+            if (quantity < 0)
             {
                 return new QuantifiedItemResult
                 {
                     Errors = new[] { "You cannot drop a negative amount of an item" }
                 };
-            } else if(quantity == 0)
+            }
+            else if (quantity == 0)
             {
                 return new QuantifiedItemResult
-                { 
+                {
                     Errors = new[] { "You cannot drop an amount of 0 from your inventory" }
                 };
             }
-            
+
             var lockedItem = GetLockedItem(userId, itemId);
 
             if (lockedItem != null)
@@ -154,7 +169,7 @@ namespace Item_Trading_App_REST_API.Services.Item
 
         public async Task<QuantifiedItemResult> GetItemAsync(string userId, string itemId)
         {
-            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
             {
                 return new QuantifiedItemResult
                 {
@@ -164,7 +179,7 @@ namespace Item_Trading_App_REST_API.Services.Item
 
             int amount = GetAmountOfFreeItem(userId, itemId);
 
-            if(amount == 0)
+            if (amount == 0)
             {
                 return new QuantifiedItemResult
                 {
@@ -231,27 +246,158 @@ namespace Item_Trading_App_REST_API.Services.Item
             return results;
         }
 
+        public async Task<LockItemResult> LockItemAsync(string userId, string itemId, int quantity)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "Invalid input data" }
+                };
+            }
+
+            int amount = GetAmountOfFreeItem(userId, itemId);
+
+            if (amount < quantity)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "You do not own enough of this item" }
+                };
+            }
+
+            var lockedItem = await LockItem(userId, itemId, quantity);
+
+            if (lockedItem == null)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            return new LockItemResult
+            {
+                UserId = userId,
+                ItemId = itemId,
+                Quantity = quantity,
+                Success = true
+            };
+        }
+
+        public async Task<LockItemResult> UnlockItemAsync(string userId, string itemId, int quantity)
+        {
+            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "Invalid input data" }
+                };
+            }
+
+            int amount = GetAmountOfLockedItem(userId, itemId);
+
+            if(quantity > amount)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "Cannot unlock an amount more than you have locked" }
+                };
+            }
+
+            var lockedItem = GetLockedItem(userId, itemId);
+
+            if(lockedItem == null || lockedItem == default)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            amount -= quantity;
+
+            if (amount == 0)
+            {
+                _context.LockedItems.Remove(lockedItem);
+            }
+            else
+            {
+                lockedItem.Quantity = amount;
+            }
+
+            int removed = await _context.SaveChangesAsync();
+
+            if(removed == 0)
+            {
+                return new LockItemResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            return new LockItemResult
+            {
+                ItemId = itemId,
+                UserId = userId,
+                Quantity = amount,
+                Success = true
+            };
+        }
+
         private OwnedItem GetItem(string userId, string itemId) => _context.OwnedItems.FirstOrDefault(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
 
         private LockedItem GetLockedItem(string userId, string itemId) => _context.LockedItems.FirstOrDefault(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
-    
+
         private int GetAmountOfFreeItem(string userId, string itemId)
         {
             var item = GetItem(userId, itemId);
 
             var lockedItem = GetLockedItem(userId, itemId);
 
-            if(item == null || item == default)
+            if (item == null || item == default)
             {
                 return 0;
-            }    
+            }
 
-            if(lockedItem == null || lockedItem == default)
+            if (lockedItem == null || lockedItem == default)
             {
                 return item.Quantity;
             }
 
             return item.Quantity - lockedItem.Quantity;
+        }
+
+        private int GetAmountOfLockedItem(string userId, string itemId)
+        {
+            var item = GetLockedItem(userId, itemId);
+
+            if(item == null || item == default)
+            {
+                return 0;
+            }
+
+            return item.Quantity;
+        }
+
+        private async Task<LockedItem> LockItem(string userId, string itemId, int quantity)
+        {
+            var lockedItem = GetLockedItem(userId, itemId);
+
+            if (lockedItem == null)
+            {
+                lockedItem = new LockedItem { UserId = userId, ItemId = itemId, Quantity = quantity };
+
+                _context.LockedItems.Add(lockedItem);
+            }
+            else
+            {
+                lockedItem.Quantity += quantity;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return lockedItem;
         }
     }
 }

@@ -1,10 +1,6 @@
-﻿using Item_Trading_App_REST_API.Data;
-using Item_Trading_App_REST_API.Entities;
+﻿using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Wallet;
 using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Wallet
@@ -16,6 +12,18 @@ namespace Item_Trading_App_REST_API.Services.Wallet
         public WalletService(UserManager<User> userManager)
         {
             _userManager = userManager;
+        }
+
+        public async Task<int> GetUserCashAsync(string userId)
+        {
+            var user = await GetUser(userId);
+        
+            if(user == null)
+            {
+                return 0;
+            }
+
+            return user.Cash;
         }
 
         public async Task<WalletResult> GetWalletAsync(string userId)
@@ -36,6 +44,48 @@ namespace Item_Trading_App_REST_API.Services.Wallet
                 Cash = user.Cash,
                 Success = true
             };
+        }
+
+        public async Task<bool> GiveCashAsync(string userId, int amount)
+        {
+            var user = await GetUser(userId);
+
+            if(user == null)
+            {
+                return false;
+            }
+
+            if(amount < 1)
+            {
+                return false;
+            }
+
+            user.Cash += amount;
+
+            await _userManager.UpdateAsync(user);
+
+            return true;
+        }
+
+        public async Task<bool> TakeCashAsync(string userId, int amount)
+        {
+            var user = await GetUser(userId);
+
+            if(user == null)
+            {
+                return false;
+            }
+
+            if(user.Cash - amount < 0)
+            {
+                return false;
+            }
+
+            user.Cash -= amount;
+
+            await _userManager.UpdateAsync(user);
+
+            return true;
         }
 
         public async Task<WalletResult> UpdateWalletAsync(string userId, int amount)

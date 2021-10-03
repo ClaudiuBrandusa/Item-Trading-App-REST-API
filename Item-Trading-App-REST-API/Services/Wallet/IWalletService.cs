@@ -8,5 +8,11 @@ namespace Item_Trading_App_REST_API.Services.Wallet
         Task<WalletResult> GetWalletAsync(string userId);
 
         Task<WalletResult> UpdateWalletAsync(string userId, int amount);
+
+        Task<int> GetUserCashAsync(string userId);
+
+        Task<bool> TakeCashAsync(string userId, int amount);
+
+        Task<bool> GiveCashAsync(string userId, int amount);
     }
 }

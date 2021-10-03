@@ -10,5 +10,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
         Task<AuthenticationResult> LoginAsync(string username, string password);
 
         Task<AuthenticationResult> RefreshTokenAsync(string token, string refreshToken);
+
+        Task<string> GetUsername(string userId);
     }
 }
