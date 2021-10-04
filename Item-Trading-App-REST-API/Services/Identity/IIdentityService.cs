@@ -42,6 +42,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        Task<IEnumerable<string>> ListUsers(string userId);
+        Task<UsersResult> ListUsers(string userId);
     }
 }

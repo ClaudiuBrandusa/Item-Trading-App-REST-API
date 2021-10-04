@@ -2,6 +2,7 @@
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -144,6 +145,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return await GetAuthenticationResultForUser(user);
         }
 
+        [Authorize]
         public async Task<string> GetUsername(string userId)
         {
             if(string.IsNullOrEmpty(userId))
@@ -159,6 +161,26 @@ namespace Item_Trading_App_REST_API.Services.Identity
             }
 
             return user.UserName;
+        }
+
+        [Authorize]
+        public async Task<UsersResult> ListUsers(string userId)
+        {
+            var list = _context.Users.Where(u => !Equals(u.Id, userId)).Select(u => u.Id);
+
+            if (list == null)
+            {
+                return new UsersResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            return new UsersResult
+            {
+                UsersId = list,
+                Success = true
+            };
         }
 
         private ClaimsPrincipal GetPrincipalFromToken(string token)

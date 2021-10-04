@@ -17,28 +17,28 @@ namespace Item_Trading_App_REST_API.Services.Trade
         /// </summary>
         /// <param name="tradeOfferId"></param>
         /// <returns></returns>
-        public Task<SentTradeOffer> GetSentTradeOffer(string tradeOfferId);
+        public Task<SentTradeOffer> GetSentTradeOffer(RequestTradeOffer requestTradeOffer);
 
         /// <summary>
         /// Returns a responded sent trade offer
         /// </summary>
         /// <param name="tradeOfferId"></param>
         /// <returns></returns>
-        public Task<SentRespondedTradeOffer> GetSentRespondedTradeOffer(string tradeOfferId);
+        public Task<SentRespondedTradeOffer> GetSentRespondedTradeOffer(RequestTradeOffer requestTradeOffer);
 
         /// <summary>
         /// Returns a received trade offer
         /// </summary>
         /// <param name="tradeOfferId"></param>
         /// <returns></returns>
-        public Task<ReceivedTradeOffer> GetReceivedTradeOffer(string tradeOfferId);
+        public Task<ReceivedTradeOffer> GetReceivedTradeOffer(RequestTradeOffer requestTradeOffer);
 
         /// <summary>
         /// Returns a responded received trade offer
         /// </summary>
         /// <param name="tradeOfferId"></param>
         /// <returns></returns>
-        public Task<ReceivedRespondedTradeOffer> GetReceivedRespondedTradeOffer(string tradeOfferId);
+        public Task<ReceivedRespondedTradeOffer> GetReceivedRespondedTradeOffer(RequestTradeOffer requestTradeOffer);
 
         /// <summary>
         /// Returns all of the sent trade offers

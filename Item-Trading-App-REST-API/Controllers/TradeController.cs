@@ -26,7 +26,11 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Trade.GetSent)]
         public async Task<IActionResult> GetSent(string tradeId)
         {
-            var result = await _tradeService.GetSentTradeOffer(tradeId);
+            var result = await _tradeService.GetSentTradeOffer(new RequestTradeOffer
+            {
+                UserId = UserId,
+                TradeOfferId = tradeId
+            });
 
             if (result == null)
             {
@@ -58,7 +62,11 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Trade.GetSentResponded)]
         public async Task<IActionResult>  GetSentResponded(string tradeId)
         {
-            var result = await _tradeService.GetSentRespondedTradeOffer(tradeId);
+            var result = await _tradeService.GetSentRespondedTradeOffer(new RequestTradeOffer
+            {
+                UserId = UserId,
+                TradeOfferId = tradeId
+            });
 
             if (result == null)
             {
@@ -92,7 +100,11 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Trade.GetReceived)]
         public async Task<IActionResult> GetReceived(string tradeId)
         {
-            var result = await _tradeService.GetReceivedTradeOffer(tradeId);
+            var result = await _tradeService.GetReceivedTradeOffer(new RequestTradeOffer
+            {
+                UserId = UserId,
+                TradeOfferId = tradeId
+            });
 
             if (result == null)
             {
@@ -124,7 +136,11 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Trade.GetReceivedResponded)]
         public async Task<IActionResult> GetReceivedResponded(string tradeId)
         {
-            var result = await _tradeService.GetReceivedRespondedTradeOffer(tradeId);
+            var result = await _tradeService.GetReceivedRespondedTradeOffer(new RequestTradeOffer
+            {
+                UserId = UserId,
+                TradeOfferId = tradeId
+            });
 
             if (result == null)
             {
@@ -151,7 +167,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Price = t.Price, Quantity = t.Quantity }),
                 SentDate = result.SentDate,
                 Response = result.Response,
-                RespondedTime = result.ResponseDate
+                ResponseDate = result.ResponseDate
             });
         }
 

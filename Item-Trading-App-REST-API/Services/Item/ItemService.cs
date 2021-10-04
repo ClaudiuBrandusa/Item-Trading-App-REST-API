@@ -172,9 +172,13 @@ namespace Item_Trading_App_REST_API.Services.Item
             };
         }
 
-        public IEnumerable<FullItemResult> ListItems()
+        public ItemsResult ListItems()
         {
-            return _context.Items.Select(i => new FullItemResult { ItemId = i.ItemId, ItemName = i.Name, ItemDescription = i.Description, Success = true }).ToList();
+            return new ItemsResult
+            {
+                ItemsId = _context.Items.Select(i => i.ItemId),
+                Success = true
+            };
         }
 
         public async Task<string> GetItemNameAsync(string itemId)

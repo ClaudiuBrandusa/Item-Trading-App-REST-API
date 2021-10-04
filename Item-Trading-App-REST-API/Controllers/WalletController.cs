@@ -50,7 +50,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 });
             }
 
-            return Ok(new WalletResponse
+            return Ok(new WalletSuccessResponse
             {
                 Cash = wallet.Cash
             });

@@ -197,11 +197,11 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             };
         }
 
-        public async Task<InventoryItemsResult> ListItemsAsync(string userId)
+        public async Task<ItemsResult> ListItemsAsync(string userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
-                return new InventoryItemsResult
+                return new ItemsResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -211,39 +211,17 @@ namespace Item_Trading_App_REST_API.Services.Inventory
 
             if (ownedItems == null)
             {
-                return new InventoryItemsResult
+                return new ItemsResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
             }
 
-            var results = new InventoryItemsResult
+            return new ItemsResult
             {
                 Success = true,
-                Items = new List<QuantifiedItemResult>()
+                ItemsId = ownedItems.Select(oi => oi.ItemId)
             };
-
-            var itemsId = ownedItems.Select(oi => oi.ItemId);
-
-            var list = new List<QuantifiedItemResult>();
-
-            foreach (var id in itemsId)
-            {
-                var item = new QuantifiedItemResult
-                {
-                    ItemId = id,
-                    ItemName = await _itemService.GetItemNameAsync(id),
-                    ItemDescription = await _itemService.GetItemDescriptionAsync(id),
-                    Quantity = GetAmountOfFreeItem(userId, id),
-                    Success = true
-                };
-
-                list.Add(item);
-            }
-
-            results.Items = list;
-
-            return results;
         }
 
         public async Task<LockItemResult> LockItemAsync(string userId, string itemId, int quantity)

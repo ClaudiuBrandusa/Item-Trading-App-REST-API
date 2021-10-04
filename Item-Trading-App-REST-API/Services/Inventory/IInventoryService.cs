@@ -1,5 +1,6 @@
 ﻿using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Inventory
@@ -46,7 +47,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        Task<InventoryItemsResult> ListItemsAsync(string userId);
+        Task<ItemsResult> ListItemsAsync(string userId);
 
         /// <summary>
         /// Locks a given quantity of the item from the user's inventory

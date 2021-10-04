@@ -441,17 +441,17 @@ namespace Item_Trading_App_REST_API.Services.Trade
             };
         }
 
-        public async Task<SentTradeOffer> GetSentTradeOffer(string tradeOfferId)
+        public async Task<SentTradeOffer> GetSentTradeOffer(RequestTradeOffer requestTradeOffer)
         {
-            if (string.IsNullOrEmpty(tradeOfferId))
+            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
             {
                 return new SentTradeOffer
                 {
-                    Errors = new[] { "Invalid ID" }
+                    Errors = new[] { "Invalid input data" }
                 };
             }
 
-            var offer = GetTradeOfferEntity(tradeOfferId);
+            var offer = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
 
             if (offer == null)
             {
@@ -461,22 +461,38 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
-            string receiverId = GetReceiverId(tradeOfferId);
+            if(!IsSender(requestTradeOffer.UserId, requestTradeOffer.TradeOfferId))
+            {
+                return new SentTradeOffer
+                {
+                    Errors = new[] { "User has not sent this trade offer" }
+                };
+            }
+
+            string receiverId = GetReceiverId(requestTradeOffer.TradeOfferId);
 
             return new SentTradeOffer
             {
-                TradeOfferId = tradeOfferId,
+                TradeOfferId = requestTradeOffer.TradeOfferId,
                 ReceiverId = receiverId,
                 ReceiverName = await _identityService.GetUsername(receiverId),
                 SentDate = offer.SentDate,
-                Items = GetItemPrices(tradeOfferId),
+                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
                 Success = true
             };
         }
 
-        public async Task<SentRespondedTradeOffer> GetSentRespondedTradeOffer(string tradeOfferId)
+        public async Task<SentRespondedTradeOffer> GetSentRespondedTradeOffer(RequestTradeOffer requestTradeOffer)
         {
-            var offer = await GetSentTradeOffer(tradeOfferId);
+            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
+            {
+                return new SentRespondedTradeOffer
+                {
+                    Errors = new[] { "Invalid input data" }
+                };
+            }
+
+            var offer = await GetSentTradeOffer(requestTradeOffer);
 
             if(!offer.Success)
             {
@@ -486,7 +502,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
-            var response = GetTradeOfferEntity(tradeOfferId);
+            var response = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
 
             if(response == null || response.Response == null || response.ResponseDate == null)
             {
@@ -498,7 +514,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
 
             return new SentRespondedTradeOffer
             {
-                TradeOfferId = tradeOfferId,
+                TradeOfferId = requestTradeOffer.TradeOfferId,
                 ReceiverId = offer.ReceiverId,
                 ReceiverName = offer.ReceiverName,
                 Response = (bool)response.Response,
@@ -509,17 +525,17 @@ namespace Item_Trading_App_REST_API.Services.Trade
             };
         }
 
-        public async Task<ReceivedTradeOffer> GetReceivedTradeOffer(string tradeOfferId)
+        public async Task<ReceivedTradeOffer> GetReceivedTradeOffer(RequestTradeOffer requestTradeOffer)
         {
-            if(string.IsNullOrEmpty(tradeOfferId))
+            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
             {
                 return new ReceivedTradeOffer
                 {
-                    Errors = new[] { "Invalid ID" }
+                    Errors = new[] { "Invalid input data" }
                 };
             }
 
-            var offer = GetReceivedTradeOfferEntity(tradeOfferId);
+            var offer = GetReceivedTradeOfferEntity(requestTradeOffer.TradeOfferId);
         
             if(offer == null)
             {
@@ -529,9 +545,17 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
-            string senderId = GetSenderId(tradeOfferId);
+            if (!IsReceiver(requestTradeOffer.UserId, requestTradeOffer.TradeOfferId))
+            {
+                return new ReceivedTradeOffer
+                {
+                    Errors = new[] { "User has not sent this trade offer" }
+                };
+            }
 
-            var trade = GetTradeOfferEntity(tradeOfferId);
+            string senderId = GetSenderId(requestTradeOffer.TradeOfferId);
+
+            var trade = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
 
             if(trade == null)
             {
@@ -543,18 +567,26 @@ namespace Item_Trading_App_REST_API.Services.Trade
 
             return new ReceivedTradeOffer
             {
-                TradeOfferId = tradeOfferId,
+                TradeOfferId = requestTradeOffer.TradeOfferId,
                 SenderId = senderId,
                 SenderName = await _identityService.GetUsername(senderId),
                 SentDate = trade.SentDate,
-                Items = GetItemPrices(tradeOfferId),
+                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
                 Success = true
             };
         }
 
-        public async Task<ReceivedRespondedTradeOffer> GetReceivedRespondedTradeOffer(string tradeOfferId)
+        public async Task<ReceivedRespondedTradeOffer> GetReceivedRespondedTradeOffer(RequestTradeOffer requestTradeOffer)
         {
-            var offer = await GetReceivedTradeOffer(tradeOfferId);
+            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
+            {
+                return new ReceivedRespondedTradeOffer
+                {
+                    Errors = new[] { "Invalid input data" }
+                };
+            }
+
+            var offer = await GetReceivedTradeOffer(requestTradeOffer);
 
             if(!offer.Success)
             {
@@ -564,7 +596,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
-            var trade = GetTradeOfferEntity(tradeOfferId);
+            var trade = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
 
             if(trade == null || trade.Response == null || trade.ResponseDate == null)
             {
@@ -574,17 +606,17 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
-            string senderId = GetSenderId(tradeOfferId);
+            string senderId = GetSenderId(requestTradeOffer.TradeOfferId);
 
             return new ReceivedRespondedTradeOffer
             {
-                TradeOfferId = tradeOfferId,
+                TradeOfferId = requestTradeOffer.TradeOfferId,
                 SenderId = senderId,
                 SenderName = await _identityService.GetUsername(senderId),
                 Response = (bool)trade.Response,
                 ResponseDate = (DateTime)trade.ResponseDate,
                 SentDate = offer.SentDate,
-                Items = GetItemPrices(tradeOfferId),
+                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
                 Success = true
             };
         }
@@ -792,6 +824,10 @@ namespace Item_Trading_App_REST_API.Services.Trade
 
             return total;
         }
+
+        private bool IsSender(string userId, string tradeOfferId) => Equals(GetSenderId(tradeOfferId), userId);
+
+        private bool IsReceiver(string userId, string tradeOfferId) => Equals(GetReceiverId(tradeOfferId), userId);
 
         private List<Entities.TradeContent> GetTradeContents(string tradeId) => _context.TradeContent.Where(t => Equals(t.TradeId, tradeId)).ToList();
     

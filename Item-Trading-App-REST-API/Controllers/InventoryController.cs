@@ -139,9 +139,9 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Inventory.List)]
         public async Task<IActionResult> List()
         {
-            var results = await _inventoryService.ListItemsAsync(UserId);
+            var result = await _inventoryService.ListItemsAsync(UserId);
 
-            if(results == null)
+            if (result == null)
             {
                 return BadRequest(new FailedResponse
                 {
@@ -149,17 +149,17 @@ namespace Item_Trading_App_REST_API.Controllers
                 });
             }
 
-            if(!results.Success)
+            if (!result.Success)
             {
                 return BadRequest(new FailedResponse
                 {
-                    Errors = results.Errors
+                    Errors = result.Errors
                 });
             }
 
             return Ok(new ListItemsSuccessResponse
             {
-                Items = results.Items.Select(i => new GetItemSuccessResponse { ItemId = i.ItemId, ItemName = i.ItemName, ItemDescription = i.ItemDescription, Quantity = i.Quantity })
+                ItemsId = result.ItemsId
             });
         }
     }

@@ -71,9 +71,17 @@ namespace Item_Trading_App_REST_API.Controllers
                 });
             }    
 
+            if(!result.Success)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = result.Errors
+                });
+            }
+
             return Ok(new ItemsResponse
             {
-                Items = result.Select(i => new ItemResponse { Id = i.ItemId, Name = i.ItemName, Description = i.ItemDescription })
+                ItemsId = result.ItemsId
             });
         }
 

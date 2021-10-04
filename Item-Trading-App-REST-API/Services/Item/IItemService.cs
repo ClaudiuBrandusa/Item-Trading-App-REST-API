@@ -38,7 +38,7 @@ namespace Item_Trading_App_REST_API.Services.Item
         /// Enlists all the current items
         /// </summary>
         /// <returns></returns>
-        IEnumerable<FullItemResult> ListItems();
+        ItemsResult ListItems();
 
         /// <summary>
         /// Returns the item's name
