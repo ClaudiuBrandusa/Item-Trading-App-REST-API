@@ -1,7 +1,8 @@
 ﻿using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
-using Item_Trading_App_REST_API.Models;
+using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,12 +18,12 @@ namespace Item_Trading_App_REST_API.Services.Identity
 {
     public class IdentityService : IIdentityService
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<User> _userManager;
         private readonly JwtSettings _jwtSettings;
         private readonly DatabaseContext _context;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
-        public IdentityService(UserManager<IdentityUser> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters)
+        public IdentityService(UserManager<User> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters)
         {
             _userManager = userManager;
             _jwtSettings = jwtSettings;
@@ -44,7 +45,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
 
             var newUserId = Guid.NewGuid();
 
-            var newUser = new IdentityUser
+            var newUser = new User
             {
                 Id = newUserId.ToString(),
                 UserName = username
@@ -144,6 +145,42 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return await GetAuthenticationResultForUser(user);
         }
 
+        public async Task<string> GetUsername(string userId)
+        {
+            if(string.IsNullOrEmpty(userId))
+            {
+                return "";
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if(user == null)
+            {
+                return "";
+            }
+
+            return user.UserName;
+        }
+
+        public async Task<UsersResult> ListUsers(string userId)
+        {
+            var list = _context.Users.Where(u => !Equals(u.Id, userId)).Select(u => u.Id);
+
+            if (list == null)
+            {
+                return new UsersResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            return new UsersResult
+            {
+                UsersId = list,
+                Success = true
+            };
+        }
+
         private ClaimsPrincipal GetPrincipalFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -169,7 +206,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return (validatedToken is JwtSecurityToken jwtSecurityToken) && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private async Task<AuthenticationResult> GetAuthenticationResultForUser(IdentityUser newUser)
+        private async Task<AuthenticationResult> GetAuthenticationResultForUser(User newUser)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
