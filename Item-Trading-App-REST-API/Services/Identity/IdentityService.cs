@@ -1,7 +1,8 @@
 ﻿using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
-using Item_Trading_App_REST_API.Models;
+using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -142,6 +143,42 @@ namespace Item_Trading_App_REST_API.Services.Identity
 
             var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == "id").Value);
             return await GetAuthenticationResultForUser(user);
+        }
+
+        public async Task<string> GetUsername(string userId)
+        {
+            if(string.IsNullOrEmpty(userId))
+            {
+                return "";
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if(user == null)
+            {
+                return "";
+            }
+
+            return user.UserName;
+        }
+
+        public async Task<UsersResult> ListUsers(string userId)
+        {
+            var list = _context.Users.Where(u => !Equals(u.Id, userId)).Select(u => u.Id);
+
+            if (list == null)
+            {
+                return new UsersResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            return new UsersResult
+            {
+                UsersId = list,
+                Success = true
+            };
         }
 
         private ClaimsPrincipal GetPrincipalFromToken(string token)
