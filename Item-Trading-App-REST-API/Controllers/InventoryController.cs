@@ -3,12 +3,13 @@ using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Inventory;
 using Item_Trading_App_REST_API.Services.Inventory;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers
 {
+    [Authorize]
     public class InventoryController : BaseController
     {
         private readonly IInventoryService _inventoryService;

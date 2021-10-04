@@ -4,6 +4,7 @@ using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Services.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
@@ -70,6 +71,7 @@ namespace Item_Trading_App_REST_API.Controllers
             return Ok(ReturnSuccessResponse(authResponse));
         }
 
+        [Authorize]
         [HttpGet(Endpoints.Identity.GetUsername)]
         public async Task<IActionResult> GetUsername(string userId)
         {
@@ -88,6 +90,7 @@ namespace Item_Trading_App_REST_API.Controllers
             });
         }
 
+        [Authorize]
         [HttpGet(Endpoints.Identity.ListUsers)]
         public async Task<IActionResult> ListUsers()
         {

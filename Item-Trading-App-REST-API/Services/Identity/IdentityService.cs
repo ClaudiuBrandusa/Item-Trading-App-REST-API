@@ -145,7 +145,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return await GetAuthenticationResultForUser(user);
         }
 
-        [Authorize]
         public async Task<string> GetUsername(string userId)
         {
             if(string.IsNullOrEmpty(userId))
@@ -163,7 +162,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return user.UserName;
         }
 
-        [Authorize]
         public async Task<UsersResult> ListUsers(string userId)
         {
             var list = _context.Users.Where(u => !Equals(u.Id, userId)).Select(u => u.Id);
