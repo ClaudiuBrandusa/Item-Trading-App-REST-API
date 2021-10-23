@@ -184,10 +184,14 @@ namespace Item_Trading_App_REST_API.Services.Identity
         private ClaimsPrincipal GetPrincipalFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
+            _tokenValidationParameters.ValidateLifetime = false;
 
             try
             {
                 var principal = tokenHandler.ValidateToken(token, _tokenValidationParameters, out var validatedToken);
+
+                _tokenValidationParameters.ValidateLifetime = true;
+
                 if (!IsJwtWithValidSecurityAlgorithm(validatedToken))
                 {
                     return null;
@@ -240,6 +244,9 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 ExpiryDate = DateTime.UtcNow.AddMonths(6),
 
             };
+
+            _context.RefreshTokens.Add(refreshToken);
+            await _context.SaveChangesAsync();
 
             return new AuthenticationResult
             {
