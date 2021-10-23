@@ -22,7 +22,8 @@ namespace Item_Trading_App_REST_API.Installers
                 ValidateIssuer = false,
                 ValidateAudience = false,
                 RequireExpirationTime = false,
-                ValidateLifetime = true
+                ValidateLifetime = true,
+                ClockSkew = System.TimeSpan.Zero
             };
 
             services.AddSingleton(tokenValidationParameters);
