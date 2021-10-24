@@ -2,7 +2,6 @@
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,13 +21,15 @@ namespace Item_Trading_App_REST_API.Services.Identity
         private readonly JwtSettings _jwtSettings;
         private readonly DatabaseContext _context;
         private readonly TokenValidationParameters _tokenValidationParameters;
+        private readonly IRefreshTokenService _refreshTokenService;
 
-        public IdentityService(UserManager<User> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters)
+        public IdentityService(UserManager<User> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters, IRefreshTokenService refreshTokenService)
         {
             _userManager = userManager;
             _jwtSettings = jwtSettings;
             _context = context;
             _tokenValidationParameters = tokenValidationParameters;
+            _refreshTokenService = refreshTokenService;
         }
 
         public async Task<AuthenticationResult> RegisterAsync(string username, string password)
@@ -61,7 +62,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 };
             }
 
-            return await GetAuthenticationResultForUser(newUser);
+            return await _refreshTokenService.GenerateRefreshToken(user.Id);
         }
 
         public async Task<AuthenticationResult> LoginAsync(string username, string password)
@@ -86,7 +87,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 };
             }
 
-            return await GetAuthenticationResultForUser(user);
+            return await _refreshTokenService.GenerateRefreshToken(user.Id);
         }
 
         public async Task<AuthenticationResult> RefreshTokenAsync(string token, string refreshToken)
@@ -142,7 +143,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
             await _context.SaveChangesAsync();
 
             var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == "id").Value);
-            return await GetAuthenticationResultForUser(user);
+            return await _refreshTokenService.GenerateRefreshToken(user.Id);
         }
 
         public async Task<string> GetUsername(string userId)
@@ -208,52 +209,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
         private bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken)
         {
             return (validatedToken is JwtSecurityToken jwtSecurityToken) && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
-        }
-
-        private async Task<AuthenticationResult> GetAuthenticationResultForUser(User newUser)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
-
-            var claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, newUser.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("id", newUser.Id),
-            };
-
-            var userClaims = await _userManager.GetClaimsAsync(newUser);
-
-            claims.AddRange(userClaims);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-
-            var refreshToken = new RefreshToken
-            {
-                Token = Guid.NewGuid().ToString(),
-                JwtId = token.Id,
-                UserId = newUser.Id,
-                CreationDate = DateTime.UtcNow,
-                ExpiryDate = DateTime.UtcNow.AddMonths(6),
-
-            };
-
-            _context.RefreshTokens.Add(refreshToken);
-            await _context.SaveChangesAsync();
-
-            return new AuthenticationResult
-            {
-                Success = true,
-                Token = tokenHandler.WriteToken(token),
-                RefreshToken = refreshToken.Token
-            };
         }
     }
 }
