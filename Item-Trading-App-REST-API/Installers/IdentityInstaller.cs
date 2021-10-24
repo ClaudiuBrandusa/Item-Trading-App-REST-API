@@ -9,6 +9,7 @@ namespace Item_Trading_App_REST_API.Installers
         public void InstallServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         }
     }
 }
