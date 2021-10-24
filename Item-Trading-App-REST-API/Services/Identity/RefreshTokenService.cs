@@ -3,13 +3,9 @@ using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Identity
@@ -27,47 +23,24 @@ namespace Item_Trading_App_REST_API.Services.Identity
             _context = context;
         }
 
-        public async Task<AuthenticationResult> GenerateRefreshToken(string userId)
+        public async Task<RefreshTokenResult> GenerateRefreshToken(string userId, string jti)
         {
-            if(string.IsNullOrEmpty(userId))
+            if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(jti))
             {
-                return new AuthenticationResult { Errors = new[] { "Invalid user id" } };
+                return new RefreshTokenResult { Errors = new[] { "Invalid input data" } };
             }
 
             var user = await _userManager.FindByIdAsync(userId);
 
             if(user == null)
             {
-                return new AuthenticationResult { Errors = new[] { "User not found" } };
+                return new RefreshTokenResult { Errors = new[] { "User not found" } };
             }
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
-
-            var claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("id", user.Id),
-            };
-
-            var userClaims = await _userManager.GetClaimsAsync(user);
-
-            claims.AddRange(userClaims);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
 
             var refreshToken = new RefreshToken
             {
                 Token = Guid.NewGuid().ToString(),
-                JwtId = token.Id,
+                JwtId = jti,
                 UserId = user.Id,
                 CreationDate = DateTime.UtcNow,
                 ExpiryDate = DateTime.UtcNow.Add(_jwtSettings.RefreshTokenLifetime),
@@ -77,11 +50,15 @@ namespace Item_Trading_App_REST_API.Services.Identity
             _context.RefreshTokens.Add(refreshToken);
             await _context.SaveChangesAsync();
 
-            return new AuthenticationResult
+            return new RefreshTokenResult
             {
                 Success = true,
-                Token = tokenHandler.WriteToken(token),
-                RefreshToken = refreshToken.Token
+                Token = refreshToken.Token,
+                UserId = refreshToken.UserId,
+                Used = refreshToken.Used,
+                CreationDate = refreshToken.CreationDate,
+                ExpiryDate = refreshToken.ExpiryDate,
+                Invalidated = refreshToken.Invalidated
             };
         }
 
@@ -154,9 +131,45 @@ namespace Item_Trading_App_REST_API.Services.Identity
 
                 tokens = tokens.OrderBy(x => x.CreationDate.Ticks).ToList();
 
-                while (tokens.Count > _jwtSettings.AllowedRefreshTokensPerUser) // leaves the last N refresh tokens created
-                    _context.RefreshTokens.Remove(tokens[0]); // where N is the number of allowed refresh tokens per user
+                int n = tokens.Count - _jwtSettings.AllowedRefreshTokensPerUser; // number of tokens to be deleted
+
+                if (n < 1)
+                    continue;
+
+                for (int i = 0; i < n; i++)
+                    _context.RefreshTokens.Remove(tokens[i]);
+
+                await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task<RefreshTokenResult> GetRecentRefreshToken(string userId, string jti)
+        {
+            var tmp = _context.RefreshTokens.Where(x => Equals(x.UserId, userId) && x.Used == false && x.ExpiryDate > DateTime.UtcNow.AddHours(1) && x.Invalidated == false && Equals(x.JwtId, jti));
+            if(tmp == null || tmp.Count() == 0)
+            {
+                return new RefreshTokenResult
+                {
+                    Errors = new[] { "No refresh token found" }
+                };
+            }
+
+            tmp = tmp.OrderBy(x => x.CreationDate);
+
+            var list = tmp.ToList();
+
+            var item = list[list.Count - 1];
+
+            return new RefreshTokenResult
+            {
+                Success = true,
+                Token = item.Token,
+                UserId = userId,
+                CreationDate = item.CreationDate,
+                ExpiryDate = item.ExpiryDate,
+                Used = item.Used,
+                Invalidated = item.Invalidated
+            };
         }
 
         private async Task<List<string>> GetExpiredRefreshTokens()

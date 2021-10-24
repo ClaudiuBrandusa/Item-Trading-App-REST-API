@@ -62,7 +62,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 };
             }
 
-            return await _refreshTokenService.GenerateRefreshToken(user.Id);
+            return await GetToken(user.Id);
         }
 
         public async Task<AuthenticationResult> LoginAsync(string username, string password)
@@ -86,8 +86,8 @@ namespace Item_Trading_App_REST_API.Services.Identity
                     Errors = new[] { "Username or password is wrong" }
                 };
             }
-
-            return await _refreshTokenService.GenerateRefreshToken(user.Id);
+            
+            return await GetToken(user.Id);
         }
 
         public async Task<AuthenticationResult> RefreshTokenAsync(string token, string refreshToken)
@@ -99,16 +99,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 return new AuthenticationResult { Errors = new[] { "Invalid token" } };
             }
 
-            var expiryDateUnix = long.Parse(validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
-
-            var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                .AddSeconds(expiryDateUnix);
-
-            if (expiryDateTimeUtc > DateTime.UtcNow)
-            {
-                return new AuthenticationResult { Errors = new[] { "This token hasn't expired yet" } };
-            }
-
             var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
 
             var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshToken);
@@ -116,6 +106,27 @@ namespace Item_Trading_App_REST_API.Services.Identity
             if (storedRefreshToken == null)
             {
                 return new AuthenticationResult { Errors = new[] { "This refresh token does not exist" } };
+            }
+
+            if (!Equals(storedRefreshToken.JwtId, jti))
+            {
+                return new AuthenticationResult { Errors = new[] { "This refresh token does not match the JWT" } };
+            }
+
+            var expiryDateUnix = long.Parse(validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
+
+            var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                .AddSeconds(expiryDateUnix);
+
+            if (expiryDateTimeUtc > DateTime.UtcNow)
+            {
+                // this token hasn't expired yet
+                return new AuthenticationResult 
+                {
+                    Success = true,
+                    Token = token,
+                    RefreshToken = refreshToken
+                };
             }
 
             if (DateTime.UtcNow > storedRefreshToken.ExpiryDate)
@@ -133,17 +144,12 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 return new AuthenticationResult { Errors = new[] { "This refresh token has been used" } };
             }
 
-            if (!Equals(storedRefreshToken.JwtId, jti))
-            {
-                return new AuthenticationResult { Errors = new[] { "This refresh token does not match the JWT" } };
-            }
-
             storedRefreshToken.Used = true;
             _context.RefreshTokens.Update(storedRefreshToken);
             await _context.SaveChangesAsync();
 
             var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == "id").Value);
-            return await _refreshTokenService.GenerateRefreshToken(user.Id);
+            return await GetToken(user.Id);
         }
 
         public async Task<string> GetUsername(string userId)
@@ -202,6 +208,8 @@ namespace Item_Trading_App_REST_API.Services.Identity
             }
             catch
             {
+                _tokenValidationParameters.ValidateLifetime = true;
+
                 return null;
             }
         }
@@ -209,6 +217,68 @@ namespace Item_Trading_App_REST_API.Services.Identity
         private bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken)
         {
             return (validatedToken is JwtSecurityToken jwtSecurityToken) && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        private async Task<AuthenticationResult> GetToken(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                return new AuthenticationResult { Errors = new[] { "User not found" } };
+            }
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, await GetUsername(userId)),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("id", userId),
+            };
+
+            var userClaims = await _userManager.GetClaimsAsync(user);
+
+            claims.AddRange(userClaims);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            
+            var refreshToken = await GetRefreshToken(userId, token.Id);
+
+            if(refreshToken == null)
+            {
+                return new AuthenticationResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+            }
+
+            return new AuthenticationResult
+            {
+                Success = true,
+                Token = tokenHandler.WriteToken(token),
+                RefreshToken = refreshToken.Token
+            };
+        }
+
+        private async Task<RefreshTokenResult> GetRefreshToken(string userId, string jti)
+        {
+            var refreshToken = await _refreshTokenService.GetRecentRefreshToken(userId, jti);
+
+            if(refreshToken != null && refreshToken.Success)
+            {
+                return refreshToken;
+            }
+
+            return await _refreshTokenService.GenerateRefreshToken(userId, jti);
         }
     }
 }

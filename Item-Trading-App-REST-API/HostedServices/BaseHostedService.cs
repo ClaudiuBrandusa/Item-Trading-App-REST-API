@@ -28,7 +28,7 @@ namespace Item_Trading_App_REST_API.HostedServices
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            logger.LogInformation("Hosted service: stopped");
+            Log("Stopped");
 
             return Task.CompletedTask;
         }

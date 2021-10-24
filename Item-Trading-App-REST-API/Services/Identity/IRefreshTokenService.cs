@@ -1,7 +1,4 @@
 ﻿using Item_Trading_App_REST_API.Models.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Identity
@@ -14,7 +11,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
         /// <param name="userId"></param>
         /// <param name="jwtId"></param>
         /// <returns></returns>
-        Task<AuthenticationResult> GenerateRefreshToken(string userId);
+        Task<RefreshTokenResult> GenerateRefreshToken(string userId, string jti);
 
         /// <summary>
         /// Returns the refresh token with the given id
@@ -22,6 +19,13 @@ namespace Item_Trading_App_REST_API.Services.Identity
         /// <param name="refreshTokenId"></param>
         /// <returns></returns>
         Task<RefreshTokenResult> GetRefreshToken(string refreshTokenId);
+
+        /// <summary>
+        /// Returns the most recent refresh token
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        Task<RefreshTokenResult> GetRecentRefreshToken(string userId, string jti);
 
         /// <summary>
         /// Removes the refresh token with the given id
