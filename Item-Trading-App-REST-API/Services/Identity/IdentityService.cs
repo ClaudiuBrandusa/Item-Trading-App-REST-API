@@ -62,7 +62,7 @@ namespace Item_Trading_App_REST_API.Services.Identity
                 };
             }
 
-            return await GetToken(user.Id);
+            return await GetToken(newUser.Id);
         }
 
         public async Task<AuthenticationResult> LoginAsync(string username, string password)
