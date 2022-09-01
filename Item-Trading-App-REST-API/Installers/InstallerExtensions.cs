@@ -11,7 +11,7 @@ namespace Item_Trading_App_REST_API.Installers
     {
         public static void InstallServicesInAssembly(this IServiceCollection services, IConfiguration configuration)
         {
-            var installers = typeof(Startup).Assembly.ExportedTypes.Where(installer => typeof(IInstaller).IsAssignableFrom(installer) && !installer.IsInterface && !installer.IsAbstract).Select(Activator.CreateInstance).Cast<IInstaller>().ToList();
+            var installers = typeof(Program).Assembly.ExportedTypes.Where(installer => typeof(IInstaller).IsAssignableFrom(installer) && !installer.IsInterface && !installer.IsAbstract).Select(Activator.CreateInstance).Cast<IInstaller>().ToList();
 
             installers.ForEach(installer => installer.InstallServices(services, configuration));
         }
