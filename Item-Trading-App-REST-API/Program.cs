@@ -1,24 +1,60 @@
-using Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+using Item_Trading_App_REST_API.Installers;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Item_Trading_App_REST_API.Options;
+using Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Item_Trading_App_REST_API
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.InstallServicesInAssembly(builder.Configuration);
+
+builder.Host.ConfigureServices(services => services.AddHostedService<RefreshTokenHostedService>()); // had to run it here in order to have it executed after the rest of app has started
+
+var app = builder.Build();
+
+app.UseCors(options =>
+    options.WithOrigins(builder.Configuration["AngularClientSettings:Client_URL"].ToString())
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+);
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                })
-            .ConfigureServices(
-                services => services.AddHostedService<RefreshTokenHostedService>()); // had to run it here in order to have it executed after the rest of app has started
-    }
+    app.UseDeveloperExceptionPage();
 }
+else
+{
+    app.UseExceptionHandler("/Error");
+}
+
+app.UseAuthentication();
+var swaggerOptions = new SwaggerOptions();
+
+builder.Configuration.GetSection(nameof(SwaggerOptions)).Bind(swaggerOptions);
+
+app.UseSwagger(option =>
+{
+    option.RouteTemplate = swaggerOptions.JsonRoute;
+});
+
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint(swaggerOptions.UIEndPoint, swaggerOptions.Description);
+});
+
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+app.Run();
