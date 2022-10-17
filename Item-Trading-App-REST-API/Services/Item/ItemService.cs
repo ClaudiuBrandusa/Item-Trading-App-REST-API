@@ -172,11 +172,18 @@ namespace Item_Trading_App_REST_API.Services.Item
             };
         }
 
-        public ItemsResult ListItems()
+        public ItemsResult ListItems(string searchString = "")
         {
+            var items = _context.Items.ToList();
+
+            if (!string.IsNullOrEmpty(searchString)) // if it has a search string
+                items = (from x in _context.Items
+                        where x.Name.StartsWith(searchString) // then we search all items where the name starts with our search string
+                        select x).ToList();
+
             return new ItemsResult
             {
-                ItemsId = _context.Items.Select(i => i.ItemId),
+                ItemsId = items.Select(i => i.ItemId),
                 Success = true
             };
         }

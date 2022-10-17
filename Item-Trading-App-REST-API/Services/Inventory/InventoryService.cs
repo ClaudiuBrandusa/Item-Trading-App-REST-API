@@ -197,7 +197,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             };
         }
 
-        public async Task<ItemsResult> ListItemsAsync(string userId)
+        public async Task<ItemsResult> ListItemsAsync(string userId, string searchString = "")
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -208,6 +208,11 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             }
 
             var ownedItems = _context.OwnedItems.Where(oi => Equals(oi.UserId, userId))?.ToList();
+
+            if (!string.IsNullOrEmpty(searchString))
+                ownedItems = (from item in _context.OwnedItems
+                             where item.Item.Name.StartsWith(searchString)
+                             select item).ToList();
 
             if (ownedItems == null)
             {

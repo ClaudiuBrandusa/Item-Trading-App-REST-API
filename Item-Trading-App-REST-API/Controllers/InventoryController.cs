@@ -140,7 +140,9 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Inventory.List)]
         public async Task<IActionResult> List()
         {
-            var result = await _inventoryService.ListItemsAsync(UserId);
+            string searchString = HttpContext.Request.Query["searchstring"].ToString();
+
+            var result = await _inventoryService.ListItemsAsync(UserId, searchString);
 
             if (result == null)
             {
