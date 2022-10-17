@@ -61,7 +61,9 @@ namespace Item_Trading_App_REST_API.Controllers
         [HttpGet(Endpoints.Item.List)]
         public async Task<IActionResult> List()
         {
-            var result = _itemService.ListItems();
+            string searchString = HttpContext.Request.Query["searchstring"].ToString();
+
+            var result = _itemService.ListItems(searchString);
 
             if(result == null)
             {
