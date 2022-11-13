@@ -156,6 +156,12 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             }
 
             item.Quantity -= quantity;
+
+            if (item.Quantity == 0)
+            {
+                _context.OwnedItems.Remove(item);
+            }
+
             await _context.SaveChangesAsync();
 
             return new QuantifiedItemResult
