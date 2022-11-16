@@ -141,18 +141,21 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
+            int freeItems = item.Quantity;
+
             var lockedItem = GetLockedItem(userId, itemId);
 
             if (lockedItem != null)
             {
-                int freeItems = item.Quantity - lockedItem.Quantity;
-                if (freeItems < quantity)
+                freeItems -= lockedItem.Quantity;
+            }
+
+            if (freeItems < quantity)
+            {
+                return new QuantifiedItemResult
                 {
-                    return new QuantifiedItemResult
-                    {
-                        Errors = new[] { "You cannot drop more than you have" }
-                    };
-                }
+                    Errors = new[] { "You cannot drop more than you have" }
+                };
             }
 
             item.Quantity -= quantity;
