@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Item_Trading_App_REST_API.Options;
 using Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
 using Microsoft.Extensions.DependencyInjection;
+using Item_Trading_App_REST_API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ app.UseCors(options =>
     options.WithOrigins(builder.Configuration["AngularClientSettings:Client_URL"].ToString())
     .AllowAnyMethod()
     .AllowAnyHeader()
+    .AllowCredentials()
 );
 
 // Configure the HTTP request pipeline.
@@ -55,6 +57,7 @@ app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
+    endpoints.MapHub<NotificationHub>("/hubs/notification");
 });
 
 app.Run();
