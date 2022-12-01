@@ -2,11 +2,12 @@
 using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;
+using Item_Trading_App_REST_API.Hubs;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Item;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
+using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers
@@ -15,16 +16,18 @@ namespace Item_Trading_App_REST_API.Controllers
     public class ItemController : BaseController
     {
         private readonly IItemService _itemService;
+        private readonly IHubContext<NotificationHub> _notificationHubContext;
 
-        public ItemController(IItemService itemService)
+        public ItemController(IItemService itemService, IHubContext<NotificationHub> notificationHubContext)
         {
             _itemService = itemService;
+            _notificationHubContext = notificationHubContext;
         }
 
         [HttpGet(Endpoints.Item.Get)]
         public async Task<IActionResult> Get(string itemId)
         {
-            if(string.IsNullOrEmpty(itemId))
+            if (string.IsNullOrEmpty(itemId))
             {
                 return BadRequest(new FailedResponse
                 {
