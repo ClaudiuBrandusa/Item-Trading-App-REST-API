@@ -165,5 +165,35 @@ namespace Item_Trading_App_REST_API.Controllers
                 ItemsId = result.ItemsId
             });
         }
+
+        [HttpGet(Endpoints.Inventory.GetLockedAmount)]
+        public async Task<IActionResult> GetLockedAmount(string itemId)
+        {
+            var result = await _inventoryService.GetLockedAmount(UserId, itemId);
+
+            if (result == null)
+            {
+                return BadRequest(new FailedResponse
+                {
+                    Errors = new[] { "Something went wrong" }
+                });
+            }
+
+            if (!result.Success)
+            {
+                return BadRequest(new GetLockedAmountFailedResponse
+                {
+                    ItemId = itemId,
+                    Errors = result.Errors
+                });
+            }
+
+            return Ok(new GetLockedAmountSuccessResponse
+            {
+                ItemId = result.ItemId,
+                ItemName = result.ItemName,
+                LockedAmount = result.Amount
+            });
+        }
     }
 }

@@ -3,7 +3,6 @@ using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Item;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -333,6 +332,37 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 ItemId = itemId,
                 UserId = userId,
                 Quantity = amount,
+                Success = true
+            };
+        }
+
+        public async Task<LockedItemAmountResult> GetLockedAmount(string userId, string itemId)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+            {
+                return new LockedItemAmountResult
+                {
+                    Errors = new[] { "Invalid input data" }
+                };
+            }
+
+            var lockedItemEntity = GetLockedItem(userId, itemId);
+
+            var itemData = await _itemService.GetItemAsync(itemId);
+
+            if (itemData == null)
+            {
+                return new LockedItemAmountResult
+                {
+                    Errors = new[] { "Item not found" }
+                };
+            }
+
+            return new LockedItemAmountResult
+            {
+                ItemId = itemId,
+                ItemName = itemData.ItemName,
+                Amount = lockedItemEntity?.Quantity ?? 0,
                 Success = true
             };
         }
