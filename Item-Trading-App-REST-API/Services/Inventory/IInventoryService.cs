@@ -65,5 +65,13 @@ namespace Item_Trading_App_REST_API.Services.Inventory
         /// <param name="quantity"></param>
         /// <returns></returns>
         Task<LockItemResult> UnlockItemAsync(string userId, string itemId, int quantity);
+
+        /// <summary>
+        /// Returns the amount of the item with the given itemId for the user with the given id
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        Task<LockedItemAmountResult> GetLockedAmount(string userId, string itemId);
     }
 }
