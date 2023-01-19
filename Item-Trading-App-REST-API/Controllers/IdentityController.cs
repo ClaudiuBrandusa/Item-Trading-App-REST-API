@@ -92,9 +92,9 @@ namespace Item_Trading_App_REST_API.Controllers
 
         [Authorize]
         [HttpGet(Endpoints.Identity.ListUsers)]
-        public async Task<IActionResult> ListUsers()
+        public async Task<IActionResult> ListUsers(string searchString)
         {
-            var result = await _identityService.ListUsers(UserId);
+            var result = await _identityService.ListUsers(UserId, searchString);
 
 
             if (result == null)

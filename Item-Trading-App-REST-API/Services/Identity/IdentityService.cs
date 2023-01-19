@@ -169,9 +169,9 @@ namespace Item_Trading_App_REST_API.Services.Identity
             return user.UserName;
         }
 
-        public async Task<UsersResult> ListUsers(string userId)
+        public async Task<UsersResult> ListUsers(string userId, string searchString)
         {
-            var list = _context.Users.Where(u => !Equals(u.Id, userId)).Select(u => u.Id);
+            var list = _context.Users.Where(u => !Equals(u.Id, userId) && u.UserName.StartsWith(searchString)).Select(u => u.Id);
 
             if (list == null)
             {
