@@ -40,7 +40,8 @@ namespace Item_Trading_App_REST_API.Services.Identity
         /// Returns a list with all of the users besides the user requesting the service
         /// </summary>
         /// <param name="userId"></param>
+        /// <param name="searchString"></param>
         /// <returns></returns>
-        Task<UsersResult> ListUsers(string userId);
+        Task<UsersResult> ListUsers(string userId, string searchString);
     }
 }
