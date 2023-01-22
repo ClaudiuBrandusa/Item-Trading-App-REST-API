@@ -54,7 +54,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 TradeId = tradeId,
                 ReceiverId = result.ReceiverId,
                 ReceiverName = result.ReceiverName,
-                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Price = t.Price, Quantity = t.Quantity }),
+                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
                 SentDate = result.SentDate
             });
         }
@@ -90,7 +90,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 TradeId = tradeId,
                 ReceiverId = result.ReceiverId,
                 ReceiverName = result.ReceiverName,
-                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Price = t.Price, Quantity = t.Quantity }),
+                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
                 SentDate = result.SentDate,
                 Response = result.Response,
                 ResponseDate = result.ResponseDate
@@ -128,7 +128,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 TradeId = tradeId,
                 SenderId = result.SenderId,
                 SenderName = result.SenderName,
-                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Price = t.Price, Quantity = t.Quantity }),
+                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
                 SentDate = result.SentDate
             });
         }
@@ -164,7 +164,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 TradeId = tradeId,
                 SenderId = result.SenderId,
                 SenderName = result.SenderName,
-                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Price = t.Price, Quantity = t.Quantity }),
+                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
                 SentDate = result.SentDate,
                 Response = result.Response,
                 ResponseDate = result.ResponseDate

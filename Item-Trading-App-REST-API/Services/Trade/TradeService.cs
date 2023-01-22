@@ -3,6 +3,7 @@ using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Models.Trade;
 using Item_Trading_App_REST_API.Services.Identity;
 using Item_Trading_App_REST_API.Services.Inventory;
+using Item_Trading_App_REST_API.Services.Item;
 using Item_Trading_App_REST_API.Services.Wallet;
 using System;
 using System.Collections.Generic;
@@ -14,13 +15,15 @@ namespace Item_Trading_App_REST_API.Services.Trade
     public class TradeService : ITradeService
     {
         private readonly DatabaseContext _context;
+        private readonly IItemService _itemService;
         private readonly IInventoryService _inventoryService;
         private readonly IIdentityService _identityService;
         private readonly IWalletService _walletService;
 
-        public TradeService(DatabaseContext context, IInventoryService inventoryService, IIdentityService identityService, IWalletService walletService)
+        public TradeService(DatabaseContext context, IItemService itemService, IInventoryService inventoryService, IIdentityService identityService, IWalletService walletService)
         {
             _context = context;
+            _itemService = itemService;
             _inventoryService = inventoryService;
             _identityService = identityService;
             _walletService = walletService;
@@ -143,7 +146,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
-            int price = GetTotalPrice(tradeOfferId);
+            int price = await GetTotalPrice(tradeOfferId);
 
             if(price > await _walletService.GetUserCashAsync(userId))
             {
@@ -477,7 +480,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 ReceiverId = receiverId,
                 ReceiverName = await _identityService.GetUsername(receiverId),
                 SentDate = offer.SentDate,
-                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
+                Items = await GetItemPrices(requestTradeOffer.TradeOfferId),
                 Success = true
             };
         }
@@ -571,7 +574,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 SenderId = senderId,
                 SenderName = await _identityService.GetUsername(senderId),
                 SentDate = trade.SentDate,
-                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
+                Items = await GetItemPrices(requestTradeOffer.TradeOfferId),
                 Success = true
             };
         }
@@ -616,7 +619,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 Response = (bool)trade.Response,
                 ResponseDate = (DateTime)trade.ResponseDate,
                 SentDate = offer.SentDate,
-                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
+                Items = await GetItemPrices(requestTradeOffer.TradeOfferId),
                 Success = true
             };
         }
@@ -686,7 +689,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
             return trade.Response != null;
         }
 
-        private List<ItemPrice> GetItemPrices(string tradeId)
+        private async Task<List<ItemPrice>> GetItemPrices(string tradeId)
         {
             var tmp = GetTradeContents(tradeId);
 
@@ -696,12 +699,16 @@ namespace Item_Trading_App_REST_API.Services.Trade
             {
                 foreach (var item in tmp)
                 {
-                    items.Add(new ItemPrice
+                    var newItem = new ItemPrice
                     {
                         ItemId = item.ItemId,
                         Price = item.Price,
                         Quantity = item.Quantity
-                    });
+                    };
+
+                    newItem.Name = await GetItemNameAsync(item.ItemId);
+
+                    items.Add(newItem);
                 }
             }
 
@@ -728,9 +735,9 @@ namespace Item_Trading_App_REST_API.Services.Trade
             return tmp.SenderId;
         }
 
-        private List<TradeItem> GetTradeItems(string tradeId)
+        private async Task<List<TradeItem>> GetTradeItems(string tradeId)
         {
-            var tradeContents = GetItemPrices(tradeId);
+            var tradeContents = await GetItemPrices(tradeId);
 
             var results = new List<TradeItem>();
 
@@ -754,7 +761,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
 
         private async Task<bool> UnlockTradeItems(string userId, string tradeId)
         {
-            var tradeItems = GetTradeItems(tradeId);
+            var tradeItems = await GetTradeItems(tradeId);
 
             if(tradeItems == null || tradeItems.Count == 0)
             {
@@ -808,9 +815,9 @@ namespace Item_Trading_App_REST_API.Services.Trade
             return true;
         }
 
-        private int GetTotalPrice(string tradeOfferId)
+        private async Task<int> GetTotalPrice(string tradeOfferId)
         {
-            var list = GetItemPrices(tradeOfferId);
+            var list = await GetItemPrices(tradeOfferId);
 
             if (list == null || list.Count == 0)
                 return 0;
@@ -836,5 +843,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
         private Entities.ReceivedTrade GetReceivedTradeOfferEntity(string tradeId) => _context.ReceivedTrades.FirstOrDefault(o => Equals(o.TradeId, tradeId));
 
         private Entities.Trade GetTradeOfferEntity(string tradeId) => _context.Trades.FirstOrDefault(t => Equals(t.TradeId, tradeId));
+
+        private Task<string> GetItemNameAsync(string itemId) => _itemService.GetItemNameAsync(itemId);
     }
 }
