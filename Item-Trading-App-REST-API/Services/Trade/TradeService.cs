@@ -55,6 +55,8 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 if (!(await _inventoryService.LockItemAsync(model.SenderUserId, item.ItemId, item.Quantity)).Success)
                     continue;
 
+                item.Name = await GetItemNameAsync(item.ItemId);
+
                 items.Add(item);
             }
 
@@ -103,7 +105,9 @@ namespace Item_Trading_App_REST_API.Services.Trade
             {
                 TradeOfferId = offer.TradeId,
                 ReceiverId = model.TargetUserId,
+                ReceiverName = await _identityService.GetUsername(model.TargetUserId),
                 Items = items,
+                SentDate = offer.SentDate,
                 Success = true
             };
         }
@@ -396,7 +400,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
             {
                 return new TradeOffersResult
                 {
-                    Errors = new[] { "Invaild user ID" }
+                    Errors = new[] { "Invalid user ID" }
                 };
             }
 
@@ -544,7 +548,7 @@ namespace Item_Trading_App_REST_API.Services.Trade
             {
                 return new ReceivedTradeOffer
                 { 
-                    Errors = new[] { "Soemthing went wrong" }
+                    Errors = new[] { "Something went wrong" }
                 };
             }
 
