@@ -319,7 +319,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 ReceiverId = result.ReceiverId,
                 ReceiverName = result.ReceiverName,
                 SentDate = result.SentDate,
-                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Price = t.Price, Quantity = t.Quantity})
+                Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity})
             });
         }
 
