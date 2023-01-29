@@ -3,6 +3,7 @@ using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Item;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -215,11 +216,13 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            var ownedItems = _context.OwnedItems.Where(oi => Equals(oi.UserId, userId))?.ToList();
+            List<OwnedItem> ownedItems = null;
 
-            if (!string.IsNullOrEmpty(searchString))
+            if (string.IsNullOrEmpty(searchString))
+                ownedItems = _context.OwnedItems.Where(oi => Equals(oi.UserId, userId))?.ToList();
+            else
                 ownedItems = (from item in _context.OwnedItems
-                             where item.Item.Name.StartsWith(searchString)
+                             where item.Item.Name.StartsWith(searchString) && item.UserId == userId
                              select item).ToList();
 
             if (ownedItems == null)
