@@ -310,6 +310,14 @@ namespace Item_Trading_App_REST_API.Services.Trade
                 };
             }
 
+            if (entity.Response.HasValue)
+            {
+                return new CancelTradeOfferResult
+                {
+                    Errors = new[] { "Unable to cancel a trade that already got a response" }
+                };
+            }
+
             if(!await UnlockTradeItems(userId, tradeOfferId))
             {
                 return new CancelTradeOfferResult
