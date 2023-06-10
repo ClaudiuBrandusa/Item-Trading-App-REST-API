@@ -123,7 +123,8 @@ namespace Item_Trading_App_REST_API.Controllers
             new AuthenticationSuccessResponse
             {
                 Token = result.Token,
-                RefreshToken = result.RefreshToken
+                RefreshToken = result.RefreshToken,
+                ExpirationDateTime = result.ExpirationDateTime
             };
     }
 }

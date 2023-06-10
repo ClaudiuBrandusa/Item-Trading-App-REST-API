@@ -118,17 +118,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
             var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 .AddSeconds(expiryDateUnix);
 
-            if (expiryDateTimeUtc > DateTime.UtcNow)
-            {
-                // this token hasn't expired yet
-                return new AuthenticationResult 
-                {
-                    Success = true,
-                    Token = token,
-                    RefreshToken = refreshToken
-                };
-            }
-
             if (DateTime.UtcNow > storedRefreshToken.ExpiryDate)
             {
                 return new AuthenticationResult { Errors = new[] { "This refresh token has expired" } };
@@ -138,15 +127,6 @@ namespace Item_Trading_App_REST_API.Services.Identity
             {
                 return new AuthenticationResult { Errors = new[] { "This refresh token has been invalidated" } };
             }
-
-            if (storedRefreshToken.Used)
-            {
-                return new AuthenticationResult { Errors = new[] { "This refresh token has been used" } };
-            }
-
-            storedRefreshToken.Used = true;
-            _context.RefreshTokens.Update(storedRefreshToken);
-            await _context.SaveChangesAsync();
 
             var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == "id").Value);
             return await GetToken(user.Id);
@@ -242,10 +222,12 @@ namespace Item_Trading_App_REST_API.Services.Identity
 
             claims.AddRange(userClaims);
 
+            var expirationTime = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime);
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime),
+                Expires = expirationTime,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -265,7 +247,8 @@ namespace Item_Trading_App_REST_API.Services.Identity
             {
                 Success = true,
                 Token = tokenHandler.WriteToken(token),
-                RefreshToken = refreshToken.Token
+                RefreshToken = refreshToken.Token,
+                ExpirationDateTime = expirationTime
             };
         }
 
