@@ -39,7 +39,7 @@ namespace Item_Trading_App_REST_API.Services.Item
         /// </summary>
         /// <param name="searchString">Will enlist the items' with the name starting with the search string</param>
         /// <returns></returns>
-        ItemsResult ListItems(string searchString = "");
+        Task<ItemsResult> ListItems(string searchString = "");
 
         /// <summary>
         /// Returns the item's name

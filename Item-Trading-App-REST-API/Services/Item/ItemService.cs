@@ -1,7 +1,8 @@
-﻿using Item_Trading_App_REST_API.Data;
+﻿using Item_Trading_App_REST_API.Constants;
+using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Services.Cache;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,10 +11,12 @@ namespace Item_Trading_App_REST_API.Services.Item
     public class ItemService : IItemService
     {
         private readonly DatabaseContext _context;
+        private readonly ICacheService _cacheService;
 
-        public ItemService(DatabaseContext context)
+        public ItemService(DatabaseContext context, ICacheService cacheService)
         {
             _context = context;
+            _cacheService = cacheService;
         }
 
         public async Task<FullItemResult> CreateItemAsync(CreateItem model)
@@ -36,13 +39,15 @@ namespace Item_Trading_App_REST_API.Services.Item
             await _context.Items.AddAsync(item);
             var added = await _context.SaveChangesAsync();
 
-            if(added == 0)
+            if (added == 0)
             {
                 return new FullItemResult
                 {
                     Errors = new[] { "Unable to add this item" }
                 };
             }
+
+            await SetItemCache(item.ItemId, item);
 
             return new FullItemResult
             {
@@ -63,14 +68,17 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            var item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, model.ItemId));
-        
-            if(item == null || item == default)
+            var item = await GetItemCache(model.ItemId);
+
+            if (item == null || item == default)
             {
-                return new FullItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
+                item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, model.ItemId));
+                
+                if (item == null)
+                    return new FullItemResult
+                    {
+                        Errors = new[] { "Something went wrong" }
+                    };
             }
 
             if(!string.IsNullOrEmpty(model.ItemName) && model.ItemName.Length > 3)
@@ -83,7 +91,9 @@ namespace Item_Trading_App_REST_API.Services.Item
             _context.Items.Update(item);
             var updated = await _context.SaveChangesAsync();
 
-            if(updated == 0)
+            await SetItemCache(model.ItemId, item);
+
+            if (updated == 0)
             {
                 return new FullItemResult
                 {
@@ -113,14 +123,22 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            var item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+            var item = await GetItemCache(itemId);
 
             if (item == null || item == default)
             {
-                return new DeleteItemResult
-                { 
-                    Errors = new[] { "Something went wrong" }
-                };
+                item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+
+                if (item == null)
+                    return new DeleteItemResult
+                    { 
+                        Errors = new[] { "Something went wrong" }
+                    };
+
+            }
+            else
+            {
+                await _cacheService.ClearCacheKeyAsync(CachePrefixKeys.Items + itemId);
             }
 
             _context.Items.Remove(item);
@@ -152,15 +170,22 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            var item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+            var item = await GetItemCache(itemId);
 
-            if(item == null || item == default)
+            if (item == null)
             {
-                return new FullItemResult
+                item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+
+                if (item == null)
                 {
-                    ItemId = itemId,
-                    Errors = new[] { "Item not found" }
-                };
+                    return new FullItemResult
+                    {
+                        ItemId = itemId,
+                        Errors = new[] { "Item not found" }
+                    };
+                }
+
+                await SetItemCache(itemId, item);
             }
 
             return new FullItemResult
@@ -172,14 +197,19 @@ namespace Item_Trading_App_REST_API.Services.Item
             };
         }
 
-        public ItemsResult ListItems(string searchString = "")
+        public async Task<ItemsResult> ListItems(string searchString = "")
         {
-            var items = _context.Items.ToList();
+            var items = (await _cacheService.ListWithPrefix<Entities.Item>(CachePrefixKeys.Items)).Values.ToList();
+
+            if (items.Count == 0)
+            {
+                items = _context.Items.ToList();
+
+                await Parallel.ForEachAsync(items, async (item, cancellationToken) => await SetItemCache(item.ItemId, item));
+            }
 
             if (!string.IsNullOrEmpty(searchString)) // if it has a search string
-                items = (from x in _context.Items
-                        where x.Name.StartsWith(searchString) // then we search all items where the name starts with our search string
-                        select x).ToList();
+                items = items.Where(x => x.Name.ToLower().StartsWith(searchString.ToLower())).ToList();
 
             return new ItemsResult
             {
@@ -190,11 +220,18 @@ namespace Item_Trading_App_REST_API.Services.Item
 
         public async Task<string> GetItemNameAsync(string itemId)
         {
-            var entity = GetItemEntity(itemId);
+            var entity = await GetItemCache(itemId);
 
-            if(entity == null)
+            if (entity == null)
             {
-                return "";
+                entity = GetItemEntity(itemId);
+
+                if (entity == null)
+                {
+                    return "";
+                }
+
+                await SetItemCache(itemId, entity);
             }
 
             return entity.Name;
@@ -202,16 +239,27 @@ namespace Item_Trading_App_REST_API.Services.Item
 
         public async Task<string> GetItemDescriptionAsync(string itemId)
         {
-            var entity = GetItemEntity(itemId);
+            var entity = await GetItemCache(itemId);
 
-            if(entity == null)
+            if (entity == null)
             {
-                return "";
+                entity = GetItemEntity(itemId);
+
+                if (entity == null)
+                {
+                    return "";
+                }
+
+                await SetItemCache(itemId, entity);
             }
 
             return entity.Description;
         }
 
         private Entities.Item GetItemEntity(string itemId) => _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+
+        private async Task<Entities.Item> GetItemCache(string itemId) => await _cacheService.GetCacheValueAsync<Entities.Item>(CachePrefixKeys.Items + itemId);
+        
+        private async Task SetItemCache(string itemId, Entities.Item entity) => await _cacheService.SetCacheValueAsync(CachePrefixKeys.Items + itemId, entity);
     }
 }

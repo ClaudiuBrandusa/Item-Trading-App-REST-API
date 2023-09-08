@@ -66,7 +66,7 @@ namespace Item_Trading_App_REST_API.Controllers
         {
             string searchString = HttpContext.Request.Query["searchstring"].ToString();
 
-            var result = _itemService.ListItems(searchString);
+            var result = await _itemService.ListItems(searchString);
 
             if(result == null)
             {

@@ -13,7 +13,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
         /// <param name="itemId"></param>
         /// <param name="quantity"></param>
         /// <returns></returns>
-        bool HasItem(string userId, string itemId, int quantity);
+        Task<bool> HasItem(string userId, string itemId, int quantity);
 
         /// <summary>
         /// Adds the quantity of the item to the user

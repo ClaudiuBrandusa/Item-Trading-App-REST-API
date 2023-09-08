@@ -1,5 +1,4 @@
-﻿using Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
-using Item_Trading_App_REST_API.Options;
+﻿using Item_Trading_App_REST_API.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
