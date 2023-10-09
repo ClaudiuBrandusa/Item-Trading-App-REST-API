@@ -3,8 +3,11 @@ using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Requests.Inventory;
+using Item_Trading_App_REST_API.Requests.Item;
 using Item_Trading_App_REST_API.Services.Cache;
-using Item_Trading_App_REST_API.Services.Item;
+using Item_Trading_App_REST_API.Services.Notification;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,29 +18,31 @@ namespace Item_Trading_App_REST_API.Services.Inventory
     public class InventoryService : IInventoryService
     {
         private readonly DatabaseContext _context;
-        private readonly IItemService _itemService;
+        private readonly INotificationService _notificationService;
         private readonly ICacheService _cacheService;
+        private readonly IMediator _mediator;
 
-        public InventoryService(DatabaseContext context, IItemService itemService, ICacheService cacheService)
+        public InventoryService(DatabaseContext context, INotificationService notificationService, ICacheService cacheService, IMediator mediator)
         {
             _context = context;
-            _itemService = itemService;
+            _notificationService = notificationService;
             _cacheService = cacheService;
+            _mediator = mediator;
         }
 
-        public async Task<bool> HasItem(string userId, string itemId, int quantity)
+        public async Task<bool> HasItemAsync(string userId, string itemId, int quantity)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
             {
                 return false;
             }
 
-            var amount = await GetAmountOfFreeItem(userId, itemId);
+            var amount = await GetAmountOfFreeItemAsync(userId, itemId);
 
             return amount >= quantity;
         }
 
-        public async Task<QuantifiedItemResult> AddItemAsync(string userId, string itemId, int quantity)
+        public async Task<QuantifiedItemResult> AddItemAsync(string userId, string itemId, int quantity, bool notify = false)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
             {
@@ -47,11 +52,11 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            var item = await _cacheService.GetCacheValueAsync<InventoryItem>(GetPrefix(userId) + itemId);
+            var item = await GetInventoryItemCacheAsync(userId, itemId);
 
             if (item is null)
             {
-                var tmp = await GetItem(userId, itemId);
+                var tmp = await GetInventoryItemEntityAsync(userId, itemId);
 
                 if (tmp is not null)
                 {
@@ -63,7 +68,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 }
             }
 
-            var itemData = await _itemService.GetItemAsync(itemId);
+            var itemData = await _mediator.Send(new GetItemQuery { ItemId = itemId});
 
             if (itemData is null)
             {
@@ -114,7 +119,8 @@ namespace Item_Trading_App_REST_API.Services.Inventory
 
             var updated = await _context.SaveChangesAsync();
 
-            await _cacheService.SetCacheValueAsync(GetPrefix(userId) + itemId, new InventoryItem { Id = itemId, Quantity = quantity });
+            await _cacheService.SetCacheValueAsync(GetAmountKey(userId, itemId), new InventoryItem { Id = itemId, Quantity = quantity });
+            quantity = item is null ? quantity : await GetAmountOfFreeItemAsync(userId, item.Id);
 
             if (updated == 0)
             {
@@ -123,22 +129,29 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                     ItemId = item.Id,
                     ItemName = itemData.ItemName,
                     ItemDescription = itemData.ItemDescription,
-                    Quantity = item is null ? quantity : await GetAmountOfFreeItem(userId, item.Id),
+                    Quantity = quantity,
                     Errors = new[] { "Something went wrong" }
                 };
             }
+
+            if (notify)
+                await _notificationService.SendUpdatedNotificationToUserAsync(userId, NotificationCategoryTypes.Inventory, itemId, new InventoryItemQuantityNotification
+                {
+                    AddAmount = true,
+                    Amount = quantity
+                });
 
             return new QuantifiedItemResult
             {
                 ItemId = itemId,
                 ItemName = itemData.ItemName,
                 ItemDescription = itemData.ItemDescription,
-                Quantity = item is null ? quantity : await GetAmountOfFreeItem(userId, item.Id),
+                Quantity = quantity,
                 Success = true
             };
         }
 
-        public async Task<QuantifiedItemResult> DropItemAsync(string userId, string itemId, int quantity)
+        public async Task<QuantifiedItemResult> DropItemAsync(string userId, string itemId, int quantity, bool notify = false)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
             {
@@ -148,11 +161,11 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            var item = await _cacheService.GetCacheValueAsync<InventoryItem>(GetPrefix(userId) + itemId);
+            var item = await GetInventoryItemCacheAsync(userId, itemId);
 
             if (item is null)
             {
-                var tmp = await GetItem(userId, itemId);
+                var tmp = await GetInventoryItemEntityAsync(userId, itemId);
 
                 if (tmp is null)
                 {
@@ -189,12 +202,12 @@ namespace Item_Trading_App_REST_API.Services.Inventory
 
             if (!await _cacheService.ContainsKey(GetLockedAmountKey(userId, itemId)))
             {
-                var lockedItem = await GetLockedItem(userId, itemId);
+                var lockedItem = await GetLockedInventoryItemEntityAsync(userId, itemId);
                 lockedAmount = lockedItem?.Quantity ?? 0;
             }
             else
             {
-                lockedAmount = await _cacheService.GetCacheValueAsync<int>(GetLockedAmountKey(userId, itemId));
+                lockedAmount = await GetLockedItemAmountCacheAsync(userId, itemId);
             }
 
             freeItems -= lockedAmount;
@@ -208,26 +221,34 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             }
 
             item.Quantity -= quantity;
-
+            
             if (item.Quantity == 0)
             {
                 _context.OwnedItems.Remove(new OwnedItem { ItemId = item.Id, UserId = userId });
-                await _cacheService.ClearCacheKeyAsync(GetPrefix(userId) + itemId);
+                await _cacheService.ClearCacheKeyAsync(GetAmountKey(userId, itemId));
                 await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, itemId));
             }
             else
             {
-                await _cacheService.SetCacheValueAsync(GetPrefix(userId) + itemId, new InventoryItem { Id = itemId, Quantity = item.Quantity });
+                await _cacheService.SetCacheValueAsync(GetAmountKey(userId, itemId), new InventoryItem { Id = itemId, Quantity = item.Quantity });
                 await _cacheService.SetCacheValueAsync(GetLockedAmountKey(userId, itemId), lockedAmount);
             }
 
             await _context.SaveChangesAsync();
+            quantity = item.Quantity == 0 ? 0 : await GetAmountOfFreeItemAsync(userId, item.Id);
+
+            if (notify)
+                await _notificationService.SendUpdatedNotificationToUserAsync(userId, NotificationCategoryTypes.Inventory, itemId, new InventoryItemQuantityNotification
+                {
+                    AddAmount = false,
+                    Amount = quantity
+                });
 
             return new QuantifiedItemResult
             {
                 ItemId = itemId,
-                ItemName = await _itemService.GetItemNameAsync(itemId),
-                Quantity = item.Quantity == 0 ? 0 : await GetAmountOfFreeItem(userId, item.Id),
+                ItemName = await _mediator.Send(new GetItemNameQuery { ItemId = itemId }),
+                Quantity = quantity,
                 Success = true
             };
         }
@@ -242,7 +263,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            int amount = await GetAmountOfFreeItem(userId, itemId);
+            int amount = await GetAmountOfFreeItemAsync(userId, itemId);
             var lockedAmount = await GetLockedAmount(userId, itemId);
 
             if (amount == 0 && lockedAmount.Amount == 0)
@@ -256,8 +277,8 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             return new QuantifiedItemResult
             {
                 ItemId = itemId,
-                ItemName = await _itemService.GetItemNameAsync(itemId),
-                ItemDescription = await _itemService.GetItemDescriptionAsync(itemId),
+                ItemName = await _mediator.Send(new GetItemNameQuery { ItemId = itemId }),
+                ItemDescription = await _mediator.Send(new GetItemDescriptionQuery { ItemId = itemId }),
                 Quantity = amount,
                 Success = true
             };
@@ -285,40 +306,26 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             {
                 var tmp = _context.OwnedItems.Where(oi => Equals(oi.UserId, userId))?.ToList();
 
-                await Parallel.ForEachAsync(tmp, async (ownedItem, cancellationToken) =>
+                foreach(var ownedItem in tmp)
                 {
                     await _cacheService.SetCacheValueAsync(GetPrefix(userId) + ownedItem.ItemId, new InventoryItem { Id = ownedItem.ItemId, Quantity = ownedItem.Quantity });
 
-                    var itemName = await _itemService.GetItemNameAsync(ownedItem.ItemId);
+                    var itemName = await _mediator.Send(new GetItemNameQuery { ItemId = ownedItem.ItemId });
 
-                    if (!itemName.ToLower().StartsWith(searchString)) return;
+                    if (!itemName.ToLower().StartsWith(searchString)) continue;
 
-                    lock (ownedItem) 
-                    {
-                        ownedItems.Add(ownedItem);
-                    }
-                }); 
+                    ownedItems.Add(ownedItem);
+                }; 
 
                 cached = true;
             }
             else
             {
-                await Parallel.ForEachAsync(inventoryItems, async (inventoryItem, cancellationToken) =>
+                foreach(var inventoryItem in inventoryItems)
                 {
-                    var cachedItem = await _cacheService.GetCacheValueAsync<Entities.Item>(CachePrefixKeys.Items + inventoryItem.Id);
+                    string itemName = await _mediator.Send(new GetItemNameQuery { ItemId = inventoryItem.Id });
 
-                    string itemName = "";
-
-                    if (cachedItem is not null)
-                    {
-                        itemName = cachedItem.Name;
-                    }
-                    else
-                    {
-                        itemName = await _itemService.GetItemNameAsync(inventoryItem.Id);
-                    }
-
-                    if (!itemName.ToLower().StartsWith(searchString)) return;
+                    if (!itemName.ToLower().StartsWith(searchString)) continue;
 
                     var tmp = new OwnedItem
                     {
@@ -327,11 +334,8 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                         Quantity = inventoryItem.Quantity
                     };
 
-                    lock (tmp)
-                    {
-                        ownedItems.Add(tmp);
-                    }
-                });
+                    ownedItems.Add(tmp);
+                };
             }
 
             if (ownedItems is null)
@@ -342,9 +346,9 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            if(!cached)
-                await Parallel.ForEachAsync(ownedItems.Select(x => new InventoryItem { Id = x.ItemId, Quantity = x.Quantity }), async (item, cancellationToken) => await _cacheService.SetCacheValueAsync(GetPrefix(userId) + item.Id, item));
-
+            if (!cached)
+                ownedItems.Select(x => new InventoryItem { Id = x.ItemId, Quantity = x.Quantity }).ToList().ForEach(async (item) => await _cacheService.SetCacheValueAsync(GetPrefix(userId) + item.Id, item));
+            
             return new ItemsResult
             {
                 Success = true,
@@ -352,7 +356,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             };
         }
 
-        public async Task<LockItemResult> LockItemAsync(string userId, string itemId, int quantity)
+        public async Task<LockItemResult> LockItemAsync(string userId, string itemId, int quantity, bool notify = false)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
             {
@@ -362,7 +366,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            int amount = await GetAmountOfFreeItem(userId, itemId);
+            int amount = await GetAmountOfFreeItemAsync(userId, itemId);
 
             if (amount < quantity)
             {
@@ -382,6 +386,13 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
+            if (notify)
+                await _notificationService.SendUpdatedNotificationToUserAsync(userId, NotificationCategoryTypes.Inventory, itemId, new InventoryItemQuantityNotification
+                {
+                    AddAmount = true,
+                    Amount = await GetAmountOfFreeItemAsync(userId, itemId),
+                });
+
             return new LockItemResult
             {
                 UserId = userId,
@@ -391,7 +402,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             };
         }
 
-        public async Task<LockItemResult> UnlockItemAsync(string userId, string itemId, int quantity)
+        public async Task<LockItemResult> UnlockItemAsync(string userId, string itemId, int quantity, bool notify = false)
         {
             if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
             {
@@ -411,7 +422,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
-            var lockedItem = await GetLockedItem(userId, itemId);
+            var lockedItem = await GetLockedInventoryItemEntityAsync(userId, itemId);
 
             if(lockedItem is null || lockedItem == default)
             {
@@ -444,6 +455,13 @@ namespace Item_Trading_App_REST_API.Services.Inventory
                 };
             }
 
+            if (notify)
+                await _notificationService.SendUpdatedNotificationToUserAsync(userId, NotificationCategoryTypes.Inventory, itemId, new InventoryItemQuantityNotification
+                {
+                    AddAmount = true,
+                    Amount = await GetAmountOfFreeItemAsync(userId, itemId),
+                });
+
             return new LockItemResult
             {
                 ItemId = itemId,
@@ -467,18 +485,18 @@ namespace Item_Trading_App_REST_API.Services.Inventory
 
             if (await _cacheService.ContainsKey(GetLockedAmountKey(userId, itemId)))
             {
-                lockedAmount = await _cacheService.GetCacheValueAsync<int>(GetLockedAmountKey(userId, itemId));
+                lockedAmount = await GetLockedItemAmountCacheAsync(userId, itemId);
             }
             else
             {
-                var lockedItemEntity = await GetLockedItem(userId, itemId);
+                var lockedItemEntity = await GetLockedInventoryItemEntityAsync(userId, itemId);
 
                 lockedAmount = lockedItemEntity?.Quantity ?? 0;
 
                 await _cacheService.SetCacheValueAsync(GetLockedAmountKey(userId, itemId), lockedAmount);
             }
 
-            var itemData = await _itemService.GetItemAsync(itemId);
+            var itemData = await _mediator.Send(new GetItemQuery { ItemId = itemId });
 
             if (itemData is null)
             {
@@ -497,28 +515,44 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             };
         }
 
-        private async Task<OwnedItem> GetItem(string userId, string itemId) => await _context.OwnedItems.FirstOrDefaultAsync(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
-
-        private async Task<LockedItem> GetLockedItem(string userId, string itemId) => await _context.LockedItems.FirstOrDefaultAsync(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
-
-        private async Task<int> GetAmountOfFreeItem(string userId, string itemId)
+        public async Task<OwnedItemByUsers> GetUsersThatOwnThisItem(string itemId)
         {
-            var item = await _cacheService.GetCacheValueAsync<InventoryItem>(GetPrefix(userId) + itemId);
+            return new OwnedItemByUsers { UserIds = await ListUsersThatOwnItemAsync(itemId), ItemId = itemId };
+        }
+
+        public async Task RemoveItem(List<string> userIds, string itemId)
+        {
+            foreach(var userId in userIds)
+            {
+                await _cacheService.ClearCacheKeyAsync(GetAmountKey(userId, itemId));
+                await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, itemId));
+            };
+            
+            await _notificationService.SendDeletedNotificationToUsersAsync(userIds, NotificationCategoryTypes.Inventory, itemId);
+        }
+
+        private async Task<OwnedItem> GetInventoryItemEntityAsync(string userId, string itemId) => await _context.OwnedItems.FirstOrDefaultAsync(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
+
+        private async Task<LockedItem> GetLockedInventoryItemEntityAsync(string userId, string itemId) => await _context.LockedItems.FirstOrDefaultAsync(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
+
+        private async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
+        {
+            var item = await GetInventoryItemCacheAsync(userId, itemId);
             
             if (item is null)
             {
-                var tmp = await GetItem(userId, itemId);
+                var tmp = await GetInventoryItemEntityAsync(userId, itemId);
 
                 item = new InventoryItem { Id = itemId, Quantity = tmp.Quantity };
 
-                await _cacheService.SetCacheValueAsync(GetPrefix(userId) + itemId, item);
+                await _cacheService.SetCacheValueAsync(GetAmountKey(userId, itemId), item);
             }
 
             int lockedItemQuantity = 0;
 
             if (!await _cacheService.ContainsKey(GetLockedAmountKey(userId, itemId)))
             {
-                var tmp = await GetLockedItem(userId, itemId);
+                var tmp = await GetLockedInventoryItemEntityAsync(userId, itemId);
 
                 lockedItemQuantity = tmp?.Quantity ?? 0;
 
@@ -526,7 +560,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             }
             else
             {
-                lockedItemQuantity = await _cacheService.GetCacheValueAsync<int>(GetLockedAmountKey(userId, itemId));
+                lockedItemQuantity = await GetLockedItemAmountCacheAsync(userId, itemId);
             }
 
             return item.Quantity - lockedItemQuantity;
@@ -538,7 +572,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
 
             if (!await _cacheService.ContainsKey(GetLockedAmountKey(userId, itemId)))
             {
-                var entity = await GetLockedItem(userId, itemId);
+                var entity = await GetLockedInventoryItemEntityAsync(userId, itemId);
                 
                 lockedAmount = entity?.Quantity ?? 0;
 
@@ -546,7 +580,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             }
             else
             {
-                lockedAmount = await _cacheService.GetCacheValueAsync<int>(GetLockedAmountKey(userId, itemId));
+                lockedAmount = await GetLockedItemAmountCacheAsync(userId, itemId);
             }
 
             return lockedAmount;
@@ -554,7 +588,7 @@ namespace Item_Trading_App_REST_API.Services.Inventory
 
         private async Task<LockedItem> LockItem(string userId, string itemId, int quantity)
         {
-            var lockedItem = await GetLockedItem(userId, itemId);
+            var lockedItem = await GetLockedInventoryItemEntityAsync(userId, itemId);
 
             if (lockedItem is null)
             {
@@ -573,7 +607,15 @@ namespace Item_Trading_App_REST_API.Services.Inventory
             return lockedItem;
         }
 
+        private async Task<List<string>> ListUsersThatOwnItemAsync(string itemId) => await _context.OwnedItems.Where(x => x.ItemId == itemId).Select(x => x.UserId).ToListAsync();
+
+        private async Task<InventoryItem> GetInventoryItemCacheAsync(string  userId, string itemId) => await _cacheService.GetCacheValueAsync<InventoryItem>(GetPrefix(userId) + itemId);
+
+        private async Task<int> GetLockedItemAmountCacheAsync(string userId, string itemId) => await _cacheService.GetCacheValueAsync<int>(GetLockedAmountKey(userId, itemId));
+
         private string GetPrefix(string userId) => CachePrefixKeys.Inventory + userId + ":" + CachePrefixKeys.InventoryItems;
+
+        private string GetAmountKey(string userId, string itemId) => GetPrefix(userId) + itemId;
 
         private string GetLockedAmountKey(string userId, string itemId) => CachePrefixKeys.Inventory + userId + ":" + CachePrefixKeys.InventoryLockedItem + itemId;
     }

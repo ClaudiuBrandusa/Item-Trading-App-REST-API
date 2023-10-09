@@ -2,6 +2,8 @@
 {
     public class CreateItem
     {
+        public string SenderUserId { get; set; }
+
         public string ItemName { get; set; }
 
         public string ItemDescription { get; set; }

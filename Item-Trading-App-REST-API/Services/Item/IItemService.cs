@@ -25,7 +25,7 @@ namespace Item_Trading_App_REST_API.Services.Item
         /// </summary>
         /// <param name="itemId"></param>
         /// <returns></retu'rns>
-        Task<DeleteItemResult> DeleteItemAsync(string itemId);
+        Task<DeleteItemResult> DeleteItemAsync(string itemId, string senderUserId);
 
         /// <summary>
         /// Returns details about an item

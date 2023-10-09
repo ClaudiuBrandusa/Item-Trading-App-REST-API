@@ -2,9 +2,14 @@
 using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Cache;
+using Item_Trading_App_REST_API.Services.Notification;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.Requests.Item;
+using Item_Trading_App_REST_API.Requests.Inventory;
 
 namespace Item_Trading_App_REST_API.Services.Item
 {
@@ -12,11 +17,15 @@ namespace Item_Trading_App_REST_API.Services.Item
     {
         private readonly DatabaseContext _context;
         private readonly ICacheService _cacheService;
+        private readonly INotificationService _notificationService;
+        private readonly IMediator _mediator;
 
-        public ItemService(DatabaseContext context, ICacheService cacheService)
+        public ItemService(DatabaseContext context, ICacheService cacheService, INotificationService notificationService, IMediator mediator)
         {
             _context = context;
             _cacheService = cacheService;
+            _notificationService = notificationService;
+            _mediator = mediator;
         }
 
         public async Task<FullItemResult> CreateItemAsync(CreateItem model)
@@ -47,7 +56,8 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            await SetItemCache(item.ItemId, item);
+            await SetItemCacheAsync(item.ItemId, item);
+            await _notificationService.SendCreatedNotificationToAllUsersExceptAsync(model.SenderUserId, NotificationCategoryTypes.Item, item.ItemId);
 
             return new FullItemResult
             {
@@ -68,11 +78,11 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            var item = await GetItemCache(model.ItemId);
+            var item = await GetItemCacheAsync(model.ItemId);
 
             if (item == null || item == default)
             {
-                item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, model.ItemId));
+                item = await GetItemEntityAsync(model.ItemId);
                 
                 if (item == null)
                     return new FullItemResult
@@ -91,7 +101,7 @@ namespace Item_Trading_App_REST_API.Services.Item
             _context.Items.Update(item);
             var updated = await _context.SaveChangesAsync();
 
-            await SetItemCache(model.ItemId, item);
+            await SetItemCacheAsync(model.ItemId, item);
 
             if (updated == 0)
             {
@@ -104,6 +114,8 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
+            await _notificationService.SendUpdatedNotificationToAllUsersExceptAsync(model.SenderUserId, NotificationCategoryTypes.Item, item.ItemId);
+
             return new FullItemResult
             {
                 ItemId = item.ItemId,
@@ -113,7 +125,7 @@ namespace Item_Trading_App_REST_API.Services.Item
             };
         }
 
-        public async Task<DeleteItemResult> DeleteItemAsync(string itemId)
+        public async Task<DeleteItemResult> DeleteItemAsync(string itemId, string senderUserId)
         {
             if(string.IsNullOrEmpty(itemId))
             {
@@ -123,18 +135,19 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            var item = await GetItemCache(itemId);
+            var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItem { ItemId = itemId });
+
+            var item = await GetItemCacheAsync(itemId);
 
             if (item == null || item == default)
             {
-                item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+                item = await GetItemEntityAsync(itemId);
 
                 if (item == null)
                     return new DeleteItemResult
                     { 
                         Errors = new[] { "Something went wrong" }
                     };
-
             }
             else
             {
@@ -151,7 +164,10 @@ namespace Item_Trading_App_REST_API.Services.Item
                     Errors = new[] { "Unable to remove item" }
                 };
             }
-
+            
+            await _mediator.Send(new ItemDeleted { ItemId = itemId, UserIds = usersOwningTheItem });
+            await _notificationService.SendDeletedNotificationToAllUsersExceptAsync(senderUserId, NotificationCategoryTypes.Item, itemId);
+            
             return new DeleteItemResult
             {
                 ItemId = itemId,
@@ -170,11 +186,11 @@ namespace Item_Trading_App_REST_API.Services.Item
                 };
             }
 
-            var item = await GetItemCache(itemId);
+            var item = await GetItemCacheAsync(itemId);
 
             if (item == null)
             {
-                item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+                item = await GetItemEntityAsync(itemId, true);
 
                 if (item == null)
                 {
@@ -185,7 +201,7 @@ namespace Item_Trading_App_REST_API.Services.Item
                     };
                 }
 
-                await SetItemCache(itemId, item);
+                await SetItemCacheAsync(itemId, item);
             }
 
             return new FullItemResult
@@ -203,9 +219,12 @@ namespace Item_Trading_App_REST_API.Services.Item
 
             if (items.Count == 0)
             {
-                items = _context.Items.ToList();
+                items = await _context.Items.ToListAsync();
 
-                await Parallel.ForEachAsync(items, async (item, cancellationToken) => await SetItemCache(item.ItemId, item));
+                foreach(var item in items)
+                {
+                    await SetItemCacheAsync(item.ItemId, item);
+                }
             }
 
             if (!string.IsNullOrEmpty(searchString)) // if it has a search string
@@ -220,18 +239,18 @@ namespace Item_Trading_App_REST_API.Services.Item
 
         public async Task<string> GetItemNameAsync(string itemId)
         {
-            var entity = await GetItemCache(itemId);
+            var entity = await GetItemCacheAsync(itemId);
 
             if (entity == null)
             {
-                entity = GetItemEntity(itemId);
+                entity = await GetItemEntityAsync(itemId, true);
 
                 if (entity == null)
                 {
                     return "";
                 }
 
-                await SetItemCache(itemId, entity);
+                await SetItemCacheAsync(itemId, entity);
             }
 
             return entity.Name;
@@ -239,27 +258,33 @@ namespace Item_Trading_App_REST_API.Services.Item
 
         public async Task<string> GetItemDescriptionAsync(string itemId)
         {
-            var entity = await GetItemCache(itemId);
+            var entity = await GetItemCacheAsync(itemId);
 
             if (entity == null)
             {
-                entity = GetItemEntity(itemId);
+                entity = await GetItemEntityAsync(itemId, true);
 
                 if (entity == null)
                 {
                     return "";
                 }
 
-                await SetItemCache(itemId, entity);
+                await SetItemCacheAsync(itemId, entity);
             }
 
             return entity.Description;
         }
 
-        private Entities.Item GetItemEntity(string itemId) => _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+        private async Task<Entities.Item> GetItemEntityAsync(string itemId, bool asNoTracking = false)
+        {
+            return asNoTracking ?
+                await _context.Items.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId)
+                :
+                await _context.Items.FirstOrDefaultAsync(x => x.ItemId == itemId);
+        }
 
-        private async Task<Entities.Item> GetItemCache(string itemId) => await _cacheService.GetCacheValueAsync<Entities.Item>(CachePrefixKeys.Items + itemId);
+        private async Task<Entities.Item> GetItemCacheAsync(string itemId) => await _cacheService.GetCacheValueAsync<Entities.Item>(CachePrefixKeys.Items + itemId);
         
-        private async Task SetItemCache(string itemId, Entities.Item entity) => await _cacheService.SetCacheValueAsync(CachePrefixKeys.Items + itemId, entity);
+        private async Task SetItemCacheAsync(string itemId, Entities.Item entity) => await _cacheService.SetCacheValueAsync(CachePrefixKeys.Items + itemId, entity);
     }
 }

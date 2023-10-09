@@ -2,12 +2,10 @@
 using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;
-using Item_Trading_App_REST_API.Hubs;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Item;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers
@@ -16,12 +14,10 @@ namespace Item_Trading_App_REST_API.Controllers
     public class ItemController : BaseController
     {
         private readonly IItemService _itemService;
-        private readonly IHubContext<NotificationHub> _notificationHubContext;
 
-        public ItemController(IItemService itemService, IHubContext<NotificationHub> notificationHubContext)
+        public ItemController(IItemService itemService)
         {
             _itemService = itemService;
-            _notificationHubContext = notificationHubContext;
         }
 
         [HttpGet(Endpoints.Item.Get)]
@@ -101,7 +97,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 });
             }
 
-            var result = await _itemService.CreateItemAsync(new CreateItem { ItemName = request.ItemName, ItemDescription = request.ItemDescription });
+            var result = await _itemService.CreateItemAsync(new CreateItem { SenderUserId = UserId, ItemName = request.ItemName, ItemDescription = request.ItemDescription });
 
             if(result == null)
             {
@@ -141,6 +137,7 @@ namespace Item_Trading_App_REST_API.Controllers
 
             var result = await _itemService.UpdateItemAsync(new UpdateItem
             {
+                SenderUserId = UserId,
                 ItemId = request.ItemId,
                 ItemName = request.ItemName,
                 ItemDescription = request.ItemDescription
@@ -183,7 +180,7 @@ namespace Item_Trading_App_REST_API.Controllers
                 });
             }
 
-            var result = await _itemService.DeleteItemAsync(request.ItemId);
+            var result = await _itemService.DeleteItemAsync(request.ItemId, UserId);
 
             if(result == null)
             {
