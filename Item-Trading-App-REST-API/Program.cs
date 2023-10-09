@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.InstallServicesInAssembly(builder.Configuration);
 
-builder.Host.ConfigureServices(services => services.AddHostedService<RefreshTokenHostedService>()); // had to run it here in order to have it executed after the rest of app has started
+builder.Services.AddHostedService<RefreshTokenHostedService>(); // had to run it here in order to have it executed after the rest of app has started
 
 var app = builder.Build();
 
@@ -54,10 +54,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-    endpoints.MapHub<NotificationHub>("/hubs/notification");
-});
+app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notification");
 
 app.Run();

@@ -1,7 +1,6 @@
-﻿namespace Item_Trading_App_REST_API.Models.Item
+﻿namespace Item_Trading_App_REST_API.Models.Item;
+
+public record FullItemResult : ShortItemResult
 {
-    public class FullItemResult : ShortItemResult
-    {
-        public string ItemDescription { get; set; }
-    }
+    public string ItemDescription { get; set; }
 }

@@ -1,7 +1,6 @@
-﻿namespace Item_Trading_App_REST_API.Options
+﻿namespace Item_Trading_App_REST_API.Options;
+
+public record RedisSettings
 {
-    public class RedisSettings
-    {
-        public string ConnectionAddress { get; set; }
-    }
+    public string ConnectionAddress { get; set; }
 }

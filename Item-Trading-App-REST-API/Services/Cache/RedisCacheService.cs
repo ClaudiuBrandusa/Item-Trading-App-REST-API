@@ -1,6 +1,6 @@
-﻿using Newtonsoft.Json;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Cache;
@@ -9,7 +9,7 @@ public class RedisCacheService : ICacheService
 {
     private readonly IConnectionMultiplexer _connectionMultiplexer;
 
-    private IDatabase _database
+    private IDatabase Database
     {
         get => _connectionMultiplexer.GetDatabase();
     }
@@ -21,7 +21,7 @@ public class RedisCacheService : ICacheService
 
     public async Task<string> GetCacheValueAsync(string key)
     {
-        return (await _database.StringGetAsync(key)).ToString();
+        return (await Database.StringGetAsync(key)).ToString();
     }
 
     public async Task<T> GetCacheValueAsync<T>(string key)
@@ -30,22 +30,22 @@ public class RedisCacheService : ICacheService
 
         if (string.IsNullOrEmpty(value)) return default;
 
-        return JsonConvert.DeserializeObject<T>(value);
+        return JsonSerializer.Deserialize<T>(value);
     }
 
     public async Task SetCacheValueAsync(string key, string value)
     {
-        await _database.StringSetAsync(key, value);
+        await Database.StringSetAsync(key, value);
     }
 
     public async Task SetCacheValueAsync<T>(string key, T value)
     {
-        await SetCacheValueAsync(key, JsonConvert.SerializeObject(value));
+        await SetCacheValueAsync(key, JsonSerializer.Serialize(value));
     }
 
     public async Task<bool> ContainsKey(string key)
     {
-        return await _database.KeyExistsAsync(key);
+        return await Database.KeyExistsAsync(key);
     }
 
     public async Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, bool removePrefix = false)
@@ -56,11 +56,11 @@ public class RedisCacheService : ICacheService
         foreach (var endpoint in endPoints)
         {
             IServer server = _connectionMultiplexer.GetServer(endpoint);
-            var keys = server.KeysAsync(_database.Database, prefix + "*");
+            var keys = server.KeysAsync(Database.Database, prefix + "*");
             await foreach (var key in keys)
             {
                 var value = await GetCacheValueAsync(key);
-                dictionary.Add(removePrefix ? key.ToString().Replace(prefix, string.Empty) : key, typeof(T) == typeof(string) ? (T) (value as object) : JsonConvert.DeserializeObject<T>(value));
+                dictionary.Add(removePrefix ? key.ToString().Replace(prefix, string.Empty) : key, typeof(T) == typeof(string) ? (T) (value as object) : JsonSerializer.Deserialize<T>(value));
             }
         }
 
@@ -69,6 +69,6 @@ public class RedisCacheService : ICacheService
 
     public async Task ClearCacheKeyAsync(string key)
     {
-        await _database.KeyDeleteAsync(key);
+        await Database.KeyDeleteAsync(key);
     }
 }

@@ -1,11 +1,9 @@
 ﻿using Item_Trading_App_REST_API.Models.Base;
-using System;
 using System.Collections.Generic;
 
-namespace Item_Trading_App_REST_API.Models.Trade
+namespace Item_Trading_App_REST_API.Models.Trade;
+
+public record TradeOffersResult : BaseResult
 {
-    public class TradeOffersResult : BaseResult
-    {
-        public IEnumerable<string> TradeOffers { get; set; }
-    }
+    public IEnumerable<string> TradeOffers { get; set; }
 }

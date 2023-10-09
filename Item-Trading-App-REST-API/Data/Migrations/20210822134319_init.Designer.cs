@@ -11,7 +11,7 @@ namespace Item_Trading_App_REST_API.data.migrations
 {
     [DbContext(typeof(DatabaseContext))]
     [Migration("20210822134319_init")]
-    partial class init
+    partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

@@ -7,82 +7,81 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace Item_Trading_App_REST_API.Controllers
+namespace Item_Trading_App_REST_API.Controllers;
+
+[Authorize]
+public class WalletController : BaseController
 {
-    [Authorize]
-    public class WalletController : BaseController
+    private readonly IWalletService _walletService;
+
+    public WalletController(IWalletService walletService)
     {
-        private readonly IWalletService _walletService;
+        _walletService = walletService;
+    }
 
-        public WalletController(IWalletService walletService)
+    [HttpGet(Endpoints.Wallet.Get)]
+    public async Task<IActionResult> Get()
+    {
+        string userId = UserId;
+
+        if(string.IsNullOrEmpty(userId))
         {
-            _walletService = walletService;
-        }
-
-        [HttpGet(Endpoints.Wallet.Get)]
-        public async Task<IActionResult> Get()
-        {
-            string userId = UserId;
-
-            if(string.IsNullOrEmpty(userId))
+            return BadRequest(new FailedResponse
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "User id not found" }
-                });
-            }
-
-            var wallet = await _walletService.GetWalletAsync(userId);
-
-            if(wallet == null)
-            {
-                return BadRequest(new FailedResponse 
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
-
-            if(!wallet.Success)
-            {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = wallet.Errors
-                });
-            }
-
-            return Ok(new WalletSuccessResponse
-            {
-                Cash = wallet.Cash
+                Errors = new[] { "User id not found" }
             });
         }
 
-        [HttpPatch(Endpoints.Wallet.Update)]
-        public async Task<IActionResult> Update([FromBody] UpdateWalletRequest request)
+        var wallet = await _walletService.GetWalletAsync(userId);
+
+        if(wallet == null)
         {
-            var userId = UserId;
-
-            if (string.IsNullOrEmpty(userId) || request == null)
+            return BadRequest(new FailedResponse 
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
-
-            var wallet = await _walletService.UpdateWalletAsync(userId, request.Quantity);
-
-            if(!wallet.Success)
-            {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = wallet.Errors
-                });
-            }
-
-            return Ok(new UpdateWalletSuccessResponse
-            {
-                Amount = wallet.Cash
+                Errors = new[] { "Something went wrong" }
             });
         }
+
+        if(!wallet.Success)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = wallet.Errors
+            });
+        }
+
+        return Ok(new WalletSuccessResponse
+        {
+            Cash = wallet.Cash
+        });
+    }
+
+    [HttpPatch(Endpoints.Wallet.Update)]
+    public async Task<IActionResult> Update([FromBody] UpdateWalletRequest request)
+    {
+        var userId = UserId;
+
+        if (string.IsNullOrEmpty(userId) || request == null)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = new[] { "Something went wrong" }
+            });
+        }
+
+        var wallet = await _walletService.UpdateWalletAsync(userId, request.Quantity);
+
+        if(!wallet.Success)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = wallet.Errors
+            });
+        }
+
+        return Ok(new UpdateWalletSuccessResponse
+        {
+            Amount = wallet.Cash
+        });
     }
 }

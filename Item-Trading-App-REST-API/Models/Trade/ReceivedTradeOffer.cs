@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace Item_Trading_App_REST_API.Models.Trade
+namespace Item_Trading_App_REST_API.Models.Trade;
+
+public record ReceivedTradeOffer : BaseTradeOffer
 {
-    public class ReceivedTradeOffer : BaseTradeOffer
-    {
-        public string SenderId { get; set; }
+    public string SenderId { get; set; }
 
-        public string SenderName { get; set; }
+    public string SenderName { get; set; }
 
-        public DateTime SentDate { get; set; }
-    }
+    public DateTime SentDate { get; set; }
 }

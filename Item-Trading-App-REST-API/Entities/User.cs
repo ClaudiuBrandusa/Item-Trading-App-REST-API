@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace Item_Trading_App_REST_API.Entities
+namespace Item_Trading_App_REST_API.Entities;
+
+public class User : IdentityUser
 {
-    public class User : IdentityUser
-    {
-        public int Cash { get; set; }
-    }
+    public int Cash { get; set; }
 }

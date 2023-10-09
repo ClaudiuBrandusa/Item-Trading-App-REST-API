@@ -108,19 +108,19 @@ Or you could try the following command in Powershell.
 `dotnet ef database update`
 
 # Tools used
-- Visual Studio 2019
+- Visual Studio 2022
 - Microsoft SQL Server Management Studio 18
 
 # Technologies used
-- ASP.NET Core 5
+- ASP.NET Core 7
 
 # Packages used
-- Microsoft.EntityFrameworkCore (5.0.9)
-- Microsoft.EntityFrameworkCore.SqlServer (5.0.9)
-- Microsoft.EntityFrameworkCore.Tools (5.0.9)
-- Microsoft.AspNetCore.Identity.EntityFrameworkCore (5.0.9)
-- Microsoft.AspNetCore.Authentication.JwtBearer (5.0.9)
-- Swashbuckle.AspNetCore (6.1.5)
-- Swashbuckle.AspNetCore.Swagger (6.1.5)
-- Swashbuckle.AspNetCore.SwaggerUI (6.1.5)
-- Swashbuckle.Core (5.6.0)
+- MediatR (12.1.1)
+- Microsoft.EntityFrameworkCore (7.0.11)
+- Microsoft.EntityFrameworkCore.SqlServer (7.0.11)
+- Microsoft.EntityFrameworkCore.Tools (7.0.11)
+- Microsoft.AspNetCore.Identity.EntityFrameworkCore (7.0.11)
+- Microsoft.AspNetCore.Authentication.JwtBearer (7.0.11)
+- Swashbuckle.AspNetCore (6.5.0)
+- Swashbuckle.AspNetCore.Swagger (6.5.0)
+- Swashbuckle.AspNetCore.SwaggerUI (6.5.0)

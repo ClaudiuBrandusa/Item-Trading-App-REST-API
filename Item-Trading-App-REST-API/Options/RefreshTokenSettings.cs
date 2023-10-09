@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Item_Trading_App_REST_API.Options
+namespace Item_Trading_App_REST_API.Options;
+
+public record RefreshTokenSettings
 {
-    public class RefreshTokenSettings
-    {
-        public TimeSpan ClearRefreshTokenInterval { get; set; }
-    }
+    public TimeSpan ClearRefreshTokenInterval { get; set; }
 }

@@ -7,193 +7,192 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace Item_Trading_App_REST_API.Controllers
+namespace Item_Trading_App_REST_API.Controllers;
+
+[Authorize]
+public class InventoryController : BaseController
 {
-    [Authorize]
-    public class InventoryController : BaseController
+    private readonly IInventoryService _inventoryService;
+
+    public InventoryController(IInventoryService inventoryService)
     {
-        private readonly IInventoryService _inventoryService;
+        _inventoryService = inventoryService;
+    }
 
-        public InventoryController(IInventoryService inventoryService)
+    [HttpPut(Endpoints.Inventory.Add)]
+    public async Task<IActionResult> Add([FromBody] AddItemRequest request)
+    {
+        if (request == null)
         {
-            _inventoryService = inventoryService;
+            return BadRequest(new FailedResponse
+            {
+                Errors = new[] { "Something went wrong" }
+            });
         }
 
-        [HttpPut(Endpoints.Inventory.Add)]
-        public async Task<IActionResult> Add([FromBody] AddItemRequest request)
+        var result = await _inventoryService.AddItemAsync(UserId, request.ItemId, request.Quantity);
+
+        if (result == null)
         {
-            if (request == null)
+            return BadRequest(new FailedResponse
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
+                Errors = new[] { "Something went wrong" }
+            });
+        }
 
-            var result = await _inventoryService.AddItemAsync(UserId, request.ItemId, request.Quantity);
-
-            if (result == null)
+        if (!result.Success)
+        {
+            return BadRequest(new AddItemFailedResponse
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
-
-            if (!result.Success)
-            {
-                return BadRequest(new AddItemFailedResponse
-                {
-                    ItemId = request.ItemId,
-                    ItemName = result.ItemName,
-                    Quantity = request.Quantity,
-                    Errors = result.Errors
-                });
-            }
-
-            return Ok(new AddItemSuccessResponse
-            {
-                ItemId = result.ItemId,
+                ItemId = request.ItemId,
                 ItemName = result.ItemName,
-                Quantity = result.Quantity
+                Quantity = request.Quantity,
+                Errors = result.Errors
             });
         }
 
-        [HttpPost(Endpoints.Inventory.Drop)]
-        public async Task<IActionResult> Drop([FromBody] DropItemRequest request)
+        return Ok(new AddItemSuccessResponse
         {
-            if (request == null)
-            {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
+            ItemId = result.ItemId,
+            ItemName = result.ItemName,
+            Quantity = result.Quantity
+        });
+    }
 
-            var result = await _inventoryService.DropItemAsync(UserId, request.ItemId, request.ItemQuantity);
-
-            if (result == null)
+    [HttpPost(Endpoints.Inventory.Drop)]
+    public async Task<IActionResult> Drop([FromBody] DropItemRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new FailedResponse
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
+                Errors = new[] { "Something went wrong" }
+            });
+        }
 
-            if (!result.Success)
-            {
-                return BadRequest(new DropItemFailedResponse
-                {
-                    ItemId = request.ItemId,
-                    ItemName = result.ItemName,
-                    Errors = result.Errors
-                });
-            }
+        var result = await _inventoryService.DropItemAsync(UserId, request.ItemId, request.ItemQuantity);
 
-            return Ok(new DropItemSuccessResponse
+        if (result == null)
+        {
+            return BadRequest(new FailedResponse
             {
-                ItemId = result.ItemId,
+                Errors = new[] { "Something went wrong" }
+            });
+        }
+
+        if (!result.Success)
+        {
+            return BadRequest(new DropItemFailedResponse
+            {
+                ItemId = request.ItemId,
                 ItemName = result.ItemName,
-                Quantity = result.Quantity
+                Errors = result.Errors
             });
         }
 
-        [HttpGet(Endpoints.Inventory.Get)]
-        public async Task<IActionResult> Get(string itemId)
+        return Ok(new DropItemSuccessResponse
         {
-            if(string.IsNullOrEmpty(itemId))
-            {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Item ID not provided" }
-                });
-            }
+            ItemId = result.ItemId,
+            ItemName = result.ItemName,
+            Quantity = result.Quantity
+        });
+    }
 
-            var result = await _inventoryService.GetItemAsync(UserId, itemId);
-
-            if(result == null)
-            {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
-
-            if(!result.Success)
-            {
-                return BadRequest(new GetItemFailedResponse
-                {
-                    ItemId = itemId,
-                    Errors = result.Errors
-                });
-            }
-
-            return Ok(new GetItemSuccessResponse
-            {
-                ItemId = result.ItemId,
-                ItemName = result.ItemName,
-                ItemDescription = result.ItemDescription,
-                Quantity = result.Quantity
-            });
-        }
-
-        [HttpGet(Endpoints.Inventory.List)]
-        public async Task<IActionResult> List()
+    [HttpGet(Endpoints.Inventory.Get)]
+    public async Task<IActionResult> Get(string itemId)
+    {
+        if(string.IsNullOrEmpty(itemId))
         {
-            string searchString = HttpContext.Request.Query["searchstring"].ToString();
-
-            var result = await _inventoryService.ListItemsAsync(UserId, searchString);
-
-            if (result == null)
+            return BadRequest(new FailedResponse
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
-
-            if (!result.Success)
-            {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = result.Errors
-                });
-            }
-
-            return Ok(new ListItemsSuccessResponse
-            {
-                ItemsId = result.ItemsId
+                Errors = new[] { "Item ID not provided" }
             });
         }
 
-        [HttpGet(Endpoints.Inventory.GetLockedAmount)]
-        public async Task<IActionResult> GetLockedAmount(string itemId)
+        var result = await _inventoryService.GetItemAsync(UserId, itemId);
+
+        if(result == null)
         {
-            var result = await _inventoryService.GetLockedAmount(UserId, itemId);
-
-            if (result == null)
+            return BadRequest(new FailedResponse
             {
-                return BadRequest(new FailedResponse
-                {
-                    Errors = new[] { "Something went wrong" }
-                });
-            }
-
-            if (!result.Success)
-            {
-                return BadRequest(new GetLockedAmountFailedResponse
-                {
-                    ItemId = itemId,
-                    Errors = result.Errors
-                });
-            }
-
-            return Ok(new GetLockedAmountSuccessResponse
-            {
-                ItemId = result.ItemId,
-                ItemName = result.ItemName,
-                LockedAmount = result.Amount
+                Errors = new[] { "Something went wrong" }
             });
         }
+
+        if(!result.Success)
+        {
+            return BadRequest(new GetItemFailedResponse
+            {
+                ItemId = itemId,
+                Errors = result.Errors
+            });
+        }
+
+        return Ok(new GetItemSuccessResponse
+        {
+            ItemId = result.ItemId,
+            ItemName = result.ItemName,
+            ItemDescription = result.ItemDescription,
+            Quantity = result.Quantity
+        });
+    }
+
+    [HttpGet(Endpoints.Inventory.List)]
+    public async Task<IActionResult> List()
+    {
+        string searchString = HttpContext.Request.Query["searchstring"].ToString();
+
+        var result = await _inventoryService.ListItemsAsync(UserId, searchString);
+
+        if (result == null)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = new[] { "Something went wrong" }
+            });
+        }
+
+        if (!result.Success)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = result.Errors
+            });
+        }
+
+        return Ok(new ListItemsSuccessResponse
+        {
+            ItemsId = result.ItemsId
+        });
+    }
+
+    [HttpGet(Endpoints.Inventory.GetLockedAmount)]
+    public async Task<IActionResult> GetLockedAmount(string itemId)
+    {
+        var result = await _inventoryService.GetLockedAmount(UserId, itemId);
+
+        if (result == null)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = new[] { "Something went wrong" }
+            });
+        }
+
+        if (!result.Success)
+        {
+            return BadRequest(new GetLockedAmountFailedResponse
+            {
+                ItemId = itemId,
+                Errors = result.Errors
+            });
+        }
+
+        return Ok(new GetLockedAmountSuccessResponse
+        {
+            ItemId = result.ItemId,
+            ItemName = result.ItemName,
+            LockedAmount = result.Amount
+        });
     }
 }

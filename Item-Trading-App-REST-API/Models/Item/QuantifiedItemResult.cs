@@ -1,7 +1,6 @@
-﻿namespace Item_Trading_App_REST_API.Models.Item
+﻿namespace Item_Trading_App_REST_API.Models.Item;
+
+public record QuantifiedItemResult : FullItemResult
 {
-    public class QuantifiedItemResult : FullItemResult
-    {
-        public int Quantity { get; set; }
-    }
+    public int Quantity { get; set; }
 }
