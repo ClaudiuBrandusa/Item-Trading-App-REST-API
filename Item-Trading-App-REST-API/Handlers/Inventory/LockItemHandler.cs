@@ -14,9 +14,9 @@ public class LockItemHandler : HandlerBase, IRequestHandler<LockItemQuery, LockI
     {
     }
 
-    public async Task<LockItemResult> Handle(LockItemQuery request, CancellationToken cancellationToken)
+    public Task<LockItemResult> Handle(LockItemQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IInventoryService, LockItemResult>(async (inventoryService) =>
+        return Execute<IInventoryService, LockItemResult>(async (inventoryService) =>
             await inventoryService.LockItemAsync(request.UserId, request.ItemId, request.Quantiy, true)
         );
     }

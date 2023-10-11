@@ -14,9 +14,9 @@ public class DropItemHandler : HandlerBase, IRequestHandler<DropItemQuery, Quant
     {
     }
 
-    public async Task<QuantifiedItemResult> Handle(DropItemQuery request, CancellationToken cancellationToken)
+    public Task<QuantifiedItemResult> Handle(DropItemQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IInventoryService, QuantifiedItemResult>(async (inventoryService) =>
+        return Execute<IInventoryService, QuantifiedItemResult>(async (inventoryService) =>
             await inventoryService.DropItemAsync(request.UserId, request.ItemId, request.Quantity, true)
         );
     }

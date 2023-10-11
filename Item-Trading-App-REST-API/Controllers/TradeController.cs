@@ -32,22 +32,18 @@ public class TradeController : BaseController
             TradeOfferId = tradeId
         });
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new GetSentTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new GetSentTradeOfferFailedResponse
             {
                 TradeOfferId = tradeId,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetSentTradeOfferSuccessResponse
         {
@@ -68,22 +64,18 @@ public class TradeController : BaseController
             TradeOfferId = tradeId
         });
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new GetSentRespondedTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new GetSentRespondedTradeOfferFailedResponse
             {
                 TradeOfferId = tradeId,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetSentRespondedTradeOfferSuccessResponse
         {
@@ -106,22 +98,18 @@ public class TradeController : BaseController
             TradeOfferId = tradeId
         });
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new GetReceivedTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new GetReceivedTradeOfferFailedResponse
             {
                 TradeOfferId = tradeId,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetReceivedTradeOfferSuccessResponse
         {
@@ -142,22 +130,18 @@ public class TradeController : BaseController
             TradeOfferId = tradeId
         });
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new GetReceivedRespondedTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new GetReceivedRespondedTradeOfferFailedResponse
             {
                 TradeOfferId = tradeId,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetReceivedRespondedTradeOfferSuccessResponse
         {
@@ -176,21 +160,17 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetSentTradeOffers(UserId);
 
-        if(results == null)
-        {
+        if (results is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!results.Success)
-        {
+        if (!results.Success)
             return BadRequest(new FailedResponse
             {
                 Errors = results.Errors
             });
-        }
 
         return Ok(new ListTradeOffersSuccessResponse
         {
@@ -203,21 +183,17 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetSentRespondedTradeOffers(UserId);
 
-        if (results == null)
-        {
+        if (results is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!results.Success)
-        {
             return BadRequest(new FailedResponse
             {
                 Errors = results.Errors
             });
-        }
 
         return Ok(new ListTradeOffersSuccessResponse
         {
@@ -230,21 +206,17 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetReceivedTradeOffers(UserId);
 
-        if (results == null)
-        {
+        if (results is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!results.Success)
-        {
             return BadRequest(new FailedResponse
             {
                 Errors = results.Errors
             });
-        }
 
         return Ok(new ListTradeOffersSuccessResponse
         {
@@ -257,21 +229,17 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetReceivedRespondedTradeOffers(UserId);
 
-        if (results == null)
-        {
+        if (results is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!results.Success)
-        {
             return BadRequest(new FailedResponse
             {
                 Errors = results.Errors
             });
-        }
 
         return Ok(new ListTradeOffersSuccessResponse
         {
@@ -282,13 +250,11 @@ public class TradeController : BaseController
     [HttpPost(Endpoints.Trade.Offer)]
     public async Task<IActionResult> Offer([FromBody] TradeOfferRequest request)
     {
-        if(request == null || string.IsNullOrEmpty(request.TargetUserId) || request.Items == null || request.Items.Count() == 0)
-        {
+        if (request is null || string.IsNullOrEmpty(request.TargetUserId) || request.Items is null || !request.Items.Any())
             return BadRequest(new GetSentTradeOfferFailedResponse
             {
                 Errors = new[] { "Invalid input data" }
             });
-        }
 
         var result = await _tradeService.CreateTradeOffer(new CreateTradeOffer
         {
@@ -297,21 +263,17 @@ public class TradeController : BaseController
             Items = request.Items.Select(t => new ItemPrice { ItemId = t.Id, Price = t.Price, Quantity = t.Quantity })
         });
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new GetSentTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new GetSentTradeOfferFailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetSentTradeOfferSuccessResponse
         {
@@ -326,31 +288,25 @@ public class TradeController : BaseController
     [HttpPatch(Endpoints.Trade.Accept)]
     public async Task<IActionResult> Accept([FromBody] AcceptTradeOfferRequest request)
     {
-        if(request == null || string.IsNullOrEmpty(request.TradeId))
-        {
+        if (request is null || string.IsNullOrEmpty(request.TradeId))
             return BadRequest(new AcceptTradeOfferFailedResponse
             {
                 Errors = new[] { "Invalid input data" }
             });
-        }
 
         var result = await _tradeService.AcceptTradeOffer(request.TradeId, UserId);
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new AcceptTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new AcceptTradeOfferFailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new AcceptTradeOfferSuccessResponse
         {
@@ -365,31 +321,25 @@ public class TradeController : BaseController
     [HttpPatch(Endpoints.Trade.Reject)]
     public async Task<IActionResult> Reject([FromBody] RejectTradeOfferRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.TradeId))
-        {
+        if (request is null || string.IsNullOrEmpty(request.TradeId))
             return BadRequest(new RejectTradeOfferFailedResponse
             {
                 Errors = new[] { "Invalid input data" }
             });
-        }
 
         var result = await _tradeService.RejectTradeOffer(request.TradeId, UserId);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new RejectTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new RejectTradeOfferFailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new RejectTradeOfferSuccessResponse
         {
@@ -404,31 +354,25 @@ public class TradeController : BaseController
     [HttpDelete(Endpoints.Trade.Cancel)]
     public async Task<IActionResult> Cancel([FromBody] CancelTradeOfferRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.TradeId))
-        {
+        if (request is null || string.IsNullOrEmpty(request.TradeId))
             return BadRequest(new CancelTradeOfferFailedResponse
             {
                 Errors = new[] { "Invalid input data" }
             });
-        }
 
         var result = await _tradeService.CancelTradeOffer(request.TradeId, UserId);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new CancelTradeOfferFailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new CancelTradeOfferFailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new CancelTradeOfferSuccessResponse
         {

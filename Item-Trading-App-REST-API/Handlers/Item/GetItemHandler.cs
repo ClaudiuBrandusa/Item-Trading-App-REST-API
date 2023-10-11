@@ -14,9 +14,9 @@ public class GetItemHandler : HandlerBase, IRequestHandler<GetItemQuery, FullIte
     {
     }
 
-    public async Task<FullItemResult> Handle(GetItemQuery request, CancellationToken cancellationToken)
+    public Task<FullItemResult> Handle(GetItemQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IItemService, FullItemResult>(async (itemService) =>
+        return Execute<IItemService, FullItemResult>(async (itemService) =>
             await itemService.GetItemAsync(request.ItemId)
         );
     }

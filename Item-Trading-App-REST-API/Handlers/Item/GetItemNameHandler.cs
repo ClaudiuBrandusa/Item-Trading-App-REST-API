@@ -13,9 +13,9 @@ public class GetItemNameHandler : HandlerBase, IRequestHandler<GetItemNameQuery,
     {
     }
 
-    public async Task<string> Handle(GetItemNameQuery request, CancellationToken cancellationToken)
+    public Task<string> Handle(GetItemNameQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IItemService, string>(async (itemService) =>
+        return Execute<IItemService, string>(async (itemService) =>
             await itemService.GetItemNameAsync(request.ItemId)
         );
     }

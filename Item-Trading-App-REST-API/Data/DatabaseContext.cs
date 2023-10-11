@@ -1,6 +1,7 @@
 ﻿using Item_Trading_App_REST_API.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Data;
 
@@ -47,5 +48,26 @@ public class DatabaseContext : IdentityDbContext
         modelBuilder.Entity<User>()
             .Property(u => u.Cash)
             .HasDefaultValue(100); // starting cash value
+    }
+
+    public async Task<bool> AddEntityAsync<T>(T entity) where T : class
+    {
+        await AddAsync(entity);
+        var added = await SaveChangesAsync();
+        return added > 0;
+    }
+
+    public async Task<bool> UpdateEntityAsync<T>(T entity) where T : class
+    {
+        Update(entity);
+        var updated = await SaveChangesAsync();
+        return updated > 0;
+    }
+
+    public async Task<bool> RemoveEntityAsync<T>(T entity) where T : class
+    {
+        Remove(entity);
+        var removed = await SaveChangesAsync();
+        return removed > 0;
     }
 }

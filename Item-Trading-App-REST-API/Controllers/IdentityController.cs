@@ -75,13 +75,11 @@ public class IdentityController : BaseController
     [HttpGet(Endpoints.Identity.GetUsername)]
     public async Task<IActionResult> GetUsername(string userId)
     {
-        if(string.IsNullOrEmpty(userId))
-        {
+        if (string.IsNullOrEmpty(userId))
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Invalid user id" }
             });
-        }
 
         return Ok(new UsernameSuccessResponse
         {
@@ -97,21 +95,17 @@ public class IdentityController : BaseController
         var result = await _identityService.ListUsers(UserId, searchString);
 
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new FailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new UsersSuccessResponse
         {
@@ -119,8 +113,8 @@ public class IdentityController : BaseController
         });
     }
 
-    private AuthenticationSuccessResponse ReturnSuccessResponse(AuthenticationResult result) =>
-        new AuthenticationSuccessResponse
+    private static AuthenticationSuccessResponse ReturnSuccessResponse(AuthenticationResult result) =>
+        new()
         {
             Token = result.Token,
             RefreshToken = result.RefreshToken,

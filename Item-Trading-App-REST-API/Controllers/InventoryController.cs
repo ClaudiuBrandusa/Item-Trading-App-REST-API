@@ -22,26 +22,21 @@ public class InventoryController : BaseController
     [HttpPut(Endpoints.Inventory.Add)]
     public async Task<IActionResult> Add([FromBody] AddItemRequest request)
     {
-        if (request == null)
-        {
+        if (request is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         var result = await _inventoryService.AddItemAsync(UserId, request.ItemId, request.Quantity);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new AddItemFailedResponse
             {
                 ItemId = request.ItemId,
@@ -49,7 +44,6 @@ public class InventoryController : BaseController
                 Quantity = request.Quantity,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new AddItemSuccessResponse
         {
@@ -62,33 +56,27 @@ public class InventoryController : BaseController
     [HttpPost(Endpoints.Inventory.Drop)]
     public async Task<IActionResult> Drop([FromBody] DropItemRequest request)
     {
-        if (request == null)
-        {
+        if (request is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         var result = await _inventoryService.DropItemAsync(UserId, request.ItemId, request.ItemQuantity);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new DropItemFailedResponse
             {
                 ItemId = request.ItemId,
                 ItemName = result.ItemName,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new DropItemSuccessResponse
         {
@@ -101,32 +89,26 @@ public class InventoryController : BaseController
     [HttpGet(Endpoints.Inventory.Get)]
     public async Task<IActionResult> Get(string itemId)
     {
-        if(string.IsNullOrEmpty(itemId))
-        {
+        if (string.IsNullOrEmpty(itemId))
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Item ID not provided" }
             });
-        }
 
         var result = await _inventoryService.GetItemAsync(UserId, itemId);
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new GetItemFailedResponse
             {
                 ItemId = itemId,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetItemSuccessResponse
         {
@@ -144,21 +126,17 @@ public class InventoryController : BaseController
 
         var result = await _inventoryService.ListItemsAsync(UserId, searchString);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new FailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new ListItemsSuccessResponse
         {
@@ -171,22 +149,18 @@ public class InventoryController : BaseController
     {
         var result = await _inventoryService.GetLockedAmount(UserId, itemId);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         if (!result.Success)
-        {
             return BadRequest(new GetLockedAmountFailedResponse
             {
                 ItemId = itemId,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new GetLockedAmountSuccessResponse
         {

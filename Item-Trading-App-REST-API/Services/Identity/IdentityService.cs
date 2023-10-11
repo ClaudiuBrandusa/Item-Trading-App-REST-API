@@ -36,13 +36,11 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.FindByNameAsync(username);
 
-        if(user != null)
-        {
+        if (user is not null)
             return new AuthenticationResult
             { 
                 Errors = new[] { "User with this username already exists" }
             };
-        }
 
         var newUserId = Guid.NewGuid();
 
@@ -54,13 +52,11 @@ public class IdentityService : IIdentityService
 
         var createdUser = await _userManager.CreateAsync(newUser, password);
 
-        if(!createdUser.Succeeded)
-        {
+        if (!createdUser.Succeeded)
             return new AuthenticationResult
             { 
                 Errors = createdUser.Errors.Select(x => x.Description)
             };
-        }
 
         return await GetToken(newUser.Id);
     }
@@ -69,23 +65,19 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.FindByNameAsync(username);
 
-        if(user == null)
-        {
+        if (user is null)
             return new AuthenticationResult
             { 
                 Errors = new[] { "User does not exist" }
             };
-        }
 
         var userMatchPassword = await _userManager.CheckPasswordAsync(user, password);
 
-        if(!userMatchPassword)
-        {
+        if (!userMatchPassword)
             return new AuthenticationResult
             { 
                 Errors = new[] { "Username or password is wrong" }
             };
-        }
         
         return await GetToken(user.Id);
     }
@@ -94,24 +86,18 @@ public class IdentityService : IIdentityService
     {
         var validatedToken = GetPrincipalFromToken(token);
 
-        if (validatedToken == null)
-        {
+        if (validatedToken is null)
             return new AuthenticationResult { Errors = new[] { "Invalid token" } };
-        }
 
         var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
 
         var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshToken);
 
-        if (storedRefreshToken == null)
-        {
+        if (storedRefreshToken is null)
             return new AuthenticationResult { Errors = new[] { "This refresh token does not exist" } };
-        }
 
         if (!Equals(storedRefreshToken.JwtId, jti))
-        {
             return new AuthenticationResult { Errors = new[] { "This refresh token does not match the JWT" } };
-        }
 
         var expiryDateUnix = long.Parse(validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
 
@@ -119,14 +105,10 @@ public class IdentityService : IIdentityService
             .AddSeconds(expiryDateUnix);
 
         if (DateTime.UtcNow > storedRefreshToken.ExpiryDate)
-        {
             return new AuthenticationResult { Errors = new[] { "This refresh token has expired" } };
-        }
 
         if (storedRefreshToken.Invalidated)
-        {
             return new AuthenticationResult { Errors = new[] { "This refresh token has been invalidated" } };
-        }
 
         var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == "id").Value);
         return await GetToken(user.Id);
@@ -134,17 +116,13 @@ public class IdentityService : IIdentityService
 
     public async Task<string> GetUsername(string userId)
     {
-        if(string.IsNullOrEmpty(userId))
-        {
+        if (string.IsNullOrEmpty(userId))
             return "";
-        }
 
         var user = await _userManager.FindByIdAsync(userId);
 
-        if(user == null)
-        {
+        if (user is null)
             return "";
-        }
 
         return user.UserName;
     }
@@ -152,16 +130,22 @@ public class IdentityService : IIdentityService
     public async Task<UsersResult> ListUsers(string userId, string searchString)
     {
         var list = string.IsNullOrEmpty(searchString) ?
-            await _context.Users.AsNoTracking().Select(u => u.Id).ToListAsync() :
-            await _context.Users.AsNoTracking().Where(u => u.UserName.StartsWith(searchString)).Select(u => u.Id).ToListAsync();
+            await _context.Users
+                .AsNoTracking()
+                .Select(u => u.Id)
+                .ToListAsync()
+                :
+            await _context.Users
+                .AsNoTracking()
+                .Where(u => u.UserName.StartsWith(searchString))
+                .Select(u => u.Id)
+                .ToListAsync();
 
-        if (list == null)
-        {
+        if (list is null)
             return new UsersResult
             {
                 Errors = new[] { "Something went wrong" }
             };
-        }
 
         if (list.Contains(userId))
             list.Remove(userId);
@@ -185,9 +169,7 @@ public class IdentityService : IIdentityService
             _tokenValidationParameters.ValidateLifetime = true;
 
             if (!IsJwtWithValidSecurityAlgorithm(validatedToken))
-            {
                 return null;
-            }
 
             return principal;
         }
@@ -199,19 +181,15 @@ public class IdentityService : IIdentityService
         }
     }
 
-    private static bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken)
-    {
-        return (validatedToken is JwtSecurityToken jwtSecurityToken) && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
-    }
+    private static bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken) =>
+        (validatedToken is JwtSecurityToken jwtSecurityToken) && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
 
     private async Task<AuthenticationResult> GetToken(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
 
-        if (user == null)
-        {
+        if (user is null)
             return new AuthenticationResult { Errors = new[] { "User not found" } };
-        }
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
@@ -240,13 +218,11 @@ public class IdentityService : IIdentityService
         
         var refreshToken = await GetRefreshToken(userId, token.Id);
 
-        if(refreshToken == null)
-        {
+        if (refreshToken is null)
             return new AuthenticationResult
             {
                 Errors = new[] { "Something went wrong" }
             };
-        }
 
         return new AuthenticationResult
         {
@@ -261,10 +237,8 @@ public class IdentityService : IIdentityService
     {
         var refreshToken = await _refreshTokenService.GetRecentRefreshToken(userId, jti);
 
-        if(refreshToken != null && refreshToken.Success)
-        {
+        if (refreshToken is not null && refreshToken.Success)
             return refreshToken;
-        }
 
         return await _refreshTokenService.GenerateRefreshToken(userId, jti);
     }

@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Item_Trading_App_REST_API.Installers;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 
-namespace Item_Trading_App_REST_API.Installers;
+namespace Item_Trading_App_REST_API.Extensions;
 
 public static class InstallerExtensions
 {

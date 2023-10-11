@@ -24,30 +24,24 @@ public class ItemController : BaseController
     public async Task<IActionResult> Get(string itemId)
     {
         if (string.IsNullOrEmpty(itemId))
-        {
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Item ID not provided" }
             });
-        }
 
         var result = await _itemService.GetItemAsync(itemId);
 
-        if (result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new FailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new ItemResponse
         {
@@ -62,23 +56,19 @@ public class ItemController : BaseController
     {
         string searchString = HttpContext.Request.Query["searchstring"].ToString();
 
-        var result = await _itemService.ListItems(searchString);
+        var result = await _itemService.ListItemsAsync(searchString);
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
-            });
-        }    
+            });  
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new FailedResponse
             {
                 Errors = result.Errors
             });
-        }
 
         return Ok(new ItemsResponse
         {
@@ -89,32 +79,26 @@ public class ItemController : BaseController
     [HttpPost(Endpoints.Item.Create)]
     public async Task<IActionResult> Create([FromBody] CreateItemRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.ItemName) || string.IsNullOrEmpty(request.ItemDescription))
-        {
+        if (request is null || string.IsNullOrEmpty(request.ItemName) || string.IsNullOrEmpty(request.ItemDescription))
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         var result = await _itemService.CreateItemAsync(new CreateItem { SenderUserId = UserId, ItemName = request.ItemName, ItemDescription = request.ItemDescription });
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new CreateItemFailedResponse
             {
                 ItemName = request.ItemName,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new CreateItemSuccessResponse
         {
@@ -127,13 +111,11 @@ public class ItemController : BaseController
     [HttpPatch(Endpoints.Item.Update)]
     public async Task<IActionResult> Update([FromBody] UpdateItemRequest request)
     {
-        if(request == null || string.IsNullOrEmpty(request.ItemId) || string.IsNullOrEmpty(request.ItemName))
-        {
+        if (request is null || string.IsNullOrEmpty(request.ItemId) || string.IsNullOrEmpty(request.ItemName))
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         var result = await _itemService.UpdateItemAsync(new UpdateItem
         {
@@ -143,23 +125,19 @@ public class ItemController : BaseController
             ItemDescription = request.ItemDescription
         });
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new UpdateItemFailedResponse
             {
                 ItemId = result.ItemId,
                 ItemName = result.ItemName,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new UpdateItemSuccessResponse
         {
@@ -172,33 +150,27 @@ public class ItemController : BaseController
     [HttpDelete(Endpoints.Item.Delete)]
     public async Task<IActionResult> Delete([FromBody] DeleteItemRequest request)
     {
-        if(request == null || string.IsNullOrEmpty(request.ItemId))
-        {
+        if (request is null || string.IsNullOrEmpty(request.ItemId))
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         var result = await _itemService.DeleteItemAsync(request.ItemId, UserId);
 
-        if(result == null)
-        {
+        if (result is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!result.Success)
-        {
+        if (!result.Success)
             return BadRequest(new DeleteItemFailedResponse
             {
                 ItemId = result.ItemId,
                 ItemName = result.ItemName,
                 Errors = result.Errors
             });
-        }
 
         return Ok(new DeleteItemSuccessResponse
         {

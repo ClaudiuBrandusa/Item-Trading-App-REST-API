@@ -57,27 +57,23 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
         await hubContext.Groups.RemoveFromGroupAsync(connectionId, userId);
     }
 
-    public async Task NotifyUserAsync(string userId, object notification)
+    public Task NotifyUserAsync(string userId, object notification)
     {
-        if (!currentUsersConnections.ContainsKey(userId)) return;
+        if (!currentUsersConnections.ContainsKey(userId)) return Task.CompletedTask;
         
-        await hubContext.Clients.Group(userId).SendAsync("notify", notification);
+        return  hubContext.Clients.Group(userId).SendAsync("notify", notification);
     }
 
-    public async Task NotifyUsersAsync(object notification)
-    {
-        await NotifyUsersAsync(currentUsersConnections.Keys.ToList(), notification);
-    }
+    public Task NotifyUsersAsync(object notification) =>
+        NotifyUsersAsync(currentUsersConnections.Keys.ToList(), notification);
 
-    public async Task NotifyUsersAsync(List<string> userIds, object notification)
-    {
-        await hubContext.Clients.Groups(userIds).SendAsync("notify", notification);
-    }
+    public Task NotifyUsersAsync(List<string> userIds, object notification) =>
+        hubContext.Clients.Groups(userIds).SendAsync("notify", notification);
 
-    public async Task NotifyAllUsersExceptAsync(string userId, object notification)
+    public Task NotifyAllUsersExceptAsync(string userId, object notification)
     {
         var keys = currentUsersConnections.Keys.Where(x => !x.Equals(userId)).ToList();
 
-        await NotifyUsersAsync(keys, notification);
+        return NotifyUsersAsync(keys, notification);
     }
 }

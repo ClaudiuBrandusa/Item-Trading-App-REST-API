@@ -33,20 +33,14 @@ public class RedisCacheService : ICacheService
         return JsonSerializer.Deserialize<T>(value);
     }
 
-    public async Task SetCacheValueAsync(string key, string value)
-    {
-        await Database.StringSetAsync(key, value);
-    }
+    public Task SetCacheValueAsync(string key, string value) =>
+        Database.StringSetAsync(key, value);
 
-    public async Task SetCacheValueAsync<T>(string key, T value)
-    {
-        await SetCacheValueAsync(key, JsonSerializer.Serialize(value));
-    }
+    public Task SetCacheValueAsync<T>(string key, T value) =>
+        SetCacheValueAsync(key, JsonSerializer.Serialize(value));
 
-    public async Task<bool> ContainsKey(string key)
-    {
-        return await Database.KeyExistsAsync(key);
-    }
+    public Task<bool> ContainsKey(string key) =>
+        Database.KeyExistsAsync(key);
 
     public async Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, bool removePrefix = false)
     {
@@ -67,8 +61,6 @@ public class RedisCacheService : ICacheService
         return dictionary;
     }
 
-    public async Task ClearCacheKeyAsync(string key)
-    {
-        await Database.KeyDeleteAsync(key);
-    }
+    public Task ClearCacheKeyAsync(string key) =>
+        Database.KeyDeleteAsync(key);
 }

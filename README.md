@@ -124,3 +124,4 @@ Or you could try the following command in Powershell.
 - Swashbuckle.AspNetCore (6.5.0)
 - Swashbuckle.AspNetCore.Swagger (6.5.0)
 - Swashbuckle.AspNetCore.SwaggerUI (6.5.0)
+- System.Linq.Async (6.0.1)

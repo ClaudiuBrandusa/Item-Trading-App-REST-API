@@ -13,9 +13,9 @@ public class GetUserCashHandler : HandlerBase, IRequestHandler<GetUserCashQuery,
     {
     }
 
-    public async Task<int> Handle(GetUserCashQuery request, CancellationToken cancellationToken)
+    public Task<int> Handle(GetUserCashQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IWalletService, int>(async (walletService) =>
+        return Execute<IWalletService, int>(async (walletService) =>
             await walletService.GetUserCashAsync(request.UserId)
         );
     }

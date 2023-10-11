@@ -18,12 +18,9 @@ public class RefreshTokenHostedService : BaseHostedService, IDisposable
 
     protected override async Task ExecuteAsync()
     {
-        using (var scope = _serviceScopeFactory.CreateScope())
-        {
-            var refreshTokenService = scope.ServiceProvider.GetService<IRefreshTokenService>();
+        using var scope = _serviceScopeFactory.CreateScope();
+        var refreshTokenService = scope.ServiceProvider.GetService<IRefreshTokenService>();
 
-            await refreshTokenService.ClearRefreshTokensAsync();
-        }
-
+        await refreshTokenService.ClearRefreshTokensAsync();
     }
 }

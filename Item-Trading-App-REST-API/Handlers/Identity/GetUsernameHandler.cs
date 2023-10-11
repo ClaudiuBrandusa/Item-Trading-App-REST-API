@@ -13,9 +13,9 @@ public class GetUsernameHandler : HandlerBase, IRequestHandler<GetUsernameQuery,
     {
     }
 
-    public async Task<string> Handle(GetUsernameQuery request, CancellationToken cancellationToken)
+    public Task<string> Handle(GetUsernameQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IIdentityService, string>(async (identityService) =>
+        return Execute<IIdentityService, string>(async (identityService) =>
             await identityService.GetUsername(request.UserId)
         );
     }

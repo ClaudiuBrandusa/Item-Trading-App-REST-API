@@ -18,10 +18,8 @@ public class WalletService : IWalletService
     {
         var user = await GetUser(userId);
     
-        if(user == null)
-        {
+        if (user is null)
             return 0;
-        }
 
         return user.Cash;
     }
@@ -30,13 +28,11 @@ public class WalletService : IWalletService
     {
         var user = await GetUser(userId);
 
-        if(user == null)
-        {
+        if (user is null)
             return new WalletResult
             {
                 Errors = new[] { "User not found" }
             };
-        }
 
         return new WalletResult
         {
@@ -50,15 +46,11 @@ public class WalletService : IWalletService
     {
         var user = await GetUser(userId);
 
-        if(user == null)
-        {
+        if (user is null)
             return false;
-        }
 
-        if(amount < 1)
-        {
+        if (amount < 1)
             return false;
-        }
 
         user.Cash += amount;
 
@@ -71,15 +63,11 @@ public class WalletService : IWalletService
     {
         var user = await GetUser(userId);
 
-        if(user == null)
-        {
+        if (user is null)
             return false;
-        }
 
-        if(user.Cash - amount < 0)
-        {
+        if (user.Cash - amount < 0)
             return false;
-        }
 
         user.Cash -= amount;
 
@@ -92,21 +80,17 @@ public class WalletService : IWalletService
     {
         var user = await GetUser(userId);
 
-        if(user == null)
-        {
+        if (user is null)
             return new WalletResult
             {
                 Errors = new[] { "User not found" }
             };
-        }
 
-        if(amount < 0)
-        {
+        if (amount < 0)
             return new WalletResult
             {
                 Errors = new[] { "You cannot have a negative balance" }
             };
-        }
 
         user.Cash = amount;
 

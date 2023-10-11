@@ -13,9 +13,9 @@ public class HasItemQuantityHandler : HandlerBase, IRequestHandler<HasItemQuanti
     {
     }
 
-    public async Task<bool> Handle(HasItemQuantityQuery request, CancellationToken cancellationToken)
+    public Task<bool> Handle(HasItemQuantityQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IInventoryService, bool>(async (inventoryService) =>
+        return Execute<IInventoryService, bool>(async (inventoryService) =>
             await inventoryService.HasItemAsync(request.UserId, request.ItemId, request.Quantity)
         );
     }

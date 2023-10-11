@@ -14,9 +14,9 @@ public class TakeCashHandler : HandlerBase, IRequestHandler<TakeCashQuery, bool>
     {
     }
 
-    public async Task<bool> Handle(TakeCashQuery request, CancellationToken cancellationToken)
+    public Task<bool> Handle(TakeCashQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IWalletService, bool>(async (walletService) =>
+        return Execute<IWalletService, bool>(async (walletService) =>
             await walletService.TakeCashAsync(request.UserId, request.Amount)
         );
     }

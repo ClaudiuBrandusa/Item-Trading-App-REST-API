@@ -15,19 +15,15 @@ public class HandlerBase
 
     protected async Task Execute<ServiceType>(Func<ServiceType, Task> func) where ServiceType : class
     {
-        using(var scope = _serviceProvider.CreateScope())
-        {
-            var service = scope.ServiceProvider.GetService<ServiceType>();
-            await func(service);
-        }
+        using var scope = _serviceProvider.CreateScope();
+        var service = scope.ServiceProvider.GetService<ServiceType>();
+        await func(service);
     }
 
     protected async Task<OutputType> Execute<ServiceType, OutputType>(Func<ServiceType, Task<OutputType>> func) where ServiceType : class
     {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var service = scope.ServiceProvider.GetService<ServiceType>();
-            return await func(service);
-        }
+        using var scope = _serviceProvider.CreateScope();
+        var service = scope.ServiceProvider.GetService<ServiceType>();
+        return await func(service);
     }
 }

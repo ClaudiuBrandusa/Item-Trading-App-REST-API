@@ -1,4 +1,3 @@
-using Item_Trading_App_REST_API.Installers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -6,6 +5,7 @@ using Item_Trading_App_REST_API.Options;
 using Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
 using Microsoft.Extensions.DependencyInjection;
 using Item_Trading_App_REST_API.Hubs;
+using Item_Trading_App_REST_API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

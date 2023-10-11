@@ -26,17 +26,13 @@ public class RefreshTokenService : IRefreshTokenService
 
     public async Task<RefreshTokenResult> GenerateRefreshToken(string userId, string jti)
     {
-        if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(jti))
-        {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(jti))
             return new RefreshTokenResult { Errors = new[] { "Invalid input data" } };
-        }
 
         var user = await _userManager.FindByIdAsync(userId);
 
-        if(user == null)
-        {
+        if (user is null)
             return new RefreshTokenResult { Errors = new[] { "User not found" } };
-        }
 
         var refreshToken = new RefreshToken
         {
@@ -44,12 +40,10 @@ public class RefreshTokenService : IRefreshTokenService
             JwtId = jti,
             UserId = user.Id,
             CreationDate = DateTime.UtcNow,
-            ExpiryDate = DateTime.UtcNow.Add(_jwtSettings.RefreshTokenLifetime),
-
+            ExpiryDate = DateTime.UtcNow.Add(_jwtSettings.RefreshTokenLifetime)
         };
 
-        _context.RefreshTokens.Add(refreshToken);
-        await _context.SaveChangesAsync();
+        await _context.AddEntityAsync(refreshToken);
 
         return new RefreshTokenResult
         {
@@ -67,7 +61,7 @@ public class RefreshTokenService : IRefreshTokenService
     {
         var tmp = await _context.RefreshTokens.FirstOrDefaultAsync(x => Equals(x.Token, refreshTokenId));
 
-        if (tmp == null || tmp == default)
+        if (tmp is null || tmp == default)
             return null;
 
         return new RefreshTokenResult
@@ -93,7 +87,7 @@ public class RefreshTokenService : IRefreshTokenService
     {
         var expiredTokens = await GetExpiredRefreshTokens();
 
-        if(expiredTokens != null)
+        if(expiredTokens is not null)
         {
             foreach(var token in expiredTokens)
             {
@@ -105,7 +99,7 @@ public class RefreshTokenService : IRefreshTokenService
 
         var usedTokens = await GetUsedRefreshTokens();
 
-        if(usedTokens != null)
+        if(usedTokens is not null)
         {
             foreach(var token in usedTokens)
             {
@@ -117,14 +111,14 @@ public class RefreshTokenService : IRefreshTokenService
 
         var usersId = _context.Users.Select(x => x.Id).ToList();
 
-        if (usersId == null)
+        if (usersId is null)
             return;
 
         foreach(string userId in usersId)
         {
             var tokens = _context.RefreshTokens.Where(x => Equals(x.UserId, userId)).ToList();
 
-            if (tokens == null)
+            if (tokens is null)
                 continue;
 
             if (tokens.Count <= _jwtSettings.AllowedRefreshTokensPerUser)
@@ -155,7 +149,7 @@ public class RefreshTokenService : IRefreshTokenService
                 Equals(x.JwtId, jti))
             .ToListAsync();
 
-        if (tmp == null || !tmp.Any())
+        if (tmp is null || !tmp.Any())
         {
             return new RefreshTokenResult
             {
@@ -179,22 +173,24 @@ public class RefreshTokenService : IRefreshTokenService
         };
     }
 
-    private async Task<List<string>> GetExpiredRefreshTokens()
-    {
-        return await _context.RefreshTokens.Where(x => x.ExpiryDate < DateTime.UtcNow).Select(x => x.Token).ToListAsync();
-    }
+    private Task<List<string>> GetExpiredRefreshTokens() =>
+        _context.RefreshTokens
+            .Where(x => x.ExpiryDate < DateTime.UtcNow)
+            .Select(x => x.Token)
+            .ToListAsync();
 
-    private async Task<List<string>> GetUsedRefreshTokens()
-    {
-        return await _context.RefreshTokens.Where(x => x.Used).Select(x => x.Token).ToListAsync();
-    }
+    private Task<List<string>> GetUsedRefreshTokens() =>
+        _context.RefreshTokens
+            .Where(x => x.Used)
+            .Select(x => x.Token)
+            .ToListAsync();
 
     private void DeleteRefreshToken(string refreshToken)
     {
         // we have to get the entity in order to delete by id
         var entity = GetRefreshTokenEntity(refreshToken);
 
-        if (entity == null)
+        if (entity is null)
             return;
 
         _context.RefreshTokens.Remove(entity);

@@ -24,31 +24,25 @@ public class WalletController : BaseController
     {
         string userId = UserId;
 
-        if(string.IsNullOrEmpty(userId))
-        {
+        if (string.IsNullOrEmpty(userId))
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "User id not found" }
             });
-        }
 
         var wallet = await _walletService.GetWalletAsync(userId);
 
-        if(wallet == null)
-        {
+        if (wallet is null)
             return BadRequest(new FailedResponse 
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
-        if(!wallet.Success)
-        {
+        if (!wallet.Success)
             return BadRequest(new FailedResponse
             {
                 Errors = wallet.Errors
             });
-        }
 
         return Ok(new WalletSuccessResponse
         {
@@ -61,23 +55,19 @@ public class WalletController : BaseController
     {
         var userId = UserId;
 
-        if (string.IsNullOrEmpty(userId) || request == null)
-        {
+        if (string.IsNullOrEmpty(userId) || request is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
-        }
 
         var wallet = await _walletService.UpdateWalletAsync(userId, request.Quantity);
 
-        if(!wallet.Success)
-        {
+        if (!wallet.Success)
             return BadRequest(new FailedResponse
             {
                 Errors = wallet.Errors
             });
-        }
 
         return Ok(new UpdateWalletSuccessResponse
         {

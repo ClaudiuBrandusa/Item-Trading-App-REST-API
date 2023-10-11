@@ -14,9 +14,9 @@ public class AddItemHandler : HandlerBase, IRequestHandler<AddItemQuery, Quantif
     {
     }
 
-    public async Task<QuantifiedItemResult> Handle(AddItemQuery request, CancellationToken cancellationToken)
+    public Task<QuantifiedItemResult> Handle(AddItemQuery request, CancellationToken cancellationToken)
     {
-        return await Execute<IInventoryService, QuantifiedItemResult>(async (inventoryService) =>
+        return Execute<IInventoryService, QuantifiedItemResult>(async (inventoryService) =>
             await inventoryService.AddItemAsync(request.UserId, request.ItemId, request.Quantity, true)
         );
     }
