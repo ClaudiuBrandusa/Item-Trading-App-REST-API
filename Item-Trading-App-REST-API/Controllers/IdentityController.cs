@@ -4,6 +4,7 @@ using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Services.Identity;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -15,7 +16,7 @@ public class IdentityController : BaseController
 {
     private readonly IIdentityService _identityService;
 
-    public IdentityController(IIdentityService identityService)
+    public IdentityController(IIdentityService identityService, IMapper mapper) : base(mapper)
     {
         _identityService = identityService;
     }
@@ -26,15 +27,9 @@ public class IdentityController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(new AuthenticationFailedResponse { Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
 
-        var authResponse = await _identityService.RegisterAsync(request.Username, request.Password);
+        var result = await _identityService.RegisterAsync(AdaptToType<UserRegisterRequest, Register>(request));
 
-        if (!authResponse.Success)
-            return BadRequest(new AuthenticationFailedResponse
-            {
-                Errors = authResponse.Errors
-            });
-
-        return Ok(ReturnSuccessResponse(authResponse));
+        return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Identity.Login)]
@@ -43,15 +38,9 @@ public class IdentityController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(new AuthenticationFailedResponse { Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
 
-        var authResponse = await _identityService.LoginAsync(request.Username, request.Password);
+        var result = await _identityService.LoginAsync(AdaptToType<UserLoginRequest, Login>(request));
 
-        if (!authResponse.Success)
-            return BadRequest(new AuthenticationFailedResponse
-            {
-                Errors = authResponse.Errors
-            });
-
-        return Ok(ReturnSuccessResponse(authResponse));
+        return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Identity.Refresh)]
@@ -60,15 +49,9 @@ public class IdentityController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(new AuthenticationFailedResponse { Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
 
-        var authResponse = await _identityService.RefreshTokenAsync(request.Token, request.RefreshToken);
+        var result = await _identityService.RefreshTokenAsync(AdaptToType<RefreshTokenRequest, RefreshTokenData>(request));
 
-        if (!authResponse.Success)
-            return BadRequest(new AuthenticationFailedResponse
-            {
-                Errors = authResponse.Errors
-            });
-
-        return Ok(ReturnSuccessResponse(authResponse));
+        return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
 
     [Authorize]
@@ -81,43 +64,15 @@ public class IdentityController : BaseController
                 Errors = new[] { "Invalid user id" }
             });
 
-        return Ok(new UsernameSuccessResponse
-        {
-            UserId = userId,
-            Username = await _identityService.GetUsername(userId)
-        });
+        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, ("username", await _identityService.GetUsername(UserId))));
     }
 
     [Authorize]
     [HttpGet(Endpoints.Identity.ListUsers)]
     public async Task<IActionResult> ListUsers(string searchString)
     {
-        var result = await _identityService.ListUsers(UserId, searchString);
+        var result = await _identityService.ListUsers(AdaptToType<string, ListUsers>(searchString, ("userId", UserId)));
 
-
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new UsersSuccessResponse
-        {
-            UsersId = result.UsersId
-        });
+        return MapResult<UsersResult, UsersSuccessResponse, FailedResponse>(result);
     }
-
-    private static AuthenticationSuccessResponse ReturnSuccessResponse(AuthenticationResult result) =>
-        new()
-        {
-            Token = result.Token,
-            RefreshToken = result.RefreshToken,
-            ExpirationDateTime = result.ExpirationDateTime
-        };
 }

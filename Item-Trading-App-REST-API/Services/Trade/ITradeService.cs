@@ -53,15 +53,15 @@ public interface ITradeService
     /// <summary>
     /// Accepts the trade offer
     /// </summary>
-    public Task<AcceptTradeOfferResult> AcceptTradeOffer(string tradeOfferId, string userId);
+    public Task<AcceptTradeOfferResult> AcceptTradeOffer(RespondTrade model);
 
     /// <summary>
     /// Rejects the trade offer
     /// </summary>
-    public Task<RejectTradeOfferResult> RejectTradeOffer(string tradeOfferId, string userId);
+    public Task<RejectTradeOfferResult> RejectTradeOffer(RespondTrade model);
 
     /// <summary>
     /// Cancels the trade offer
     /// </summary>
-    public Task<CancelTradeOfferResult> CancelTradeOffer(string tradeOfferId, string userId);
+    public Task<CancelTradeOfferResult> CancelTradeOffer(RespondTrade model);
 }

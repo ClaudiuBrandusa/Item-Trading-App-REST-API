@@ -32,9 +32,9 @@ public class IdentityService : IIdentityService
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<AuthenticationResult> RegisterAsync(string username, string password)
+    public async Task<AuthenticationResult> RegisterAsync(Register model)
     {
-        var user = await _userManager.FindByNameAsync(username);
+        var user = await _userManager.FindByNameAsync(model.Username);
 
         if (user is not null)
             return new AuthenticationResult
@@ -47,10 +47,11 @@ public class IdentityService : IIdentityService
         var newUser = new User
         {
             Id = newUserId.ToString(),
-            UserName = username
+            UserName = model.Username,
+            Email = model.Email
         };
 
-        var createdUser = await _userManager.CreateAsync(newUser, password);
+        var createdUser = await _userManager.CreateAsync(newUser, model.Password);
 
         if (!createdUser.Succeeded)
             return new AuthenticationResult
@@ -61,9 +62,9 @@ public class IdentityService : IIdentityService
         return await GetToken(newUser.Id);
     }
 
-    public async Task<AuthenticationResult> LoginAsync(string username, string password)
+    public async Task<AuthenticationResult> LoginAsync(Login model)
     {
-        var user = await _userManager.FindByNameAsync(username);
+        var user = await _userManager.FindByNameAsync(model.Username);
 
         if (user is null)
             return new AuthenticationResult
@@ -71,7 +72,7 @@ public class IdentityService : IIdentityService
                 Errors = new[] { "User does not exist" }
             };
 
-        var userMatchPassword = await _userManager.CheckPasswordAsync(user, password);
+        var userMatchPassword = await _userManager.CheckPasswordAsync(user, model.Password);
 
         if (!userMatchPassword)
             return new AuthenticationResult
@@ -82,16 +83,16 @@ public class IdentityService : IIdentityService
         return await GetToken(user.Id);
     }
 
-    public async Task<AuthenticationResult> RefreshTokenAsync(string token, string refreshToken)
+    public async Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenData model)
     {
-        var validatedToken = GetPrincipalFromToken(token);
+        var validatedToken = GetPrincipalFromToken(model.Token);
 
         if (validatedToken is null)
             return new AuthenticationResult { Errors = new[] { "Invalid token" } };
 
         var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
 
-        var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshToken);
+        var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == model.RefreshToken);
 
         if (storedRefreshToken is null)
             return new AuthenticationResult { Errors = new[] { "This refresh token does not exist" } };
@@ -127,9 +128,9 @@ public class IdentityService : IIdentityService
         return user.UserName;
     }
 
-    public async Task<UsersResult> ListUsers(string userId, string searchString)
+    public async Task<UsersResult> ListUsers(ListUsers model)
     {
-        var list = string.IsNullOrEmpty(searchString) ?
+        var list = string.IsNullOrEmpty(model.SearchString) ?
             await _context.Users
                 .AsNoTracking()
                 .Select(u => u.Id)
@@ -137,7 +138,7 @@ public class IdentityService : IIdentityService
                 :
             await _context.Users
                 .AsNoTracking()
-                .Where(u => u.UserName.StartsWith(searchString))
+                .Where(u => u.UserName.StartsWith(model.SearchString))
                 .Select(u => u.Id)
                 .ToListAsync();
 
@@ -147,8 +148,8 @@ public class IdentityService : IIdentityService
                 Errors = new[] { "Something went wrong" }
             };
 
-        if (list.Contains(userId))
-            list.Remove(userId);
+        if (list.Contains(model.UserId))
+            list.Remove(model.UserId);
 
         return new UsersResult
         {

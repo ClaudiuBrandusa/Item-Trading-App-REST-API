@@ -2,7 +2,9 @@
 using Item_Trading_App_Contracts.Requests.Wallet;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Wallet;
+using Item_Trading_App_REST_API.Models.Wallet;
 using Item_Trading_App_REST_API.Services.Wallet;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -14,7 +16,7 @@ public class WalletController : BaseController
 {
     private readonly IWalletService _walletService;
 
-    public WalletController(IWalletService walletService)
+    public WalletController(IWalletService walletService, IMapper mapper) : base(mapper)
     {
         _walletService = walletService;
     }
@@ -22,56 +24,22 @@ public class WalletController : BaseController
     [HttpGet(Endpoints.Wallet.Get)]
     public async Task<IActionResult> Get()
     {
-        string userId = UserId;
+        var result = await _walletService.GetWalletAsync(UserId);
 
-        if (string.IsNullOrEmpty(userId))
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "User id not found" }
-            });
-
-        var wallet = await _walletService.GetWalletAsync(userId);
-
-        if (wallet is null)
-            return BadRequest(new FailedResponse 
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!wallet.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = wallet.Errors
-            });
-
-        return Ok(new WalletSuccessResponse
-        {
-            Cash = wallet.Cash
-        });
+        return MapResult<WalletResult, WalletSuccessResponse, FailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Wallet.Update)]
     public async Task<IActionResult> Update([FromBody] UpdateWalletRequest request)
     {
-        var userId = UserId;
-
-        if (string.IsNullOrEmpty(userId) || request is null)
+        if (request is null)
             return BadRequest(new FailedResponse
             {
                 Errors = new[] { "Something went wrong" }
             });
 
-        var wallet = await _walletService.UpdateWalletAsync(userId, request.Quantity);
+        var result = await _walletService.UpdateWalletAsync(AdaptToType<UpdateWalletRequest, UpdateWallet>(request, ("userId", UserId)));
 
-        if (!wallet.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = wallet.Errors
-            });
-
-        return Ok(new UpdateWalletSuccessResponse
-        {
-            Amount = wallet.Cash
-        });
+        return MapResult<WalletResult, UpdateWalletSuccessResponse, FailedResponse>(result);
     }
 }

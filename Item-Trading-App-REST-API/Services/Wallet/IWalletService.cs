@@ -13,7 +13,7 @@ public interface IWalletService
     /// <summary>
     /// Updates the user's cash value. The amount will overwrite the current cash value.
     /// </summary>
-    Task<WalletResult> UpdateWalletAsync(string userId, int amount);
+    Task<WalletResult> UpdateWalletAsync(UpdateWallet model);
 
     /// <summary>
     /// Returns the user's cash value
@@ -23,10 +23,10 @@ public interface IWalletService
     /// <summary>
     /// Takes the amount from the user's cash value
     /// </summary>
-    Task<bool> TakeCashAsync(string userId, int amount);
+    Task<bool> TakeCashAsync(UpdateWallet model);
 
     /// <summary>
     /// Gives the amount to the user's cash value
     /// </summary>
-    Task<bool> GiveCashAsync(string userId, int amount);
+    Task<bool> GiveCashAsync(UpdateWallet model);
 }

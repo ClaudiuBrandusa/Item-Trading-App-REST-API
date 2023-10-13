@@ -6,10 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Item_Trading_App_Contracts.Responses.Trade;
 using System.Linq;
-using Item_Trading_App_Contracts.Base.Item;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_REST_API.Models.Trade;
-using Item_Trading_App_REST_API.Models.Item;
+using MapsterMapper;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -18,7 +17,7 @@ public class TradeController : BaseController
 {
     private readonly ITradeService _tradeService;
 
-    public TradeController(ITradeService tradeService)
+    public TradeController(ITradeService tradeService, IMapper mapper) : base(mapper)
     {
         _tradeService = tradeService;
     }
@@ -26,133 +25,33 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.GetSent)]
     public async Task<IActionResult> GetSent(string tradeId)
     {
-        var result = await _tradeService.GetSentTradeOffer(new RequestTradeOffer
-        {
-            UserId = UserId,
-            TradeOfferId = tradeId
-        });
+        var result = await _tradeService.GetSentTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new GetSentTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetSentTradeOfferFailedResponse
-            {
-                TradeOfferId = tradeId,
-                Errors = result.Errors
-            });
-
-        return Ok(new GetSentTradeOfferSuccessResponse
-        {
-            TradeId = tradeId,
-            ReceiverId = result.ReceiverId,
-            ReceiverName = result.ReceiverName,
-            Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
-            SentDate = result.SentDate
-        });
+        return MapResult<SentTradeOffer, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.GetSentResponded)]
-    public async Task<IActionResult>  GetSentResponded(string tradeId)
+    public async Task<IActionResult> GetSentResponded(string tradeId)
     {
-        var result = await _tradeService.GetSentRespondedTradeOffer(new RequestTradeOffer
-        {
-            UserId = UserId,
-            TradeOfferId = tradeId
-        });
+        var result = await _tradeService.GetSentRespondedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new GetSentRespondedTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetSentRespondedTradeOfferFailedResponse
-            {
-                TradeOfferId = tradeId,
-                Errors = result.Errors
-            });
-
-        return Ok(new GetSentRespondedTradeOfferSuccessResponse
-        {
-            TradeId = tradeId,
-            ReceiverId = result.ReceiverId,
-            ReceiverName = result.ReceiverName,
-            Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
-            SentDate = result.SentDate,
-            Response = result.Response,
-            ResponseDate = result.ResponseDate
-        });
+        return MapResult<SentRespondedTradeOffer, GetSentRespondedTradeOfferSuccessResponse, GetSentRespondedTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.GetReceived)]
     public async Task<IActionResult> GetReceived(string tradeId)
     {
-        var result = await _tradeService.GetReceivedTradeOffer(new RequestTradeOffer
-        {
-            UserId = UserId,
-            TradeOfferId = tradeId
-        });
+        var result = await _tradeService.GetReceivedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new GetReceivedTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetReceivedTradeOfferFailedResponse
-            {
-                TradeOfferId = tradeId,
-                Errors = result.Errors
-            });
-
-        return Ok(new GetReceivedTradeOfferSuccessResponse
-        {
-            TradeId = tradeId,
-            SenderId = result.SenderId,
-            SenderName = result.SenderName,
-            Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
-            SentDate = result.SentDate
-        });
+        return MapResult<ReceivedTradeOffer, GetReceivedTradeOfferSuccessResponse, GetReceivedTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.GetReceivedResponded)]
     public async Task<IActionResult> GetReceivedResponded(string tradeId)
     {
-        var result = await _tradeService.GetReceivedRespondedTradeOffer(new RequestTradeOffer
-        {
-            UserId = UserId,
-            TradeOfferId = tradeId
-        });
+        var result = await _tradeService.GetReceivedRespondedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new GetReceivedRespondedTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetReceivedRespondedTradeOfferFailedResponse
-            {
-                TradeOfferId = tradeId,
-                Errors = result.Errors
-            });
-
-        return Ok(new GetReceivedRespondedTradeOfferSuccessResponse
-        {
-            TradeId = tradeId,
-            SenderId = result.SenderId,
-            SenderName = result.SenderName,
-            Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity }),
-            SentDate = result.SentDate,
-            Response = result.Response,
-            ResponseDate = result.ResponseDate
-        });
+        return MapResult<ReceivedRespondedTradeOffer, GetReceivedRespondedTradeOfferSuccessResponse, GetReceivedRespondedTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.ListSent)]
@@ -160,22 +59,7 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetSentTradeOffers(UserId);
 
-        if (results is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!results.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = results.Errors
-            });
-
-        return Ok(new ListTradeOffersSuccessResponse
-        {
-            TradeOffersIds = results.TradeOffers
-        });
+        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
     }
 
     [HttpGet(Endpoints.Trade.ListSentResponded)]
@@ -183,22 +67,7 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetSentRespondedTradeOffers(UserId);
 
-        if (results is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!results.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = results.Errors
-            });
-
-        return Ok(new ListTradeOffersSuccessResponse
-        {
-            TradeOffersIds = results.TradeOffers
-        });
+        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
     }
 
     [HttpGet(Endpoints.Trade.ListReceived)]
@@ -206,22 +75,7 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetReceivedTradeOffers(UserId);
 
-        if (results is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!results.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = results.Errors
-            });
-
-        return Ok(new ListTradeOffersSuccessResponse
-        {
-            TradeOffersIds = results.TradeOffers
-        });
+        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
     }
 
     [HttpGet(Endpoints.Trade.ListReceivedResponded)]
@@ -229,22 +83,7 @@ public class TradeController : BaseController
     {
         var results = await _tradeService.GetReceivedRespondedTradeOffers(UserId);
 
-        if (results is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!results.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = results.Errors
-            });
-
-        return Ok(new ListTradeOffersSuccessResponse
-        {
-            TradeOffersIds = results.TradeOffers
-        });
+        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
     }
 
     [HttpPost(Endpoints.Trade.Offer)]
@@ -256,33 +95,9 @@ public class TradeController : BaseController
                 Errors = new[] { "Invalid input data" }
             });
 
-        var result = await _tradeService.CreateTradeOffer(new CreateTradeOffer
-        {
-            SenderUserId = UserId,
-            TargetUserId = request.TargetUserId,
-            Items = request.Items.Select(t => new ItemPrice { ItemId = t.Id, Price = t.Price, Quantity = t.Quantity })
-        });
+        var result = await _tradeService.CreateTradeOffer(AdaptToType<TradeOfferRequest, CreateTradeOffer>(request, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new GetSentTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetSentTradeOfferFailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new GetSentTradeOfferSuccessResponse
-        {
-            TradeId = result.TradeOfferId,
-            ReceiverId = result.ReceiverId,
-            ReceiverName = result.ReceiverName,
-            SentDate = result.SentDate,
-            Items = result.Items.Select(t => new ItemWithPrice { Id = t.ItemId, Name = t.Name, Price = t.Price, Quantity = t.Quantity})
-        });
+        return MapResult<SentTradeOffer, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Accept)]
@@ -294,28 +109,9 @@ public class TradeController : BaseController
                 Errors = new[] { "Invalid input data" }
             });
 
-        var result = await _tradeService.AcceptTradeOffer(request.TradeId, UserId);
+        var result = await _tradeService.AcceptTradeOffer(AdaptToType<AcceptTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new AcceptTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new AcceptTradeOfferFailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new AcceptTradeOfferSuccessResponse
-        {
-            TradeOfferId = result.TradeOfferId,
-            SenderId = result.SenderId,
-            SenderName = result.SenderName,
-            ReceivedDate = result.ReceivedDate,
-            ResponseDate = result.ResponseDate
-        });
+        return MapResult<AcceptTradeOfferResult, AcceptTradeOfferSuccessResponse, AcceptTradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Reject)]
@@ -327,28 +123,9 @@ public class TradeController : BaseController
                 Errors = new[] { "Invalid input data" }
             });
 
-        var result = await _tradeService.RejectTradeOffer(request.TradeId, UserId);
+        var result = await _tradeService.RejectTradeOffer(AdaptToType<RejectTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new RejectTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new RejectTradeOfferFailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new RejectTradeOfferSuccessResponse
-        {
-            Id = result.TradeOfferId,
-            SenderId = result.SenderId,
-            SenderName = result.SenderName,
-            ReceivedDate = result.ReceivedDate,
-            ResponseDate = result.ResponseDate
-        });
+        return MapResult<RejectTradeOfferResult, RejectTradeOfferSuccessResponse, RejectTradeOfferFailedResponse>(result);
     }
 
     [HttpDelete(Endpoints.Trade.Cancel)]
@@ -360,25 +137,8 @@ public class TradeController : BaseController
                 Errors = new[] { "Invalid input data" }
             });
 
-        var result = await _tradeService.CancelTradeOffer(request.TradeId, UserId);
+        var result = await _tradeService.CancelTradeOffer(AdaptToType<CancelTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new CancelTradeOfferFailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new CancelTradeOfferFailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new CancelTradeOfferSuccessResponse
-        {
-            TradeOfferId = result.TradeOfferId,
-            ReceiverId = result.ReceiverId,
-            ReceiverName = result.ReceiverName
-        });
+        return MapResult<CancelTradeOfferResult, CancelTradeOfferSuccessResponse, CancelTradeOfferFailedResponse>(result);
     }
 }

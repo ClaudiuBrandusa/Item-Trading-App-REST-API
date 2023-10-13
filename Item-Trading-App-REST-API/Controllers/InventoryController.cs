@@ -2,7 +2,10 @@
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Inventory;
+using Item_Trading_App_REST_API.Models.Inventory;
+using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Inventory;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -14,7 +17,7 @@ public class InventoryController : BaseController
 {
     private readonly IInventoryService _inventoryService;
 
-    public InventoryController(IInventoryService inventoryService)
+    public InventoryController(IInventoryService inventoryService, IMapper mapper) : base(mapper)
     {
         _inventoryService = inventoryService;
     }
@@ -28,29 +31,9 @@ public class InventoryController : BaseController
                 Errors = new[] { "Something went wrong" }
             });
 
-        var result = await _inventoryService.AddItemAsync(UserId, request.ItemId, request.Quantity);
+        var result = await _inventoryService.AddItemAsync(AdaptToType<AddItemRequest, AddItem>(request, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new AddItemFailedResponse
-            {
-                ItemId = request.ItemId,
-                ItemName = result.ItemName,
-                Quantity = request.Quantity,
-                Errors = result.Errors
-            });
-
-        return Ok(new AddItemSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName,
-            Quantity = result.Quantity
-        });
+        return MapResult<QuantifiedItemResult, AddItemSuccessResponse, AddItemFailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Inventory.Drop)]
@@ -62,28 +45,9 @@ public class InventoryController : BaseController
                 Errors = new[] { "Something went wrong" }
             });
 
-        var result = await _inventoryService.DropItemAsync(UserId, request.ItemId, request.ItemQuantity);
+        var result = await _inventoryService.DropItemAsync(AdaptToType<DropItemRequest, DropItem>(request, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new DropItemFailedResponse
-            {
-                ItemId = request.ItemId,
-                ItemName = result.ItemName,
-                Errors = result.Errors
-            });
-
-        return Ok(new DropItemSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName,
-            Quantity = result.Quantity
-        });
+        return MapResult<QuantifiedItemResult, AddItemSuccessResponse, AddItemFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.Get)]
@@ -95,28 +59,9 @@ public class InventoryController : BaseController
                 Errors = new[] { "Item ID not provided" }
             });
 
-        var result = await _inventoryService.GetItemAsync(UserId, itemId);
+        var result = await _inventoryService.GetItemAsync(AdaptToType<string, GetUsersItem>(itemId, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetItemFailedResponse
-            {
-                ItemId = itemId,
-                Errors = result.Errors
-            });
-
-        return Ok(new GetItemSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName,
-            ItemDescription = result.ItemDescription,
-            Quantity = result.Quantity
-        });
+        return MapResult<QuantifiedItemResult, GetItemSuccessResponse, GetItemFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.List)]
@@ -124,49 +69,16 @@ public class InventoryController : BaseController
     {
         string searchString = HttpContext.Request.Query["searchstring"].ToString();
 
-        var result = await _inventoryService.ListItemsAsync(UserId, searchString);
+        var result = await _inventoryService.ListItemsAsync(AdaptToType<string , ListItems>(searchString, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new ListItemsSuccessResponse
-        {
-            ItemsId = result.ItemsId
-        });
+        return MapResult<ItemsResult, ListItemsSuccessResponse, FailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.GetLockedAmount)]
     public async Task<IActionResult> GetLockedAmount(string itemId)
     {
-        var result = await _inventoryService.GetLockedAmount(UserId, itemId);
+        var result = await _inventoryService.GetLockedAmount(AdaptToType<string, GetUsersItem>(itemId, ("userId", UserId)));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new GetLockedAmountFailedResponse
-            {
-                ItemId = itemId,
-                Errors = result.Errors
-            });
-
-        return Ok(new GetLockedAmountSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName,
-            LockedAmount = result.Amount
-        });
+        return MapResult<LockedItemAmountResult, GetLockedAmountSuccessResponse, GetLockedAmountFailedResponse>(result);
     }
 }

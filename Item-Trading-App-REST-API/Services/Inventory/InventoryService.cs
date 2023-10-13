@@ -9,6 +9,7 @@ using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.Notification;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,29 +31,29 @@ public class InventoryService : IInventoryService
         _mediator = mediator;
     }
 
-    public async Task<bool> HasItemAsync(string userId, string itemId, int quantity)
+    public async Task<bool> HasItemAsync(HasItem model)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
+        if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
             return false;
 
-        var amount = await GetAmountOfFreeItemAsync(userId, itemId);
+        var amount = await GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
-        return amount >= quantity;
+        return amount >= model.Quantity;
     }
 
-    public async Task<QuantifiedItemResult> AddItemAsync(string userId, string itemId, int quantity, bool notify = false)
+    public async Task<QuantifiedItemResult> AddItemAsync(AddItem model, bool notify = false)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+        if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         var item = await _cacheService.GetEntityAsync(
-            GetPrefix(userId) + itemId,
+            GetPrefix(model.UserId) + model.ItemId,
             async (args) =>
             {
-                var entity = await GetInventoryItemEntityAsync(userId, itemId);
+                var entity = await GetInventoryItemEntityAsync(model.UserId, model.ItemId);
 
                 if (entity is not null)
                     return new InventoryItem
@@ -64,7 +65,7 @@ public class InventoryService : IInventoryService
                 return null;
             });
 
-        var itemData = await _mediator.Send(new GetItemQuery { ItemId = itemId});
+        var itemData = await _mediator.Send(new GetItemQuery { ItemId = model.ItemId });
 
         if (itemData is null)
             return new QuantifiedItemResult
@@ -72,12 +73,12 @@ public class InventoryService : IInventoryService
                 Errors = new[] { "Item not found" }
             };
 
-        if (quantity < 0)
+        if (model.Quantity < 0)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "You cannot add a negative amount of an item" }
             };
-        else if (quantity == 0)
+        else if (model.Quantity == 0)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "You cannot add an amount of 0 in your inventory" }
@@ -91,28 +92,28 @@ public class InventoryService : IInventoryService
 
             modified = await _context.AddEntityAsync(new OwnedItem
             {
-                ItemId = itemId,
-                UserId = userId,
-                Quantity = quantity
+                ItemId = model.ItemId,
+                UserId = model.UserId,
+                Quantity = model.Quantity
             });
         }
         else
         {
-            item.Quantity += quantity;
+            item.Quantity += model.Quantity;
 
             modified = await _context.UpdateEntityAsync(new OwnedItem
             {
-                UserId = userId,
+                UserId = model.UserId,
                 ItemId = item.Id,
                 Quantity = item.Quantity
             });
 
-            quantity = item.Quantity;
+            model.Quantity = item.Quantity;
         }
 
         await _cacheService.SetCacheValueAsync(
-            GetAmountKey(userId, itemId),
-            new InventoryItem { Id = itemId, Quantity = quantity });
+            GetAmountKey(model.UserId, model.ItemId),
+            new InventoryItem { Id = model.ItemId, Quantity = model.Quantity });
 
         if (!modified)
             return new QuantifiedItemResult
@@ -122,34 +123,34 @@ public class InventoryService : IInventoryService
 
         if (notify)
             await _notificationService.SendUpdatedNotificationToUserAsync(
-                userId,
+                model.UserId,
                 NotificationCategoryTypes.Inventory,
-                itemId,
-                new InventoryItemQuantityNotification { AddAmount = true, Amount = quantity });
+                model.ItemId,
+                new InventoryItemQuantityNotification { AddAmount = true, Amount = model.Quantity });
 
         return new QuantifiedItemResult
         {
-            ItemId = itemId,
+            ItemId = model.ItemId,
             ItemName = itemData.ItemName,
             ItemDescription = itemData.ItemDescription,
-            Quantity = quantity,
+            Quantity = model.Quantity,
             Success = true
         };
     }
 
-    public async Task<QuantifiedItemResult> DropItemAsync(string userId, string itemId, int quantity, bool notify = false)
+    public async Task<QuantifiedItemResult> DropItemAsync(DropItem model, bool notify = false)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+        if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         var item = await _cacheService.GetEntityAsync(
-            GetPrefix(userId) + itemId,
+            GetPrefix(model.UserId) + model.ItemId,
             async (args) =>
             {
-                var entity = await GetInventoryItemEntityAsync(userId, itemId);
+                var entity = await GetInventoryItemEntityAsync(model.UserId, model.ItemId);
 
                 if (entity is not null)
                 {
@@ -163,29 +164,29 @@ public class InventoryService : IInventoryService
                 return null;
             });
 
-        if (quantity < 0)
+        if (model.Quantity < 0)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "You cannot drop a negative amount of an item" }
             };
-        else if (quantity == 0)
+        else if (model.Quantity == 0)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "You cannot drop an amount of 0 from your inventory" }
             };
 
         int freeItems = item.Quantity;
-        int lockedAmount = await GetAmountOfLockedItem(userId, itemId);
+        int lockedAmount = await GetAmountOfLockedItem(model.UserId, model.ItemId);
 
         freeItems -= lockedAmount;
         
-        if (freeItems < quantity)
+        if (freeItems < model.Quantity)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "You cannot drop more than you have" }
             };
 
-        item.Quantity -= quantity;
+        item.Quantity -= model.Quantity;
 
         bool modified;
 
@@ -194,21 +195,21 @@ public class InventoryService : IInventoryService
             modified = await _context.RemoveEntityAsync(new OwnedItem
             {
                 ItemId = item.Id,
-                UserId = userId
+                UserId = model.UserId
             });
-            await _cacheService.ClearCacheKeyAsync(GetAmountKey(userId, itemId));
-            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, itemId));
+            await _cacheService.ClearCacheKeyAsync(GetAmountKey(model.UserId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(model.UserId, model.ItemId));
         }
         else
         {
             modified = await _context.UpdateEntityAsync(new OwnedItem
             {
                 ItemId = item.Id,
-                UserId = userId,
+                UserId = model.UserId,
                 Quantity = item.Quantity,
             });
-            await _cacheService.SetCacheValueAsync(GetAmountKey(userId, itemId), new InventoryItem { Id = itemId, Quantity = item.Quantity });
-            await _cacheService.SetCacheValueAsync(GetLockedAmountKey(userId, itemId), lockedAmount);
+            await _cacheService.SetCacheValueAsync(GetAmountKey(model.UserId, model.ItemId), new InventoryItem { Id = model.ItemId, Quantity = item.Quantity });
+            await _cacheService.SetCacheValueAsync(GetLockedAmountKey(model.UserId, model.ItemId), lockedAmount);
         }
 
         if (!modified)
@@ -219,9 +220,9 @@ public class InventoryService : IInventoryService
 
         if (notify)
             await _notificationService.SendUpdatedNotificationToUserAsync(
-                userId,
+                model.UserId,
                 NotificationCategoryTypes.Inventory,
-                itemId,
+                model.ItemId,
                 new InventoryItemQuantityNotification
                 {
                     AddAmount = false,
@@ -230,23 +231,23 @@ public class InventoryService : IInventoryService
 
         return new QuantifiedItemResult
         {
-            ItemId = itemId,
-            ItemName = await _mediator.Send(new GetItemNameQuery { ItemId = itemId }),
+            ItemId = model.ItemId,
+            ItemName = await _mediator.Send(new GetItemNameQuery { ItemId = model.ItemId }),
             Quantity = item.Quantity,
             Success = true
         };
     }
 
-    public async Task<QuantifiedItemResult> GetItemAsync(string userId, string itemId)
+    public async Task<QuantifiedItemResult> GetItemAsync(GetUsersItem model)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+        if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
-        int amount = await GetAmountOfFreeItemAsync(userId, itemId);
-        var lockedAmount = await GetLockedAmount(userId, itemId);
+        int amount = await GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
+        var lockedAmount = await GetLockedAmount(model);
 
         if (amount == 0 && lockedAmount.Amount == 0)
             return new QuantifiedItemResult
@@ -254,11 +255,11 @@ public class InventoryService : IInventoryService
                 Errors = new[] { "You do not own this item" }
             };
 
-        var itemData = await _mediator.Send(new GetItemQuery { ItemId = itemId });
+        var itemData = await _mediator.Send(new GetItemQuery { ItemId = model.ItemId });
 
         return new QuantifiedItemResult
         {
-            ItemId = itemId,
+            ItemId = model.ItemId,
             ItemName = itemData.ItemName,
             ItemDescription = itemData.ItemDescription,
             Quantity = amount,
@@ -266,20 +267,20 @@ public class InventoryService : IInventoryService
         };
     }
 
-    public async Task<ItemsResult> ListItemsAsync(string userId, string searchString = "")
+    public async Task<ItemsResult> ListItemsAsync(ListItems model)
     {
-        if (string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(model.UserId))
             return new ItemsResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         var inventoryItems = await _cacheService.GetEntitiesAsync(
-            GetPrefix(userId),
+            GetPrefix(model.UserId),
             async (args) => await _context
                 .OwnedItems
                 .AsNoTracking()
-                .Where(oi => Equals(oi.UserId, userId))
+                .Where(oi => Equals(oi.UserId, model.UserId))
                 .Select(x => new InventoryItem { Id = x.ItemId, Quantity = x.Quantity })
                 .ToListAsync(),
             true,
@@ -287,14 +288,13 @@ public class InventoryService : IInventoryService
 
         List<string> itemIds = new();
 
-        if (!string.IsNullOrEmpty(searchString))
+        if (!string.IsNullOrEmpty(model.SearchString))
         {
-            searchString = searchString.ToLower();
             foreach (var inventoryItem in inventoryItems)
             {
                 string itemName = await _mediator.Send(new GetItemNameQuery { ItemId = inventoryItem.Id });
-
-                if (!itemName.ToLower().StartsWith(searchString)) continue;
+                
+                if (!itemName.StartsWith(model.SearchString, StringComparison.OrdinalIgnoreCase)) continue;
 
                 itemIds.Add(inventoryItem.Id);
             };
@@ -311,23 +311,23 @@ public class InventoryService : IInventoryService
         };
     }
 
-    public async Task<LockItemResult> LockItemAsync(string userId, string itemId, int quantity, bool notify = false)
+    public async Task<LockItemResult> LockItemAsync(LockInventoryItem model, bool notify = false)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
+        if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
             return new LockItemResult
             {
                 Errors = new[] { "Invalid input data" }
             };
 
-        int amount = await GetAmountOfFreeItemAsync(userId, itemId);
+        int amount = await GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
-        if (amount < quantity)
+        if (amount < model.Quantity)
             return new LockItemResult
             {
                 Errors = new[] { "You do not own enough of this item" }
             };
 
-        if (!await LockItem(userId, itemId, quantity))
+        if (!await LockItem(model.UserId, model.ItemId, model.Quantity))
             return new LockItemResult
             {
                 Errors = new[] { "Something went wrong" }
@@ -335,9 +335,9 @@ public class InventoryService : IInventoryService
 
         if (notify)
             await _notificationService.SendUpdatedNotificationToUserAsync(
-                userId,
+                model.UserId,
                 NotificationCategoryTypes.Inventory,
-                itemId,
+                model.ItemId,
                 new InventoryItemQuantityNotification
                 {
                     AddAmount = true,
@@ -346,43 +346,43 @@ public class InventoryService : IInventoryService
 
         return new LockItemResult
         {
-            UserId = userId,
-            ItemId = itemId,
-            Quantity = quantity,
+            UserId = model.UserId,
+            ItemId = model.ItemId,
+            Quantity = model.Quantity,
             Success = true
         };
     }
 
-    public async Task<LockItemResult> UnlockItemAsync(string userId, string itemId, int quantity, bool notify = false)
+    public async Task<LockItemResult> UnlockItemAsync(LockInventoryItem model, bool notify = false)
     {
-        if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId) || quantity < 1)
+        if(string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
             return new LockItemResult
             {
                 Errors = new[] { "Invalid input data" }
             };
 
-        int amount = await GetAmountOfLockedItem(userId, itemId);
+        int amount = await GetAmountOfLockedItem(model.UserId, model.ItemId);
 
-        if(amount == 0 || quantity > amount)
+        if(amount == 0 || model.Quantity > amount)
             return new LockItemResult
             {
                 Errors = new[] { "Cannot unlock more than you have locked" }
             };
 
-        amount -= quantity;
+        amount -= model.Quantity;
         bool modified;
-        var lockedItem = new LockedItem { UserId = userId, ItemId = itemId, Quantity = amount };
+        var lockedItem = new LockedItem { UserId = model.UserId, ItemId = model.ItemId, Quantity = amount };
 
         if (amount == 0)
         {
             modified = await _context.RemoveEntityAsync(lockedItem);
-            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, itemId));
+            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(model.UserId, model.ItemId));
         }
         else
         {
             lockedItem.Quantity = amount;
             modified = await _context.UpdateEntityAsync(lockedItem);
-            await _cacheService.SetCacheValueAsync(GetLockedAmountKey(userId, itemId), lockedItem.Quantity);
+            await _cacheService.SetCacheValueAsync(GetLockedAmountKey(model.UserId, model.ItemId), lockedItem.Quantity);
         }
 
         if(!modified)
@@ -393,35 +393,35 @@ public class InventoryService : IInventoryService
 
         if (notify)
             await _notificationService.SendUpdatedNotificationToUserAsync(
-                userId,
+                model.UserId,
                 NotificationCategoryTypes.Inventory,
-                itemId,
+                model.ItemId,
                 new InventoryItemQuantityNotification
                 {
                     AddAmount = true,
-                    Amount = await GetAmountOfFreeItemAsync(userId, itemId),
+                    Amount = await GetAmountOfFreeItemAsync(model.UserId, model.ItemId),
                 });
 
         return new LockItemResult
         {
-            ItemId = itemId,
-            UserId = userId,
+            ItemId = model.ItemId,
+            UserId = model.UserId,
             Quantity = amount,
             Success = true
         };
     }
 
-    public async Task<LockedItemAmountResult> GetLockedAmount(string userId, string itemId)
+    public async Task<LockedItemAmountResult> GetLockedAmount(GetUsersItem model)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(itemId))
+        if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return new LockedItemAmountResult
             {
                 Errors = new[] { "Invalid input data" }
             };
 
-        int lockedAmount = await GetAmountOfLockedItem(userId, itemId);
+        int lockedAmount = await GetAmountOfLockedItem(model.UserId, model.ItemId);
 
-        var itemName = await _mediator.Send(new GetItemNameQuery { ItemId = itemId });
+        var itemName = await _mediator.Send(new GetItemNameQuery { ItemId = model.ItemId });
 
         if (string.IsNullOrEmpty(itemName))
             return new LockedItemAmountResult
@@ -431,7 +431,7 @@ public class InventoryService : IInventoryService
 
         return new LockedItemAmountResult
         {
-            ItemId = itemId,
+            ItemId = model.ItemId,
             ItemName = itemName,
             Amount = lockedAmount,
             Success = true
@@ -445,15 +445,15 @@ public class InventoryService : IInventoryService
             ItemId = itemId
         };
 
-    public async Task RemoveItemAsync(List<string> userIds, string itemId)
+    public async Task RemoveItemAsync(RemoveItemFromUsers model)
     {
-        foreach(var userId in userIds)
+        foreach(var userId in model.UserIds)
         {
-            await _cacheService.ClearCacheKeyAsync(GetAmountKey(userId, itemId));
-            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, itemId));
+            await _cacheService.ClearCacheKeyAsync(GetAmountKey(userId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, model.ItemId));
         };
         
-        await _notificationService.SendDeletedNotificationToUsersAsync(userIds, NotificationCategoryTypes.Inventory, itemId);
+        await _notificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
     }
 
     private Task<OwnedItem> GetInventoryItemEntityAsync(string userId, string itemId) => 

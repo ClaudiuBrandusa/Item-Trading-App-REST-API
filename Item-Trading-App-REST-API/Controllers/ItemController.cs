@@ -4,6 +4,7 @@ using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Item;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ public class ItemController : BaseController
 {
     private readonly IItemService _itemService;
 
-    public ItemController(IItemService itemService)
+    public ItemController(IItemService itemService, IMapper mapper) : base(mapper)
     {
         _itemService = itemService;
     }
@@ -31,24 +32,7 @@ public class ItemController : BaseController
 
         var result = await _itemService.GetItemAsync(itemId);
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new ItemResponse
-        {
-            Id = result.ItemId,
-            Name = result.ItemName,
-            Description = result.ItemDescription
-        });
+        return MapResult<FullItemResult, ItemResponse, FailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Item.List)]
@@ -58,22 +42,7 @@ public class ItemController : BaseController
 
         var result = await _itemService.ListItemsAsync(searchString);
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });  
-
-        if (!result.Success)
-            return BadRequest(new FailedResponse
-            {
-                Errors = result.Errors
-            });
-
-        return Ok(new ItemsResponse
-        {
-            ItemsId = result.ItemsId
-        });
+        return MapResult<ItemsResult, ItemsResponse, FailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Item.Create)]
@@ -85,27 +54,11 @@ public class ItemController : BaseController
                 Errors = new[] { "Something went wrong" }
             });
 
-        var result = await _itemService.CreateItemAsync(new CreateItem { SenderUserId = UserId, ItemName = request.ItemName, ItemDescription = request.ItemDescription });
+        var model = AdaptToType<CreateItemRequest, CreateItem>(request, ("userId", UserId));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
+        var result = await _itemService.CreateItemAsync(model);
 
-        if (!result.Success)
-            return BadRequest(new CreateItemFailedResponse
-            {
-                ItemName = request.ItemName,
-                Errors = result.Errors
-            });
-
-        return Ok(new CreateItemSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName,
-            ItemDescription = result.ItemDescription
-        });
+        return MapResult<FullItemResult, CreateItemSuccessResponse, CreateItemFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Item.Update)]
@@ -117,34 +70,11 @@ public class ItemController : BaseController
                 Errors = new[] { "Something went wrong" }
             });
 
-        var result = await _itemService.UpdateItemAsync(new UpdateItem
-        {
-            SenderUserId = UserId,
-            ItemId = request.ItemId,
-            ItemName = request.ItemName,
-            ItemDescription = request.ItemDescription
-        });
+        var model = AdaptToType<UpdateItemRequest, UpdateItem>(request, ("userId", UserId));
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
+        var result = await _itemService.UpdateItemAsync(model);
 
-        if (!result.Success)
-            return BadRequest(new UpdateItemFailedResponse
-            {
-                ItemId = result.ItemId,
-                ItemName = result.ItemName,
-                Errors = result.Errors
-            });
-
-        return Ok(new UpdateItemSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName,
-            ItemDescription = result.ItemDescription
-        });
+        return MapResult<FullItemResult, UpdateItemSuccessResponse, UpdateItemFailedResponse>(result);
     }
 
     [HttpDelete(Endpoints.Item.Delete)]
@@ -158,24 +88,6 @@ public class ItemController : BaseController
 
         var result = await _itemService.DeleteItemAsync(request.ItemId, UserId);
 
-        if (result is null)
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
-
-        if (!result.Success)
-            return BadRequest(new DeleteItemFailedResponse
-            {
-                ItemId = result.ItemId,
-                ItemName = result.ItemName,
-                Errors = result.Errors
-            });
-
-        return Ok(new DeleteItemSuccessResponse
-        {
-            ItemId = result.ItemId,
-            ItemName = result.ItemName
-        });
+        return MapResult<DeleteItemResult, DeleteItemSuccessResponse, DeleteItemFailedResponse>(result);
     }
 }

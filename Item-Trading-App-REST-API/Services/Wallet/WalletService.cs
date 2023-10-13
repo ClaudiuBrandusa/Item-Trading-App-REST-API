@@ -42,43 +42,43 @@ public class WalletService : IWalletService
         };
     }
 
-    public async Task<bool> GiveCashAsync(string userId, int amount)
+    public async Task<bool> GiveCashAsync(UpdateWallet model)
     {
-        var user = await GetUser(userId);
+        var user = await GetUser(model.UserId);
 
         if (user is null)
             return false;
 
-        if (amount < 1)
+        if (model.Quantity < 1)
             return false;
 
-        user.Cash += amount;
+        user.Cash += model.Quantity;
 
         await _userManager.UpdateAsync(user);
 
         return true;
     }
 
-    public async Task<bool> TakeCashAsync(string userId, int amount)
+    public async Task<bool> TakeCashAsync(UpdateWallet model)
     {
-        var user = await GetUser(userId);
+        var user = await GetUser(model.UserId);
 
         if (user is null)
             return false;
 
-        if (user.Cash - amount < 0)
+        if (user.Cash - model.Quantity < 0)
             return false;
 
-        user.Cash -= amount;
+        user.Cash -= model.Quantity;
 
         await _userManager.UpdateAsync(user);
 
         return true;
     }
 
-    public async Task<WalletResult> UpdateWalletAsync(string userId, int amount)
+    public async Task<WalletResult> UpdateWalletAsync(UpdateWallet model)
     {
-        var user = await GetUser(userId);
+        var user = await GetUser(model.UserId);
 
         if (user is null)
             return new WalletResult
@@ -86,20 +86,20 @@ public class WalletService : IWalletService
                 Errors = new[] { "User not found" }
             };
 
-        if (amount < 0)
+        if (model.Quantity < 0)
             return new WalletResult
             {
                 Errors = new[] { "You cannot have a negative balance" }
             };
 
-        user.Cash = amount;
+        user.Cash = model.Quantity;
 
         await _userManager.UpdateAsync(user);
 
         return new WalletResult
         {
-            UserId = userId,
-            Cash = amount,
+            UserId = model.UserId,
+            Cash = model.Quantity,
             Success = true
         };
     }
