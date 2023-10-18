@@ -445,7 +445,7 @@ public class InventoryService : IInventoryService
             ItemId = itemId
         };
 
-    public async Task RemoveItemAsync(RemoveItemFromUsers model)
+    public async Task RemoveItemCacheAsync(RemoveItemFromUsers model)
     {
         foreach(var userId in model.UserIds)
         {
@@ -463,6 +463,7 @@ public class InventoryService : IInventoryService
 
     private Task<LockedItem> GetLockedInventoryItemEntityAsync(string userId, string itemId) => 
         _context.LockedItems
+            .AsNoTracking()
             .FirstOrDefaultAsync(oi => Equals(oi.UserId, userId) && Equals(oi.ItemId, itemId));
 
     private async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
@@ -487,7 +488,7 @@ public class InventoryService : IInventoryService
 
         int lockedItemQuantity = await GetAmountOfLockedItem(userId, itemId);
 
-        return item.Quantity - lockedItemQuantity;
+        return item?.Quantity ?? 0 - lockedItemQuantity;
     }
 
     private Task<int> GetAmountOfLockedItem(string userId, string itemId)

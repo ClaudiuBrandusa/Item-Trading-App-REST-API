@@ -54,5 +54,5 @@ public interface IInventoryService
     /// <summary>
     /// Sends the notifications and clears the cached used by the deleted item
     /// </summary>
-    Task RemoveItemAsync(RemoveItemFromUsers model);
+    Task RemoveItemCacheAsync(RemoveItemFromUsers model);
 }

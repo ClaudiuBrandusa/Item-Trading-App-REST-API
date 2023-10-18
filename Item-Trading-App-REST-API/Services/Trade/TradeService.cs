@@ -624,19 +624,15 @@ public class TradeService : ITradeService
     {
         return _cacheService.GetEntitiesAsync(GetTradeItemCacheKey(tradeId, ""), async (args) =>
         {
-            List<ItemPrice> result = new();
-
-            var tmp = await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToListAsync();
-            return result;
+            return await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToListAsync();
         }, async (content) =>
         {
-            var tmp = content as Entities.TradeContent;
             return new ItemPrice
             {
-                ItemId = tmp.ItemId,
-                Price = tmp.Price,
-                Name = await GetItemNameAsync(tmp.ItemId),
-                Quantity = tmp.Quantity
+                ItemId = content.ItemId,
+                Price = content.Price,
+                Name = await GetItemNameAsync(content.ItemId),
+                Quantity = content.Quantity
             };
         }, true, (ItemPrice itemPrice) => itemPrice.ItemId); ;
     }
@@ -662,12 +658,14 @@ public class TradeService : ITradeService
             async (args) =>
             {
                 var trade = _context.Trades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
+                var sentTrade = _context.SentTrades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
+                var receivedTrade = _context.ReceivedTrades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
 
                 return new CachedTrade
                 {
                     TradeId = trade.TradeId,
-                    SenderUserId = await GetSenderId(trade.TradeId),
-                    ReceiverUserId = await GetReceiverId(trade.TradeId),
+                    SenderUserId = sentTrade.SenderId,
+                    ReceiverUserId = receivedTrade.ReceiverId,
                     SentDate = trade.SentDate,
                     Response = trade.Response,
                     ResponseDate = trade.ResponseDate,

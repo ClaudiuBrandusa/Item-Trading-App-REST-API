@@ -54,6 +54,7 @@ public class DatabaseContext : IdentityDbContext
     {
         await AddAsync(entity);
         var added = await SaveChangesAsync();
+        Entry(entity).State = EntityState.Detached;
         return added > 0;
     }
 
@@ -61,6 +62,7 @@ public class DatabaseContext : IdentityDbContext
     {
         Update(entity);
         var updated = await SaveChangesAsync();
+        Entry(entity).State = EntityState.Detached;
         return updated > 0;
     }
 

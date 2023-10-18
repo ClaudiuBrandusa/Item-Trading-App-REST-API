@@ -18,7 +18,7 @@ public class ItemDeletedHandler : HandlerBase, IRequestHandler<ItemDeleted>
     public async Task Handle(ItemDeleted request, CancellationToken cancellationToken)
     {
         await Execute<IInventoryService>(async inventoryService =>
-            await inventoryService.RemoveItemAsync(Map<ItemDeleted, RemoveItemFromUsers>(request))
+            await inventoryService.RemoveItemCacheAsync(Map<ItemDeleted, RemoveItemFromUsers>(request))
         );
     }
 }

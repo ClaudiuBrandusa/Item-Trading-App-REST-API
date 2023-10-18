@@ -10,9 +10,9 @@ public static class CacheServiceExtensions
 {
     public static async Task<List<T>> GetEntitiesAsync<T>(this ICacheService service, string cacheKey, Func<object[], Task<List<T>>> readFromDb, bool setCache, params object[] args) where T : class
     {
-        var entities = (await service.ListWithPrefix<T>(cacheKey)).Values.ToList();
+        var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToList();
 
-        if (entities.Count == 0)
+        if (entities is null || entities.Count == 0)
         {
             entities = await readFromDb(args);
 
@@ -24,19 +24,20 @@ public static class CacheServiceExtensions
         return entities;
     }
 
-    public static async Task<List<T>> GetEntitiesAsync<T>(this ICacheService service, string cacheKey, Func<object[], Task<List<T>>> readFromDb, Func<object, Task<T>> convert, bool setCache, params object[] args) where T : class
+    public static async Task<List<T>> GetEntitiesAsync<T, R>(this ICacheService service, string cacheKey, Func<object[], Task<List<R>>> readFromDb, Func<R, Task<T>> convert, bool setCache, params object[] args) where T : class
     {
-        var entities = (await service.ListWithPrefix<T>(cacheKey)).Values.ToList();
+        var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToList();
 
-        if (entities.Count == 0)
+        if (entities is null || entities.Count == 0)
         {
-            entities = await readFromDb(args);
+            var fromDb = await readFromDb(args);
 
             if (setCache)
-                foreach (var entity in entities)
+                foreach (var entity in fromDb)
                 {
                     var tmp = await convert(entity);
                     await service.SetCacheValueAsync(cacheKey + (args[0] as Func<T, string>)(tmp), tmp);
+                    entities.Add(tmp);
                 }
         }
         return entities;
@@ -63,9 +64,11 @@ public static class CacheServiceExtensions
 
     public static async Task<T> GetEntityAsync<T>(this ICacheService service, string cacheKey, Func<object[], Task<T>> readFromDb, bool setCache = false, params object[] args) where T : new()
     {
-        var entity = await service.GetCacheValueAsync<T>(cacheKey);
+        var isNullable = Nullable.GetUnderlyingType(typeof(T)) != null;
 
-        if (entity is null)
+        var entity = await service.GetCacheValueAsync<T>(cacheKey);
+        
+        if ((isNullable && entity is null) || !await service.ContainsKey(cacheKey))
         {
             entity = await readFromDb(args);
 

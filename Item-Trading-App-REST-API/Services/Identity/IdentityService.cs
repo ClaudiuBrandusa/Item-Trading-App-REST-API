@@ -42,6 +42,12 @@ public class IdentityService : IIdentityService
                 Errors = new[] { "User with this username already exists" }
             };
 
+        if (string.IsNullOrEmpty(model.Username) || string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
+            return new AuthenticationResult
+            {
+                Errors = new[] { "Invalid input data" }
+            };
+
         var newUserId = Guid.NewGuid();
 
         var newUser = new User
