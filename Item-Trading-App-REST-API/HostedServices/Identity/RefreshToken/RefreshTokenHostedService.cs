@@ -5,26 +5,22 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
-namespace Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken
+namespace Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
+
+public class RefreshTokenHostedService : BaseHostedService, IDisposable
 {
-    public class RefreshTokenHostedService : BaseHostedService, IDisposable
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+
+    public RefreshTokenHostedService(ILogger<RefreshTokenHostedService> logger, RefreshTokenSettings refreshTokenSettings, IServiceScopeFactory serviceScopeFactory) : base(logger, refreshTokenSettings.ClearRefreshTokenInterval)
     {
-        private readonly IServiceScopeFactory _serviceScopeFactory;
+        _serviceScopeFactory = serviceScopeFactory;
+    }
 
-        public RefreshTokenHostedService(ILogger<RefreshTokenHostedService> logger, RefreshTokenSettings refreshTokenSettings, IServiceScopeFactory serviceScopeFactory) : base(logger, refreshTokenSettings.ClearRefreshTokenInterval)
-        {
-            _serviceScopeFactory = serviceScopeFactory;
-        }
+    protected override async Task ExecuteAsync()
+    {
+        using var scope = _serviceScopeFactory.CreateScope();
+        var refreshTokenService = scope.ServiceProvider.GetService<IRefreshTokenService>();
 
-        protected override async Task ExecuteAsync()
-        {
-            using (var scope = _serviceScopeFactory.CreateScope())
-            {
-                var refreshTokenService = scope.ServiceProvider.GetService<IRefreshTokenService>();
-
-                await refreshTokenService.ClearRefreshTokensAsync();
-            }
-
-        }
+        await refreshTokenService.ClearRefreshTokensAsync();
     }
 }

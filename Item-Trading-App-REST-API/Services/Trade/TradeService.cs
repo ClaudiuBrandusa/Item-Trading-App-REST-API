@@ -1,840 +1,779 @@
-﻿using Item_Trading_App_REST_API.Data;
+﻿using Item_Trading_App_REST_API.Constants;
+using Item_Trading_App_REST_API.Data;
+using Item_Trading_App_REST_API.Requests.Wallet;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Models.Trade;
-using Item_Trading_App_REST_API.Services.Identity;
-using Item_Trading_App_REST_API.Services.Inventory;
-using Item_Trading_App_REST_API.Services.Wallet;
+using Item_Trading_App_REST_API.Requests.Identity;
+using Item_Trading_App_REST_API.Requests.Inventory;
+using Item_Trading_App_REST_API.Requests.Item;
+using Item_Trading_App_REST_API.Services.Cache;
+using MediatR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.Services.Notification;
+using Microsoft.EntityFrameworkCore;
+using Item_Trading_App_REST_API.Extensions;
 
-namespace Item_Trading_App_REST_API.Services.Trade
+namespace Item_Trading_App_REST_API.Services.Trade;
+
+public class TradeService : ITradeService
 {
-    public class TradeService : ITradeService
+    private readonly DatabaseContext _context;
+    private readonly INotificationService _notificationService;
+    private readonly ICacheService _cacheService;
+    private readonly IMediator _mediator;
+
+    public TradeService(DatabaseContext context, ICacheService cacheService, IMediator mediator, INotificationService notificationService)
     {
-        private readonly DatabaseContext _context;
-        private readonly IInventoryService _inventoryService;
-        private readonly IIdentityService _identityService;
-        private readonly IWalletService _walletService;
+        _context = context;
+        _notificationService = notificationService;
+        _cacheService = cacheService;
+        _mediator = mediator;
+    }
 
-        public TradeService(DatabaseContext context, IInventoryService inventoryService, IIdentityService identityService, IWalletService walletService)
-        {
-            _context = context;
-            _inventoryService = inventoryService;
-            _identityService = identityService;
-            _walletService = walletService;
-        }
-
-        public async Task<SentTradeOffer> CreateTradeOffer(CreateTradeOffer model)
-        {
-            if (model == null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.TargetUserId) || model.Items == null)
-            {
-                return new SentTradeOffer
-                {
-                    Errors = new[] { "Invalid input data" }
-                };
-            }
-
-            var items = new List<ItemPrice>();
-
-            foreach (var item in model.Items)
-            {
-                if (item == null)
-                    continue;
-
-                if (item.Price < 0)
-                    continue;
-
-                if (!_inventoryService.HasItem(model.SenderUserId, item.ItemId, item.Quantity))
-                    continue;
-
-                if (!(await _inventoryService.LockItemAsync(model.SenderUserId, item.ItemId, item.Quantity)).Success)
-                    continue;
-
-                items.Add(item);
-            }
-
-            if (items.Count == 0)
-            {
-                return new SentTradeOffer
-                {
-                    Errors = new[] { "Invalid input data" }
-                };
-            }
-
-            var offer = new Entities.Trade
-            {
-                TradeId = Guid.NewGuid().ToString(),
-                SentDate = DateTime.Now
-            };
-
-            _context.Trades.Add(offer);
-
-            await _context.SaveChangesAsync();
-
-            foreach (var item in items)
-            {
-                var tradeContent = new Entities.TradeContent
-                {
-                    TradeId = offer.TradeId,
-                    ItemId = item.ItemId,
-                    Price = item.Price,
-                    Quantity = item.Quantity
-                };
-
-                _context.TradeContent.Add(tradeContent);
-            }
-
-            await _context.SaveChangesAsync();
-
-            _context.SentTrades.Add(new Entities.SentTrade { TradeId = offer.TradeId, SenderId = model.SenderUserId });
-
-            await _context.SaveChangesAsync();
-
-            _context.ReceivedTrades.Add(new Entities.ReceivedTrade { TradeId = offer.TradeId, ReceiverId = model.TargetUserId });
-
-            await _context.SaveChangesAsync();
-
+    public async Task<SentTradeOffer> CreateTradeOffer(CreateTradeOffer model)
+    {
+        if (model is null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.TargetUserId) || model.Items is null)
             return new SentTradeOffer
             {
-                TradeOfferId = offer.TradeId,
-                ReceiverId = model.TargetUserId,
-                Items = items,
-                Success = true
+                Errors = new[] { "Invalid input data" }
             };
+
+        var items = new List<ItemPrice>();
+
+        foreach (var item in model.Items)
+        {
+            if (item is null)
+                continue;
+
+            if (item.Price < 0)
+                continue;
+
+            if (!await _mediator.Send(new HasItemQuantityQuery { UserId = model.SenderUserId, ItemId = item.ItemId, Quantity = item.Quantity }))
+                continue;
+
+            if (!(await _mediator.Send(new LockItemQuery { UserId = model.SenderUserId, ItemId = item.ItemId, Quantiy = item.Quantity })).Success)
+                continue;
+
+            item.Name = await GetItemNameAsync(item.ItemId);
+
+            items.Add(item);
         }
 
-        public async Task<AcceptTradeOfferResult> AcceptTradeOffer(string tradeOfferId, string userId)
+        if (items.Count == 0)
+            return new SentTradeOffer
+            {
+                Errors = new[] { "Invalid input data" }
+            };
+
+        var offer = new Entities.Trade
         {
-            if(string.IsNullOrEmpty(tradeOfferId) || string.IsNullOrEmpty(userId))
+            TradeId = Guid.NewGuid().ToString(),
+            SentDate = DateTime.Now
+        };
+
+        await _context.AddEntityAsync(offer);
+
+        foreach(var item in items)
+        {
+            var tradeContent = new Entities.TradeContent
             {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Invalid IDs" }
-                };
-            }
+                TradeId = offer.TradeId,
+                ItemId = item.ItemId,
+                Price = item.Price,
+                Quantity = item.Quantity
+            };
 
-            string receiverId = GetReceiverId(tradeOfferId);
+            _context.TradeContent.Add(tradeContent);
+            await _cacheService.SetCacheValueAsync(GetTradeItemCacheKey(offer.TradeId, item.ItemId), item);
+        }
 
-            if(!Equals(receiverId, userId))
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Invalid userId" }
-                };
-            }
+        await _context.SaveChangesAsync();
 
-            var entity = GetTradeOfferEntity(tradeOfferId);
+        await _context.AddEntityAsync(new Entities.SentTrade { TradeId = offer.TradeId, SenderId = model.SenderUserId });
 
-            if(entity == null || entity == default)
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
+        await _context.AddEntityAsync(new Entities.ReceivedTrade { TradeId = offer.TradeId, ReceiverId = model.TargetUserId });
 
-            if(entity.Response != null)
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Already responded" }
-                };
-            }
+        await _cacheService.SetCacheValueAsync(GetTradesCacheKey(offer.TradeId), new CachedTrade
+        {
+            TradeId = offer.TradeId,
+            SenderUserId = model.SenderUserId,
+            ReceiverUserId = model.TargetUserId,
+            TradeItemsId = items.Select(x => x.ItemId).ToList(),
+            SentDate = offer.SentDate
+        });
 
-            int price = GetTotalPrice(tradeOfferId);
+        await _cacheService.SetCacheValueAsync(GetSentTradesCacheKey(model.SenderUserId, offer.TradeId), "");
+        await _cacheService.SetCacheValueAsync(GetReceivedTradesCacheKey(model.TargetUserId, offer.TradeId), "");
+        await _notificationService.SendCreatedNotificationToUserAsync(
+            model.TargetUserId,
+            NotificationCategoryTypes.Trade,
+            offer.TradeId);
 
-            if(price > await _walletService.GetUserCashAsync(userId))
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "User has not enough money" }
-                };
-            }
+        return new SentTradeOffer
+        {
+            TradeOfferId = offer.TradeId,
+            ReceiverId = model.TargetUserId,
+            ReceiverName = await GetUsername(model.TargetUserId),
+            Items = items,
+            SentDate = offer.SentDate,
+            Success = true
+        };
+    }
 
-            if(!await _walletService.TakeCashAsync(userId, price))
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            string senderId = GetSenderId(tradeOfferId);
-
-            if (!await UnlockTradeItems(senderId, tradeOfferId))
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            if(!await GiveItems(userId, tradeOfferId))
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-
-            if (!await TakeItems(senderId, tradeOfferId))
-            {
-                return new AcceptTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            if (!await _walletService.GiveCashAsync(senderId, price))
-            {
-
-            }
-
-            entity.Response = true;
-            entity.ResponseDate = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
+    public async Task<AcceptTradeOfferResult> AcceptTradeOffer(RespondTrade model)
+    {
+        if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
             return new AcceptTradeOfferResult
             {
-                TradeOfferId = tradeOfferId,
-                SenderId = senderId,
-                SenderName = await _identityService.GetUsername(senderId),
-                ReceivedDate = entity.SentDate,
-                ResponseDate = (DateTime)entity.ResponseDate,
-                Success = true
+                Errors = new[] { "Invalid IDs" }
             };
-        }
 
-        public async Task<RejectTradeOfferResult> RejectTradeOffer(string tradeOfferId, string userId)
+        string receiverId = await GetReceiverId(model.TradeId);
+
+        if (!Equals(receiverId, model.UserId))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Invalid userId" }
+            };
+
+        var entity = await GetCachedTrade(model.TradeId);
+
+        if (entity is null)
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        if (entity.Response is not null)
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Already responded" }
+            };
+
+        int price = await GetTotalPrice(model.TradeId);
+
+        if (price > await _mediator.Send(new GetUserCashQuery { UserId = model.UserId }))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "User has not enough money" }
+            };
+
+        if (!await _mediator.Send(new TakeCashQuery { UserId = model.UserId, Amount = price }))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        string senderId = await GetSenderId(model.TradeId);
+        entity.SenderUserId = senderId;
+
+        if (!await UnlockTradeItemsAsync(senderId, model.TradeId))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        if (!await GiveItemsAsync(model.UserId, model.TradeId))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+
+        if (!await TakeItemsAsync(senderId, model.TradeId))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        if (!await _mediator.Send(new GiveCashQuery { UserId = senderId, Amount = price }))
+            return new AcceptTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        entity.Response = true;
+        entity.ResponseDate = DateTime.Now;
+
+        await _context.UpdateEntityAsync(new Entities.Trade { TradeId = model.TradeId, Response = entity.Response, ResponseDate = entity.ResponseDate, SentDate = entity.SentDate });
+        
+        await _cacheService.SetCacheValueAsync(GetTradesCacheKey(model.TradeId), entity);
+        await _notificationService.SendUpdatedNotificationToUserAsync(
+            senderId,
+            NotificationCategoryTypes.Trade,
+            model.TradeId,
+            new RespondedTradeNotification
+            {
+                Response = entity.Response
+            });
+
+        return new AcceptTradeOfferResult
         {
-            if (string.IsNullOrEmpty(tradeOfferId) || string.IsNullOrEmpty(userId))
-            {
-                return new RejectTradeOfferResult
-                {
-                    Errors = new[] { "Invalid IDs" }
-                };
-            }
+            TradeOfferId = model.TradeId,
+            SenderId = senderId,
+            SenderName = await GetUsername(senderId),
+            ReceivedDate = entity.SentDate,
+            ResponseDate = (DateTime)entity.ResponseDate,
+            Success = true
+        };
+    }
 
-            string receiverId = GetReceiverId(tradeOfferId);
-
-            if (!Equals(receiverId, userId))
-            {
-                return new RejectTradeOfferResult
-                {
-                    Errors = new[] { "Invalid userId" }
-                };
-            }
-
-            var entity = GetTradeOfferEntity(tradeOfferId);
-
-            if (entity == null || entity == default)
-            {
-                return new RejectTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            if (entity.Response != null)
-            {
-                return new RejectTradeOfferResult
-                {
-                    Errors = new[] { "Already responded" }
-                };
-            }
-
-            string senderId = GetSenderId(tradeOfferId);
-
-            if(!await UnlockTradeItems(senderId, tradeOfferId))
-            {
-                return new RejectTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            entity.Response = false;
-            entity.ResponseDate = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
+    public async Task<RejectTradeOfferResult> RejectTradeOffer(RespondTrade model)
+    {
+        if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
             return new RejectTradeOfferResult
             {
-                TradeOfferId = tradeOfferId,
-                SenderId = senderId,
-                SenderName = await _identityService.GetUsername(senderId),
-                ReceivedDate = entity.SentDate,
-                ResponseDate = (DateTime)entity.ResponseDate,
-                Success = true
+                Errors = new[] { "Invalid IDs" }
             };
-        }
 
-        public async Task<CancelTradeOfferResult> CancelTradeOffer(string tradeOfferId, string userId)
+        string receiverId = await GetReceiverId(model.TradeId);
+
+        if (!Equals(receiverId, model.UserId))
+            return new RejectTradeOfferResult
+            {
+                Errors = new[] { "Invalid userId" }
+            };
+
+        var trade = await GetCachedTrade(model.TradeId);
+
+        if (trade is null)
+            return new RejectTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        if (trade.Response is not null)
+            return new RejectTradeOfferResult
+            {
+                Errors = new[] { "Already responded" }
+            };
+
+        string senderId = await GetSenderId(model.TradeId);
+        trade.SenderUserId = senderId;
+
+        if (!await UnlockTradeItemsAsync(senderId, model.TradeId))
+            return new RejectTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        trade.Response = false;
+        trade.ResponseDate = DateTime.Now;
+
+        await _context.UpdateEntityAsync(new Entities.Trade { TradeId = model.TradeId, Response = trade.Response, ResponseDate = trade.ResponseDate, SentDate = trade.SentDate });
+        
+        await _cacheService.SetCacheValueAsync(GetTradesCacheKey(model.TradeId), trade);
+        await _notificationService.SendUpdatedNotificationToUserAsync(
+            senderId,
+            NotificationCategoryTypes.Trade,
+            model.TradeId,
+            new RespondedTradeNotification
+            {
+                Response = trade.Response
+            });
+
+        return new RejectTradeOfferResult
         {
-            if (string.IsNullOrEmpty(tradeOfferId) || string.IsNullOrEmpty(userId))
-            {
-                return new CancelTradeOfferResult
-                {
-                    Errors = new[] { "Invalid IDs" }
-                };
-            }
+            TradeOfferId = model.TradeId,
+            SenderId = senderId,
+            SenderName = await GetUsername(senderId),
+            ReceivedDate = trade.SentDate,
+            ResponseDate = (DateTime)trade.ResponseDate,
+            Success = true
+        };
+    }
 
-            string senderId = GetSenderId(tradeOfferId);
-
-            if (!Equals(senderId, userId))
-            {
-                return new CancelTradeOfferResult
-                {
-                    Errors = new[] { "Invalid userId" }
-                };
-            }
-
-            var entity = GetTradeOfferEntity(tradeOfferId);
-
-            if (entity == null || entity == default)
-            {
-                return new CancelTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            if(!await UnlockTradeItems(userId, tradeOfferId))
-            {
-                return new CancelTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            string receiverId = GetReceiverId(tradeOfferId);
-
-            _context.Trades.Remove(entity);
-            int removed = await _context.SaveChangesAsync();
-
-            if(removed == 0)
-            {
-                return new CancelTradeOfferResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+    public async Task<CancelTradeOfferResult> CancelTradeOffer(RespondTrade model)
+    {
+        if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
             return new CancelTradeOfferResult
             {
-                TradeOfferId = tradeOfferId,
-                ReceiverId = receiverId,
-                ReceiverName = await _identityService.GetUsername(receiverId),
-                Success = true
+                Errors = new[] { "Invalid IDs" }
             };
-        }
 
-        public async Task<TradeOffersResult> GetReceivedTradeOffers(string userId)
+        string senderId = await GetSenderId(model.TradeId);
+
+        if (!Equals(senderId, model.UserId))
+            return new CancelTradeOfferResult
+            {
+                Errors = new[] { "Invalid userId" }
+            };
+
+        var trade = await GetCachedTrade(model.TradeId);
+
+        if (trade is null)
+            return new CancelTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        if (trade.Response.HasValue)
+            return new CancelTradeOfferResult
+            {
+                Errors = new[] { "Unable to cancel a trade that already got a response" }
+            };
+
+        if (!await UnlockTradeItemsAsync(model.UserId, model.TradeId))
+            return new CancelTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        string receiverId = await GetReceiverId(model.TradeId);
+
+        trade.ReceiverUserId = receiverId;
+
+        if (!await _context.RemoveEntityAsync(new Entities.Trade { TradeId = model.TradeId }))
+            return new CancelTradeOfferResult
+            {
+                Errors = new[] { "Something went wrong" } 
+            };
+
+        await _cacheService.ClearCacheKeyAsync(GetTradesCacheKey(model.TradeId));
+        await _cacheService.ClearCacheKeyAsync(GetSentTradesCacheKey(senderId, model.TradeId));
+        await _cacheService.ClearCacheKeyAsync(GetReceivedTradesCacheKey(receiverId, model.TradeId));
+        await _notificationService.SendUpdatedNotificationToUserAsync(
+            receiverId,
+            NotificationCategoryTypes.Trade,
+            model.TradeId, new RespondedTradeNotification
+            {
+                Response = trade.Response
+            });
+
+        return new CancelTradeOfferResult
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Invalid user ID" }
-                };
-            }
+            TradeOfferId = model.TradeId,
+            ReceiverId = receiverId,
+            ReceiverName = await GetUsername(receiverId),
+            Success = true
+        };
+    }
 
-            var idList = GetReceivedTradeOffersIdList(userId);
-
-            if (idList == null)
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+    public async Task<TradeOffersResult> GetReceivedTradeOffers(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
             return new TradeOffersResult
             {
-                TradeOffers = idList,
-                Success = true
+                Errors = new[] { "Invalid user ID" }
             };
-        }
 
-        public async Task<TradeOffersResult> GetReceivedRespondedTradeOffers(string userId)
-        {
-            if (string.IsNullOrEmpty(userId))
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Invalid user ID" }
-                };
-            }
+        var idList = await GetReceivedTradeOffersIdList(userId);
 
-            var idList = GetReceivedTradeOffersIdList(userId, true);
-
-            if (idList == null)
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+        if (idList is null)
             return new TradeOffersResult
             {
-                TradeOffers = idList,
-                Success = true
+                Errors = new[] { "Something went wrong" }
             };
-        }
 
-        public async Task<TradeOffersResult> GetSentTradeOffers(string userId)
+        return new TradeOffersResult
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Invaild user ID" }
-                };
-            }
+            TradeOffers = idList,
+            Success = true
+        };
+    }
 
-            var idList = GetSentTradeOffersIdList(userId);
-
-            if (idList == null)
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+    public async Task<TradeOffersResult> GetReceivedRespondedTradeOffers(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
             return new TradeOffersResult
             {
-                TradeOffers = idList,
-                Success = true
+                Errors = new[] { "Invalid user ID" }
             };
-        }
 
-        public async Task<TradeOffersResult> GetSentRespondedTradeOffers(string userId)
-        {
-            if (string.IsNullOrEmpty(userId))
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "" }
-                };
-            }
+        var idList = await GetReceivedTradeOffersIdList(userId, true);
 
-            var idList = GetSentTradeOffersIdList(userId, true);
-
-            if (idList == null)
-            {
-                return new TradeOffersResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+        if (idList is null)
             return new TradeOffersResult
             {
-                TradeOffers = idList,
-                Success = true
+                Errors = new[] { "Something went wrong" }
             };
-        }
 
-        public async Task<SentTradeOffer> GetSentTradeOffer(RequestTradeOffer requestTradeOffer)
+        return new TradeOffersResult
         {
-            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
+            TradeOffers = idList,
+            Success = true
+        };
+    }
+
+    public async Task<TradeOffersResult> GetSentTradeOffers(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return new TradeOffersResult
             {
-                return new SentTradeOffer
-                {
-                    Errors = new[] { "Invalid input data" }
-                };
-            }
+                Errors = new[] { "Invalid user ID" }
+            };
 
-            var offer = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
+        var idList = await GetSentTradeOffersIdList(userId);
 
-            if (offer == null)
+        if (idList is null)
+            return new TradeOffersResult
             {
-                return new SentTradeOffer
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
+                Errors = new[] { "Something went wrong" }
+            };
 
-            if(!IsSender(requestTradeOffer.UserId, requestTradeOffer.TradeOfferId))
+        return new TradeOffersResult
+        {
+            TradeOffers = idList,
+            Success = true
+        };
+    }
+
+    public async Task<TradeOffersResult> GetSentRespondedTradeOffers(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return new TradeOffersResult
             {
-                return new SentTradeOffer
-                {
-                    Errors = new[] { "User has not sent this trade offer" }
-                };
-            }
+                Errors = new[] { "" }
+            };
 
-            string receiverId = GetReceiverId(requestTradeOffer.TradeOfferId);
+        var idList = await GetSentTradeOffersIdList(userId, true);
 
+        if (idList is null)
+            return new TradeOffersResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        return new TradeOffersResult
+        {
+            TradeOffers = idList,
+            Success = true
+        };
+    }
+
+    public async Task<SentTradeOffer> GetSentTradeOffer(RequestTradeOffer requestTradeOffer)
+    {
+        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
             return new SentTradeOffer
             {
-                TradeOfferId = requestTradeOffer.TradeOfferId,
-                ReceiverId = receiverId,
-                ReceiverName = await _identityService.GetUsername(receiverId),
-                SentDate = offer.SentDate,
-                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
-                Success = true
+                Errors = new[] { "Invalid input data" }
             };
-        }
 
-        public async Task<SentRespondedTradeOffer> GetSentRespondedTradeOffer(RequestTradeOffer requestTradeOffer)
+        var trade = await GetCachedTrade(requestTradeOffer.TradeOfferId);
+
+        if (!Equals(requestTradeOffer.UserId, trade.SenderUserId))
+            return new SentTradeOffer
+            {
+                Errors = new[] { "User has not sent this trade offer" }
+            };
+
+        return new SentTradeOffer
         {
-            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            {
-                return new SentRespondedTradeOffer
-                {
-                    Errors = new[] { "Invalid input data" }
-                };
-            }
+            TradeOfferId = requestTradeOffer.TradeOfferId,
+            ReceiverId = trade.ReceiverUserId,
+            ReceiverName = await GetUsername(trade.ReceiverUserId),
+            SentDate = trade.SentDate,
+            Items = await GetItemPricesAsync(requestTradeOffer.TradeOfferId),
+            Success = true
+        };
+    }
 
-            var offer = await GetSentTradeOffer(requestTradeOffer);
-
-            if(!offer.Success)
-            {
-                return new SentRespondedTradeOffer
-                {
-                    Errors = offer.Errors
-                };
-            }
-
-            var response = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
-
-            if(response == null || response.Response == null || response.ResponseDate == null)
-            {
-                return new SentRespondedTradeOffer
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+    public async Task<SentRespondedTradeOffer> GetSentRespondedTradeOffer(RequestTradeOffer requestTradeOffer)
+    {
+        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
             return new SentRespondedTradeOffer
             {
-                TradeOfferId = requestTradeOffer.TradeOfferId,
-                ReceiverId = offer.ReceiverId,
-                ReceiverName = offer.ReceiverName,
-                Response = (bool)response.Response,
-                ResponseDate = (DateTime)response.ResponseDate,
-                SentDate = response.SentDate,
-                Items = offer.Items,
-                Success = true
+                Errors = new[] { "Invalid input data" }
             };
-        }
 
-        public async Task<ReceivedTradeOffer> GetReceivedTradeOffer(RequestTradeOffer requestTradeOffer)
+        var entity = await GetSentTradeOffer(requestTradeOffer);
+
+        if (!entity.Success)
+            return new SentRespondedTradeOffer
+            {
+                Errors = entity.Errors
+            };
+
+        var response = await GetTradeResponseAsync(entity.TradeOfferId);
+        var responseDate = await GetTradeResponseDateAsync(entity.TradeOfferId);
+
+        if (response is null || responseDate is null)
+            return new SentRespondedTradeOffer
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        return new SentRespondedTradeOffer
         {
-            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            {
-                return new ReceivedTradeOffer
-                {
-                    Errors = new[] { "Invalid input data" }
-                };
-            }
+            TradeOfferId = requestTradeOffer.TradeOfferId,
+            ReceiverId = entity.ReceiverId,
+            ReceiverName = entity.ReceiverName,
+            Response = (bool)response,
+            ResponseDate = (DateTime)responseDate,
+            SentDate = entity.SentDate,
+            Items = entity.Items,
+            Success = true
+        };
+    }
 
-            var offer = GetReceivedTradeOfferEntity(requestTradeOffer.TradeOfferId);
-        
-            if(offer == null)
-            {
-                return new ReceivedTradeOffer
-                { 
-                    Errors = new[] { "Soemthing went wrong" }
-                };
-            }
-
-            if (!IsReceiver(requestTradeOffer.UserId, requestTradeOffer.TradeOfferId))
-            {
-                return new ReceivedTradeOffer
-                {
-                    Errors = new[] { "User has not sent this trade offer" }
-                };
-            }
-
-            string senderId = GetSenderId(requestTradeOffer.TradeOfferId);
-
-            var trade = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
-
-            if(trade == null)
-            {
-                return new ReceivedTradeOffer
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
+    public async Task<ReceivedTradeOffer> GetReceivedTradeOffer(RequestTradeOffer requestTradeOffer)
+    {
+        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
             return new ReceivedTradeOffer
             {
-                TradeOfferId = requestTradeOffer.TradeOfferId,
-                SenderId = senderId,
-                SenderName = await _identityService.GetUsername(senderId),
-                SentDate = trade.SentDate,
-                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
-                Success = true
+                Errors = new[] { "Invalid input data" }
             };
-        }
 
-        public async Task<ReceivedRespondedTradeOffer> GetReceivedRespondedTradeOffer(RequestTradeOffer requestTradeOffer)
+        var trade = await GetCachedTrade(requestTradeOffer.TradeOfferId);
+        
+        if (!Equals(requestTradeOffer.UserId, trade.ReceiverUserId))
+            return new ReceivedTradeOffer
+            {
+                Errors = new[] { "User has not sent this trade offer" }
+            };
+
+        if (trade is null)
+            return new ReceivedTradeOffer
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        return new ReceivedTradeOffer
         {
-            if (requestTradeOffer == null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            {
-                return new ReceivedRespondedTradeOffer
-                {
-                    Errors = new[] { "Invalid input data" }
-                };
-            }
+            TradeOfferId = requestTradeOffer.TradeOfferId,
+            SenderId = trade.SenderUserId,
+            SenderName = await GetUsername(trade.SenderUserId),
+            SentDate = trade.SentDate,
+            Items = await GetItemPricesAsync(requestTradeOffer.TradeOfferId),
+            Success = true
+        };
+    }
 
-            var offer = await GetReceivedTradeOffer(requestTradeOffer);
-
-            if(!offer.Success)
-            {
-                return new ReceivedRespondedTradeOffer
-                {
-                    Errors = offer.Errors
-                };
-            }
-
-            var trade = GetTradeOfferEntity(requestTradeOffer.TradeOfferId);
-
-            if(trade == null || trade.Response == null || trade.ResponseDate == null)
-            {
-                return new ReceivedRespondedTradeOffer
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            string senderId = GetSenderId(requestTradeOffer.TradeOfferId);
-
+    public async Task<ReceivedRespondedTradeOffer> GetReceivedRespondedTradeOffer(RequestTradeOffer requestTradeOffer)
+    {
+        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
             return new ReceivedRespondedTradeOffer
             {
-                TradeOfferId = requestTradeOffer.TradeOfferId,
-                SenderId = senderId,
-                SenderName = await _identityService.GetUsername(senderId),
-                Response = (bool)trade.Response,
-                ResponseDate = (DateTime)trade.ResponseDate,
-                SentDate = offer.SentDate,
-                Items = GetItemPrices(requestTradeOffer.TradeOfferId),
-                Success = true
+                Errors = new[] { "Invalid input data" }
             };
-        }
 
-        private List<string> GetSentTradeOffersIdList(string userId, bool responded = false)
+        var entity = await GetReceivedTradeOffer(requestTradeOffer);
+
+        if (!entity.Success)
+            return new ReceivedRespondedTradeOffer
+            {
+                Errors = entity.Errors
+            };
+
+        var response = await GetTradeResponseAsync(entity.TradeOfferId);
+        var responseDate = await GetTradeResponseDateAsync(entity.TradeOfferId);
+
+        if (response is null || responseDate is null)
+            return new ReceivedRespondedTradeOffer
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        string senderId = await GetSenderId(requestTradeOffer.TradeOfferId);
+
+        return new ReceivedRespondedTradeOffer
         {
-            var list = _context.SentTrades.Where(st => Equals(st.SenderId, userId)).Select(st => st.TradeId).ToList();
-
-            if (list == null)
-                return new List<string>();
-
-            int index = 0;
-
-            while (index < list.Count)
-            {
-                if (IsResponded(list[index]) != responded)
-                {
-                    list.RemoveAt(index);
-                    continue;
-                }
-
-                index++;
-            }
-
-            return list;
-        }
-
-        private List<string> GetReceivedTradeOffersIdList(string receiverId, bool responded = false)
-        {
-            var list = _context.ReceivedTrades.Where(o => Equals(receiverId, o.ReceiverId)).Select(t => t.TradeId).ToList();
-        
-            if(list == null || list.Count == 0)
-            {
-                return new List<string>();
-            }
-
-            int index = 0;
-
-            while(index < list.Count)
-            {
-                if(IsResponded(list[index]) != responded)
-                {
-                    list.RemoveAt(index);
-                    continue;
-                }   
-
-                index++;
-            }
-
-            return list;
-        }
-
-        private bool IsResponded(string tradeId)
-        {
-            if(string.IsNullOrEmpty(tradeId))
-            {
-                return false;
-            }
-
-            var trade = GetTradeOfferEntity(tradeId);
-
-            if(trade == null)
-            {
-                return false;
-            }
-
-            return trade.Response != null;
-        }
-
-        private List<ItemPrice> GetItemPrices(string tradeId)
-        {
-            var tmp = GetTradeContents(tradeId);
-
-            var items = new List<ItemPrice>();
-
-            if (tmp != null && tmp != default)
-            {
-                foreach (var item in tmp)
-                {
-                    items.Add(new ItemPrice
-                    {
-                        ItemId = item.ItemId,
-                        Price = item.Price,
-                        Quantity = item.Quantity
-                    });
-                }
-            }
-
-            return items;
-        }
-
-        private string GetReceiverId(string tradeId)
-        {
-            var tmp = GetReceivedTradeOfferEntity(tradeId);
-
-            if (tmp == null)
-                return "";
-
-            return tmp.ReceiverId;
-        }
-
-        private string GetSenderId(string tradeId)
-        {
-            var tmp = GetSentTradeOfferEntity(tradeId);
-
-            if (tmp == null)
-                return "";
-
-            return tmp.SenderId;
-        }
-
-        private List<TradeItem> GetTradeItems(string tradeId)
-        {
-            var tradeContents = GetItemPrices(tradeId);
-
-            var results = new List<TradeItem>();
-
-            if (tradeContents != null && tradeContents.Count > 0)
-            {
-                foreach(var content in tradeContents)
-                {
-                    if (content == null)
-                        continue;
-
-                    results.Add(new TradeItem
-                    {
-                        ItemId = content.ItemId,
-                        Quantity = content.Quantity
-                    });
-                }
-            }
-
-            return results;
-        }
-
-        private async Task<bool> UnlockTradeItems(string userId, string tradeId)
-        {
-            var tradeItems = GetTradeItems(tradeId);
-
-            if(tradeItems == null || tradeItems.Count == 0)
-            {
-                return false;
-            }
-
-            foreach(var item in tradeItems)
-            {
-                if (item == null)
-                    continue;
-
-                await _inventoryService.UnlockItemAsync(userId, item.ItemId, item.Quantity);
-            }
-
-            return true;
-        }
-
-        // Takes the items from trade to the receiver
-        private async Task<bool> GiveItems(string userId, string tradeId)
-        {
-            var tradeItems = GetTradeContents(tradeId);
-
-            if(tradeItems == null || tradeItems.Count == 0)
-            {
-                return false;
-            }
-
-            foreach(var item in tradeItems)
-            {
-                await _inventoryService.AddItemAsync(userId, item.ItemId, item.Quantity);
-            }
-
-            return true;
-        }
-
-        // Takes the items from the sender
-        private async Task<bool> TakeItems(string userId, string tradeId)
-        {
-            var tradeItems = GetTradeContents(tradeId);
-
-            if(tradeItems == null || tradeItems.Count == 0)
-            {
-                return false;
-            }
-
-            foreach(var item in tradeItems)
-            {
-                await _inventoryService.DropItemAsync(userId, item.ItemId, item.Quantity);
-            }
-
-            return true;
-        }
-
-        private int GetTotalPrice(string tradeOfferId)
-        {
-            var list = GetItemPrices(tradeOfferId);
-
-            if (list == null || list.Count == 0)
-                return 0;
-
-            int total = 0;
-
-            foreach(var item in list)
-            {
-                total += item.Price;
-            }
-
-            return total;
-        }
-
-        private bool IsSender(string userId, string tradeOfferId) => Equals(GetSenderId(tradeOfferId), userId);
-
-        private bool IsReceiver(string userId, string tradeOfferId) => Equals(GetReceiverId(tradeOfferId), userId);
-
-        private List<Entities.TradeContent> GetTradeContents(string tradeId) => _context.TradeContent.Where(t => Equals(t.TradeId, tradeId)).ToList();
-    
-        private Entities.SentTrade GetSentTradeOfferEntity(string tradeId) => _context.SentTrades.FirstOrDefault(o => Equals(o.TradeId, tradeId));
-
-        private Entities.ReceivedTrade GetReceivedTradeOfferEntity(string tradeId) => _context.ReceivedTrades.FirstOrDefault(o => Equals(o.TradeId, tradeId));
-
-        private Entities.Trade GetTradeOfferEntity(string tradeId) => _context.Trades.FirstOrDefault(t => Equals(t.TradeId, tradeId));
+            TradeOfferId = requestTradeOffer.TradeOfferId,
+            SenderId = senderId,
+            SenderName = await GetUsername(senderId),
+            Response = (bool)response,
+            ResponseDate = (DateTime)responseDate,
+            SentDate = entity.SentDate,
+            Items = await GetItemPricesAsync(requestTradeOffer.TradeOfferId),
+            Success = true
+        };
     }
+
+    private async Task<List<string>> GetSentTradeOffersIdList(string userId, bool responded = false)
+    {
+        var list = await _cacheService.GetEntityIdsAsync(
+            GetSentTradesCacheKey(userId, ""),
+            async (args) => await _context.SentTrades
+                .AsNoTracking()
+                .Where(st => Equals(st.SenderId, userId))
+                .Select(t => t.TradeId)
+                .ToListAsync(),
+            true);
+
+        return await FilterTradeOffers(list, responded);
+    }
+
+    private async Task<List<string>> GetReceivedTradeOffersIdList(string userId, bool responded = false)
+    {
+        var list = await _cacheService.GetEntityIdsAsync(
+            GetReceivedTradesCacheKey(userId, ""),
+            async (args) => await _context.ReceivedTrades
+                .AsNoTracking()
+                .Where(o => Equals(userId, o.ReceiverId))
+                .Select(t => t.TradeId)
+                .ToListAsync(),
+            true);
+
+        return await FilterTradeOffers(list, responded);
+    }
+
+    private async Task<List<string>> FilterTradeOffers(List<string> tradeOffersList, bool responded = false)
+    {
+        return await tradeOffersList
+            .ToAsyncEnumerable()
+            .WhereAwait(async x => await IsResponded(x) == responded)
+            .ToListAsync();
+    }
+
+    private async Task<bool> IsResponded(string tradeId) => (await GetTradeResponseAsync(tradeId)) is not null;
+
+    private Task<List<ItemPrice>> GetItemPricesAsync(string tradeId)
+    {
+        return _cacheService.GetEntitiesAsync(GetTradeItemCacheKey(tradeId, ""), async (args) =>
+        {
+            return await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToListAsync();
+        }, async (content) =>
+        {
+            return new ItemPrice
+            {
+                ItemId = content.ItemId,
+                Price = content.Price,
+                Name = await GetItemNameAsync(content.ItemId),
+                Quantity = content.Quantity
+            };
+        }, true, (ItemPrice itemPrice) => itemPrice.ItemId); ;
+    }
+
+    private async Task<string> GetReceiverId(string tradeId)
+    {
+        var trade = await GetCachedTrade(tradeId);
+
+        return trade?.ReceiverUserId ?? string.Empty;
+    }
+
+    private async Task<string> GetSenderId(string tradeId)
+    {
+        var trade = await GetCachedTrade(tradeId);
+
+        return trade?.SenderUserId ?? string.Empty;
+    }
+
+    private Task<CachedTrade> GetCachedTrade(string tradeId)
+    {
+        return _cacheService.GetEntityAsync(
+            GetTradesCacheKey(tradeId),
+            async (args) =>
+            {
+                var trade = _context.Trades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
+                var sentTrade = _context.SentTrades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
+                var receivedTrade = _context.ReceivedTrades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
+
+                return new CachedTrade
+                {
+                    TradeId = trade.TradeId,
+                    SenderUserId = sentTrade.SenderId,
+                    ReceiverUserId = receivedTrade.ReceiverId,
+                    SentDate = trade.SentDate,
+                    Response = trade.Response,
+                    ResponseDate = trade.ResponseDate,
+                    TradeItemsId = (await GetTradeItemsAsync(trade.TradeId)).Select(x => x.ItemId).ToList()
+                };
+            },
+            true);
+    }
+
+    /// <returns>null -> trade has no response<br/> 
+    /// true -> trade has 'Accepted' as response<br/>
+    /// false -> trade has 'Declined' as response</returns>
+    private async Task<bool?> GetTradeResponseAsync(string tradeId)
+    {
+        var trade = await GetCachedTrade(tradeId);
+
+        return trade?.Response;
+    }
+
+    private async Task<DateTime?> GetTradeResponseDateAsync(string tradeId)
+    {
+        var trade = await GetCachedTrade(tradeId);
+
+        return trade?.ResponseDate;
+    }
+
+    private async Task<List<TradeItem>> GetTradeItemsAsync(string tradeId)
+    {
+        var tradeContents = await GetItemPricesAsync(tradeId);
+
+        var results = new List<TradeItem>();
+
+        foreach (var content in tradeContents)
+        {
+            if (content is null)
+                continue;
+
+            results.Add(new TradeItem
+            {
+                ItemId = content.ItemId,
+                Quantity = content.Quantity
+            });
+        }
+
+        return results;
+    }
+
+    private async Task<bool> UnlockTradeItemsAsync(string userId, string tradeId)
+    {
+        var tradeItems = await GetTradeItemsAsync(tradeId);
+
+        foreach (var item in tradeItems)
+        {
+            if (item is null)
+                continue;
+
+            await _mediator.Send(new UnlockItemQuery { UserId = userId, ItemId = item.ItemId, Quantity = item.Quantity });
+        }
+
+        return tradeItems.Count != 0;
+    }
+
+    // Takes the items from trade to the receiver
+    private async Task<bool> GiveItemsAsync(string userId, string tradeId)
+    {
+        var tradeItems = await GetTradeItemsAsync(tradeId);
+
+        foreach (var item in tradeItems)
+            await _mediator.Send(new AddItemQuery { UserId = userId, ItemId = item.ItemId, Quantity = item.Quantity });
+
+        return tradeItems.Count != 0;
+    }
+
+    // Takes the items from the sender
+    private async Task<bool> TakeItemsAsync(string userId, string tradeId)
+    {
+        var tradeItems = await GetTradeItemsAsync(tradeId);
+
+        foreach (var item in tradeItems)
+            await _mediator.Send(new DropItemQuery { UserId = userId, ItemId = item.ItemId, Quantity = item.Quantity });
+
+        return tradeItems.Count != 0;
+    }
+
+    private async Task<int> GetTotalPrice(string tradeOfferId)
+    {
+        var list = await GetItemPricesAsync(tradeOfferId);
+
+        if (list is null || list.Count == 0)
+            return 0;
+
+        int total = 0;
+
+        foreach (var item in list)
+            total += item.Price;
+
+        return total;
+    }
+
+    private Task<string> GetItemNameAsync(string itemId) => _mediator.Send(new GetItemNameQuery { ItemId = itemId });
+
+    private Task<string> GetUsername(string userId) => _mediator.Send(new GetUsernameQuery { UserId = userId });
+
+    private static string GetTradesCacheKey(string tradeId) => CachePrefixKeys.Trades + CachePrefixKeys.Trade + tradeId;
+
+    private static string GetSentTradesCacheKey(string userId, string tradeId) => CachePrefixKeys.Trades + CachePrefixKeys.SentTrades + userId + "+" + tradeId;
+
+    private static string GetReceivedTradesCacheKey(string userId, string tradeId) => CachePrefixKeys.Trades + CachePrefixKeys.ReceivedTrades + userId + "+" + tradeId;
+
+    private static string GetTradeItemCacheKey(string tradeId, string itemId) => CachePrefixKeys.Trades + tradeId + ":" + CachePrefixKeys.TradeItem + itemId;
 }

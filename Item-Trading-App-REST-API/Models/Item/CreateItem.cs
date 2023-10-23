@@ -1,9 +1,10 @@
-﻿namespace Item_Trading_App_REST_API.Models.Item
-{
-    public class CreateItem
-    {
-        public string ItemName { get; set; }
+﻿namespace Item_Trading_App_REST_API.Models.Item;
 
-        public string ItemDescription { get; set; }
-    }
+public record CreateItem
+{
+    public string SenderUserId { get; set; }
+
+    public string ItemName { get; set; }
+
+    public string ItemDescription { get; set; }
 }

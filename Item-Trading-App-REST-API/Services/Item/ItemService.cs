@@ -1,210 +1,234 @@
-﻿using Item_Trading_App_REST_API.Data;
+﻿using Item_Trading_App_REST_API.Constants;
+using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Services.Cache;
+using Item_Trading_App_REST_API.Services.Notification;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.Requests.Item;
+using Item_Trading_App_REST_API.Requests.Inventory;
+using Item_Trading_App_REST_API.Extensions;
 
-namespace Item_Trading_App_REST_API.Services.Item
+namespace Item_Trading_App_REST_API.Services.Item;
+
+public class ItemService : IItemService
 {
-    public class ItemService : IItemService
+    private readonly DatabaseContext _context;
+    private readonly ICacheService _cacheService;
+    private readonly INotificationService _notificationService;
+    private readonly IMediator _mediator;
+
+    public ItemService(DatabaseContext context, ICacheService cacheService, INotificationService notificationService, IMediator mediator)
     {
-        private readonly DatabaseContext _context;
+        _context = context;
+        _cacheService = cacheService;
+        _notificationService = notificationService;
+        _mediator = mediator;
+    }
 
-        public ItemService(DatabaseContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<FullItemResult> CreateItemAsync(CreateItem model)
-        {
-            if(model == null)
-            {
-                return new FullItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            var item = new Entities.Item
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                Name = model.ItemName,
-                Description = model.ItemDescription
-            };
-
-            await _context.Items.AddAsync(item);
-            var added = await _context.SaveChangesAsync();
-
-            if(added == 0)
-            {
-                return new FullItemResult
-                {
-                    Errors = new[] { "Unable to add this item" }
-                };
-            }
-
+    public async Task<FullItemResult> CreateItemAsync(CreateItem model)
+    {
+        if(model is null)
             return new FullItemResult
             {
-                ItemId = item.ItemId,
-                ItemName = item.Name,
-                ItemDescription = item.Description,
-                Success = true
+                Errors = new[] { "Something went wrong" }
             };
-        }
 
-        public async Task<FullItemResult> UpdateItemAsync(UpdateItem model)
+        var item = new Entities.Item
         {
-            if(model == null)
-            {
-                return new FullItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
+            ItemId = Guid.NewGuid().ToString(),
+            Name = model.ItemName,
+            Description = model.ItemDescription
+        };
 
-            var item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, model.ItemId));
+        if (!await _context.AddEntityAsync(item))
+            return new FullItemResult
+            {
+                Errors = new[] { "Unable to add this item" }
+            };
+
+        await SetItemCacheAsync(item.ItemId, item);
+        await _notificationService.SendCreatedNotificationToAllUsersExceptAsync(
+            model.SenderUserId,
+            NotificationCategoryTypes.Item,
+            item.ItemId);
+
+        return new FullItemResult
+        {
+            ItemId = item.ItemId,
+            ItemName = item.Name,
+            ItemDescription = item.Description,
+            Success = true
+        };
+    }
+
+    public async Task<FullItemResult> UpdateItemAsync(UpdateItem model)
+    {
+        if(model is null)
+            return new FullItemResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        var item = await _cacheService.GetEntityAsync(
+            CachePrefixKeys.Items + model.ItemId,
+            (args) => GetItemEntityAsync(model.ItemId));
+
+        if (item is null)
+            return new FullItemResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        if(!string.IsNullOrEmpty(model.ItemName))
+            if(!Equals(item.Name, model.ItemName))
+                item.Name = model.ItemName;
         
-            if(item == null || item == default)
-            {
-                return new FullItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
+        if(!Equals(item.Description, model.ItemDescription))
+            item.Description = model.ItemDescription;
 
-            if(!string.IsNullOrEmpty(model.ItemName) && model.ItemName.Length > 3)
-                if(!Equals(item.Name, model.ItemName))
-                    item.Name = model.ItemName;
-            
-            if(!Equals(item.Description, model.ItemDescription))
-                item.Description = model.ItemDescription;
-
-            _context.Items.Update(item);
-            var updated = await _context.SaveChangesAsync();
-
-            if(updated == 0)
-            {
-                return new FullItemResult
-                {
-                    ItemId = item.ItemId,
-                    ItemName = item.Name,
-                    ItemDescription = item.Description,
-                    Errors = new[] { "Unable to update item" }
-                };
-            }
-
+        if (!await _context.UpdateEntityAsync(item))
             return new FullItemResult
             {
                 ItemId = item.ItemId,
                 ItemName = item.Name,
                 ItemDescription = item.Description,
-                Success = true
+                Errors = new[] { "Unable to update item" }
             };
-        }
 
-        public async Task<DeleteItemResult> DeleteItemAsync(string itemId)
+        await SetItemCacheAsync(model.ItemId, item);
+        await _notificationService.SendUpdatedNotificationToAllUsersExceptAsync(
+            model.SenderUserId,
+            NotificationCategoryTypes.Item,
+            item.ItemId);
+
+        return new FullItemResult
         {
-            if(string.IsNullOrEmpty(itemId))
-            {
-                return new DeleteItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
+            ItemId = item.ItemId,
+            ItemName = item.Name,
+            ItemDescription = item.Description,
+            Success = true
+        };
+    }
 
-            var item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
-
-            if (item == null || item == default)
-            {
-                return new DeleteItemResult
-                { 
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
-
-            _context.Items.Remove(item);
-            var removed = await _context.SaveChangesAsync();
-
-            if(removed == 0)
-            {
-                return new DeleteItemResult
-                {
-                    Errors = new[] { "Unable to remove item" }
-                };
-            }
-
+    public async Task<DeleteItemResult> DeleteItemAsync(string itemId, string senderUserId)
+    {
+        if(string.IsNullOrEmpty(itemId))
             return new DeleteItemResult
             {
-                ItemId = itemId,
-                ItemName = item.Name,
-                Success = true
+                Errors = new[] { "Something went wrong" }
             };
-        }
 
-        public async Task<FullItemResult> GetItemAsync(string itemId)
+        var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItem { ItemId = itemId });
+
+        string cacheKey = CachePrefixKeys.Items + itemId;
+
+        var item = await _cacheService.GetEntityAsync(
+            cacheKey,
+            (args) => GetItemEntityAsync(itemId));
+
+        if (item is null)
+            return new DeleteItemResult
+            { 
+                Errors = new[] { "Something went wrong" }
+            };
+        else
+            await _cacheService.ClearCacheKeyAsync(cacheKey);
+
+        if(!await _context.RemoveEntityAsync(item))
+            return new DeleteItemResult
+            {
+                Errors = new[] { "Unable to remove item" }
+            };
+        
+        await _mediator.Send(new ItemDeleted { ItemId = itemId, UserIds = usersOwningTheItem });
+        await _notificationService.SendDeletedNotificationToAllUsersExceptAsync(
+            senderUserId,
+            NotificationCategoryTypes.Item,
+            itemId);
+        
+        return new DeleteItemResult
         {
-            if(string.IsNullOrEmpty(itemId))
-            {
-                return new FullItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
-            }
+            ItemId = itemId,
+            ItemName = item.Name,
+            Success = true
+        };
+    }
 
-            var item = _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
-
-            if(item == null || item == default)
-            {
-                return new FullItemResult
-                {
-                    ItemId = itemId,
-                    Errors = new[] { "Item not found" }
-                };
-            }
-
+    public async Task<FullItemResult> GetItemAsync(string itemId)
+    {
+        if(string.IsNullOrEmpty(itemId))
             return new FullItemResult
             {
-                ItemId = item.ItemId,
-                ItemName = item.Name,
-                ItemDescription = item.Description,
-                Success = true
+                Errors = new[] { "Something went wrong" }
             };
-        }
 
-        public ItemsResult ListItems()
-        {
-            return new ItemsResult
+        var item = await _cacheService.GetEntityAsync(
+            CachePrefixKeys.Items + itemId,
+            (args) => GetItemEntityAsync(itemId),
+            true);
+
+        if (item is null)
+            return new FullItemResult
             {
-                ItemsId = _context.Items.Select(i => i.ItemId),
-                Success = true
+                ItemId = itemId,
+                Errors = new[] { "Item not found" }
             };
-        }
 
-        public async Task<string> GetItemNameAsync(string itemId)
+        return new FullItemResult
         {
-            var entity = GetItemEntity(itemId);
-
-            if(entity == null)
-            {
-                return "";
-            }
-
-            return entity.Name;
-        }
-
-        public async Task<string> GetItemDescriptionAsync(string itemId)
-        {
-            var entity = GetItemEntity(itemId);
-
-            if(entity == null)
-            {
-                return "";
-            }
-
-            return entity.Description;
-        }
-
-        private Entities.Item GetItemEntity(string itemId) => _context.Items.FirstOrDefault(i => Equals(i.ItemId, itemId));
+            ItemId = item.ItemId,
+            ItemName = item.Name,
+            ItemDescription = item.Description,
+            Success = true
+        };
     }
+
+    public async Task<ItemsResult> ListItemsAsync(string searchString = "")
+    {
+        var items = await _cacheService.GetEntitiesAsync(
+            CachePrefixKeys.Items,
+            (args) => _context.Items.AsNoTracking().ToListAsync(),
+            true,
+            (Entities.Item x) => x.ItemId);
+
+        if (!string.IsNullOrEmpty(searchString))
+            items = items.Where(x => x.Name.ToLower().StartsWith(searchString.ToLower())).ToList();
+
+        return new ItemsResult
+        {
+            ItemsId = items.Select(i => i.ItemId),
+            Success = true
+        };
+    }
+
+    public async Task<string> GetItemNameAsync(string itemId)
+    {
+        var entity = await _cacheService.GetEntityAsync(
+            CachePrefixKeys.Items + itemId,
+            (args) => GetItemEntityAsync(itemId),
+            true);
+
+        return entity?.Name ?? "";
+    }
+
+    public async Task<string> GetItemDescriptionAsync(string itemId)
+    {
+        var entity = await _cacheService.GetEntityAsync(
+            CachePrefixKeys.Items + itemId,
+            (args) => GetItemEntityAsync(itemId),
+            true);
+
+        return entity?.Description ?? "";
+    }
+
+    private Task<Entities.Item> GetItemEntityAsync(string itemId)
+    {
+        return _context.Items.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId);
+    }
+
+    private Task SetItemCacheAsync(string itemId, Entities.Item entity) => _cacheService.SetCacheValueAsync(CachePrefixKeys.Items + itemId, entity);
 }

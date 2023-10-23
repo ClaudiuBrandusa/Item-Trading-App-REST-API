@@ -5,18 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Item_Trading_App_REST_API.Installers
-{
-    public class DbInstaller : IInstaller
-    {
-        public void InstallServices(IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddDbContext<DatabaseContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+namespace Item_Trading_App_REST_API.Installers;
 
-            services.AddIdentityCore<User>()
-                .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<DatabaseContext>();
-        }
+public class DbInstaller : IInstaller
+{
+    public void InstallServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<DatabaseContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+
+        services.AddIdentityCore<User>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<DatabaseContext>();
     }
 }

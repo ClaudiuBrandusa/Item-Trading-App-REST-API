@@ -1,7 +1,6 @@
-﻿namespace Item_Trading_App_REST_API.Models.Item
+﻿namespace Item_Trading_App_REST_API.Models.Item;
+
+public record UpdateItem : CreateItem
 {
-    public class UpdateItem : CreateItem
-    {
-        public string ItemId { get; set; }
-    }
+    public string ItemId { get; set; }
 }
