@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Item-Trading-App-Contracts\Item-Trading-App-Contracts\Item-Trading-App-Contracts.csproj" />
+    <ProjectReference Include="$(SolutionDir)\Item-Trading-App-Contracts\Item-Trading-App-Contracts\Item-Trading-App-Contracts.csproj" />
   </ItemGroup>
 
 </Project>
