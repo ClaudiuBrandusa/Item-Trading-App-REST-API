@@ -16,6 +16,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+    - name: Pull submodules
+      run: |
+        git submodule update --init --recursive
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
