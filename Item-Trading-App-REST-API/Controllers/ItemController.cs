@@ -7,6 +7,7 @@ using Item_Trading_App_REST_API.Services.Item;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers;
@@ -48,11 +49,8 @@ public class ItemController : BaseController
     [HttpPost(Endpoints.Item.Create)]
     public async Task<IActionResult> Create([FromBody] CreateItemRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.ItemName) || string.IsNullOrEmpty(request.ItemDescription))
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<CreateItemRequest, CreateItem>(request, ("userId", UserId));
 
@@ -64,11 +62,8 @@ public class ItemController : BaseController
     [HttpPatch(Endpoints.Item.Update)]
     public async Task<IActionResult> Update([FromBody] UpdateItemRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.ItemId) || string.IsNullOrEmpty(request.ItemName))
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<UpdateItemRequest, UpdateItem>(request, ("userId", UserId));
 
@@ -80,11 +75,8 @@ public class ItemController : BaseController
     [HttpDelete(Endpoints.Item.Delete)]
     public async Task<IActionResult> Delete([FromBody] DeleteItemRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.ItemId))
-            return BadRequest(new FailedResponse
-            {
-                Errors = new[] { "Something went wrong" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var result = await _itemService.DeleteItemAsync(request.ItemId, UserId);
 

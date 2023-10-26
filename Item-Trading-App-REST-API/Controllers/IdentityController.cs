@@ -7,7 +7,7 @@ using Item_Trading_App_REST_API.Services.Identity;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers;
@@ -25,7 +25,7 @@ public class IdentityController : BaseController
     public async Task<IActionResult> Register([FromBody] UserRegisterRequest request)
     {
         if (!ModelState.IsValid)
-            return BadRequest(new AuthenticationFailedResponse { Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
+            return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
         var result = await _identityService.RegisterAsync(AdaptToType<UserRegisterRequest, Register>(request));
 
@@ -36,7 +36,7 @@ public class IdentityController : BaseController
     public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
     {
         if (!ModelState.IsValid)
-            return BadRequest(new AuthenticationFailedResponse { Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
+            return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
         var result = await _identityService.LoginAsync(AdaptToType<UserLoginRequest, Login>(request));
 
@@ -47,7 +47,7 @@ public class IdentityController : BaseController
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
     {
         if (!ModelState.IsValid)
-            return BadRequest(new AuthenticationFailedResponse { Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
+            return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
         var result = await _identityService.RefreshTokenAsync(AdaptToType<RefreshTokenRequest, RefreshTokenData>(request));
 

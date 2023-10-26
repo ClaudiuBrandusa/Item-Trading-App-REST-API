@@ -3,6 +3,7 @@ using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Requests.Trade;
 using Item_Trading_App_Contracts.Requests.Wallet;
+using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_Contracts.Responses.Inventory;
 using Item_Trading_App_Contracts.Responses.Item;
@@ -14,6 +15,7 @@ using Item_Trading_App_REST_API.Models.Trade;
 using Item_Trading_App_REST_API.Models.Wallet;
 using Item_Trading_App_REST_API.Requests.Wallet;
 using Mapster;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
@@ -27,7 +29,15 @@ public class MapsterInstaller : IInstaller
     {
         services.AddMapster();
 
+        TypeAdapterConfig<ModelStateDictionary, FailedResponse>
+            .NewConfig()
+            .MapWith(dictionary => new FailedResponse { Errors = dictionary.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
+
         // identity
+
+        TypeAdapterConfig<ModelStateDictionary, AuthenticationFailedResponse>
+            .NewConfig()
+            .MapWith(dictionary => new AuthenticationFailedResponse { Errors = dictionary.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
 
         TypeAdapterConfig<string, UsernameSuccessResponse>
             .NewConfig()
@@ -121,6 +131,10 @@ public class MapsterInstaller : IInstaller
         TypeAdapterConfig<RejectTradeOfferResult, RejectTradeOfferSuccessResponse>
             .NewConfig()
             .Map(dest => dest.Id, src => src.TradeOfferId);
+
+        TypeAdapterConfig<CancelTradeOfferRequest, RespondTrade>
+            .NewConfig()
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
 
         // wallet
 

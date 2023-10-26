@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Item_Trading_App_Contracts.Responses.Trade;
-using System.Linq;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_REST_API.Models.Trade;
 using MapsterMapper;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -89,11 +89,8 @@ public class TradeController : BaseController
     [HttpPost(Endpoints.Trade.Offer)]
     public async Task<IActionResult> Offer([FromBody] TradeOfferRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.TargetUserId) || request.Items is null || !request.Items.Any())
-            return BadRequest(new GetSentTradeOfferFailedResponse
-            {
-                Errors = new[] { "Invalid input data" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var result = await _tradeService.CreateTradeOffer(AdaptToType<TradeOfferRequest, CreateTradeOffer>(request, ("userId", UserId)));
 
@@ -103,11 +100,8 @@ public class TradeController : BaseController
     [HttpPatch(Endpoints.Trade.Accept)]
     public async Task<IActionResult> Accept([FromBody] AcceptTradeOfferRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.TradeId))
-            return BadRequest(new AcceptTradeOfferFailedResponse
-            {
-                Errors = new[] { "Invalid input data" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var result = await _tradeService.AcceptTradeOffer(AdaptToType<AcceptTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
 
@@ -117,11 +111,8 @@ public class TradeController : BaseController
     [HttpPatch(Endpoints.Trade.Reject)]
     public async Task<IActionResult> Reject([FromBody] RejectTradeOfferRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.TradeId))
-            return BadRequest(new RejectTradeOfferFailedResponse
-            {
-                Errors = new[] { "Invalid input data" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var result = await _tradeService.RejectTradeOffer(AdaptToType<RejectTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
 
@@ -131,11 +122,8 @@ public class TradeController : BaseController
     [HttpDelete(Endpoints.Trade.Cancel)]
     public async Task<IActionResult> Cancel([FromBody] CancelTradeOfferRequest request)
     {
-        if (request is null || string.IsNullOrEmpty(request.TradeId))
-            return BadRequest(new CancelTradeOfferFailedResponse
-            {
-                Errors = new[] { "Invalid input data" }
-            });
+        if (!ModelState.IsValid)
+            return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var result = await _tradeService.CancelTradeOffer(AdaptToType<CancelTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
 
