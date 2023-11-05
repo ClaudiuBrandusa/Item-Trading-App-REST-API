@@ -64,7 +64,7 @@ public class IdentityController : BaseController
                 Errors = new[] { "Invalid user id" }
             });
 
-        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, ("username", await _identityService.GetUsername(UserId))));
+        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, ("username", await _identityService.GetUsername(userId))));
     }
 
     [Authorize]

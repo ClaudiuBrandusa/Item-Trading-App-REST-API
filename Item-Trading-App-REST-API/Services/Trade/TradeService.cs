@@ -54,7 +54,7 @@ public class TradeService : ITradeService
             if (!await _mediator.Send(new HasItemQuantityQuery { UserId = model.SenderUserId, ItemId = item.ItemId, Quantity = item.Quantity }))
                 continue;
 
-            if (!(await _mediator.Send(new LockItemQuery { UserId = model.SenderUserId, ItemId = item.ItemId, Quantiy = item.Quantity })).Success)
+            if (!(await _mediator.Send(new LockItemQuery { UserId = model.SenderUserId, ItemId = item.ItemId, Quantity = item.Quantity })).Success)
                 continue;
 
             item.Name = await GetItemNameAsync(item.ItemId);

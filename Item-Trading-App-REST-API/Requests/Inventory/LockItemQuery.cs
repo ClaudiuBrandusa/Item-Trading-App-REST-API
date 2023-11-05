@@ -9,5 +9,5 @@ public record LockItemQuery : IRequest<LockItemResult>
 
     public string ItemId { get; set; }
 
-    public int Quantiy { get; set; }
+    public int Quantity { get; set; }
 }
