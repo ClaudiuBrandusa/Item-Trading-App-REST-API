@@ -54,7 +54,10 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.UseWebSockets();
+
 app.MapControllers();
+
 app.MapHub<NotificationHub>("/hubs/notification");
 
 app.Run();
