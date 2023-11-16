@@ -128,6 +128,10 @@ public class MapsterInstaller : IInstaller
             .NewConfig()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
 
+        TypeAdapterConfig<RejectTradeOfferRequest, RespondTrade>
+            .NewConfig()
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
+        
         TypeAdapterConfig<RejectTradeOfferResult, RejectTradeOfferSuccessResponse>
             .NewConfig()
             .Map(dest => dest.Id, src => src.TradeOfferId);

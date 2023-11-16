@@ -1,6 +1,7 @@
 ﻿using Item_Trading_App_REST_API.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Data;
@@ -25,6 +26,11 @@ public class DatabaseContext : IdentityDbContext
     public DbSet<ReceivedTrade> ReceivedTrades { get; set; }
 
     public DbSet<TradeContent> TradeContent { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS));
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
