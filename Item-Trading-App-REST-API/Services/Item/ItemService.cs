@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Requests.Item;
 using Item_Trading_App_REST_API.Requests.Inventory;
 using Item_Trading_App_REST_API.Extensions;
+using Item_Trading_App_REST_API.Requests.Trade;
 
 namespace Item_Trading_App_REST_API.Services.Item;
 
@@ -74,7 +75,7 @@ public class ItemService : IItemService
             };
 
         var item = await _cacheService.GetEntityAsync(
-            CachePrefixKeys.Items + model.ItemId,
+            CacheKeys.Item.GetItemKey(model.ItemId),
             (args) => GetItemEntityAsync(model.ItemId));
 
         if (item is null)
@@ -122,9 +123,17 @@ public class ItemService : IItemService
                 Errors = new[] { "Something went wrong" }
             };
 
+        var isUsedInATrade = await _mediator.Send(new ItemUsedInTradeQuery { ItemId = itemId });
+
+        if (isUsedInATrade)
+            return new DeleteItemResult
+            {
+                Errors = new[] { "Unable to delete an item that is used in a trade" }
+            };
+
         var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItem { ItemId = itemId });
 
-        string cacheKey = CachePrefixKeys.Items + itemId;
+        string cacheKey = CacheKeys.Item.GetItemKey(itemId);
 
         var item = await _cacheService.GetEntityAsync(
             cacheKey,
@@ -167,7 +176,7 @@ public class ItemService : IItemService
             };
 
         var item = await _cacheService.GetEntityAsync(
-            CachePrefixKeys.Items + itemId,
+            CacheKeys.Item.GetItemKey(itemId),
             (args) => GetItemEntityAsync(itemId),
             true);
 
@@ -190,7 +199,7 @@ public class ItemService : IItemService
     public async Task<ItemsResult> ListItemsAsync(string searchString = "")
     {
         var items = await _cacheService.GetEntitiesAsync(
-            CachePrefixKeys.Items,
+            CacheKeys.Item.GetItemsKey(),
             (args) => _context.Items.AsNoTracking().ToListAsync(),
             true,
             (Entities.Item x) => x.ItemId);
@@ -208,7 +217,7 @@ public class ItemService : IItemService
     public async Task<string> GetItemNameAsync(string itemId)
     {
         var entity = await _cacheService.GetEntityAsync(
-            CachePrefixKeys.Items + itemId,
+            CacheKeys.Item.GetItemKey(itemId),
             (args) => GetItemEntityAsync(itemId),
             true);
 
@@ -218,7 +227,7 @@ public class ItemService : IItemService
     public async Task<string> GetItemDescriptionAsync(string itemId)
     {
         var entity = await _cacheService.GetEntityAsync(
-            CachePrefixKeys.Items + itemId,
+            CacheKeys.Item.GetItemKey(itemId),
             (args) => GetItemEntityAsync(itemId),
             true);
 
@@ -230,5 +239,5 @@ public class ItemService : IItemService
         return _context.Items.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId);
     }
 
-    private Task SetItemCacheAsync(string itemId, Entities.Item entity) => _cacheService.SetCacheValueAsync(CachePrefixKeys.Items + itemId, entity);
+    private Task SetItemCacheAsync(string itemId, Entities.Item entity) => _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(itemId), entity);
 }

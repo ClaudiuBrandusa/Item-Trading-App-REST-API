@@ -50,7 +50,7 @@ public class InventoryService : IInventoryService
             };
 
         var item = await _cacheService.GetEntityAsync(
-            GetPrefix(model.UserId) + model.ItemId,
+            CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId),
             async (args) =>
             {
                 var entity = await GetInventoryItemEntityAsync(model.UserId, model.ItemId);
@@ -112,7 +112,7 @@ public class InventoryService : IInventoryService
         }
 
         await _cacheService.SetCacheValueAsync(
-            GetAmountKey(model.UserId, model.ItemId),
+            CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId),
             new InventoryItem { Id = model.ItemId, Quantity = model.Quantity });
 
         if (!modified)
@@ -147,7 +147,7 @@ public class InventoryService : IInventoryService
             };
 
         var item = await _cacheService.GetEntityAsync(
-            GetPrefix(model.UserId) + model.ItemId,
+            CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId),
             async (args) =>
             {
                 var entity = await GetInventoryItemEntityAsync(model.UserId, model.ItemId);
@@ -197,8 +197,8 @@ public class InventoryService : IInventoryService
                 ItemId = item.Id,
                 UserId = model.UserId
             });
-            await _cacheService.ClearCacheKeyAsync(GetAmountKey(model.UserId, model.ItemId));
-            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(model.UserId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId));
         }
         else
         {
@@ -208,8 +208,8 @@ public class InventoryService : IInventoryService
                 UserId = model.UserId,
                 Quantity = item.Quantity,
             });
-            await _cacheService.SetCacheValueAsync(GetAmountKey(model.UserId, model.ItemId), new InventoryItem { Id = model.ItemId, Quantity = item.Quantity });
-            await _cacheService.SetCacheValueAsync(GetLockedAmountKey(model.UserId, model.ItemId), lockedAmount);
+            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId), new InventoryItem { Id = model.ItemId, Quantity = item.Quantity });
+            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedAmount);
         }
 
         if (!modified)
@@ -276,7 +276,7 @@ public class InventoryService : IInventoryService
             };
 
         var inventoryItems = await _cacheService.GetEntitiesAsync(
-            GetPrefix(model.UserId),
+            CacheKeys.Inventory.GetUserInventoryKey(model.UserId),
             async (args) => await _context
                 .OwnedItems
                 .AsNoTracking()
@@ -376,13 +376,13 @@ public class InventoryService : IInventoryService
         if (amount == 0)
         {
             modified = await _context.RemoveEntityAsync(lockedItem);
-            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(model.UserId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId));
         }
         else
         {
             lockedItem.Quantity = amount;
             modified = await _context.UpdateEntityAsync(lockedItem);
-            await _cacheService.SetCacheValueAsync(GetLockedAmountKey(model.UserId, model.ItemId), lockedItem.Quantity);
+            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedItem.Quantity);
         }
 
         if(!modified)
@@ -449,8 +449,8 @@ public class InventoryService : IInventoryService
     {
         foreach(var userId in model.UserIds)
         {
-            await _cacheService.ClearCacheKeyAsync(GetAmountKey(userId, model.ItemId));
-            await _cacheService.ClearCacheKeyAsync(GetLockedAmountKey(userId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetAmountKey(userId, model.ItemId));
+            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, model.ItemId));
         };
         
         await _notificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
@@ -469,7 +469,7 @@ public class InventoryService : IInventoryService
     private async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
     {
         var item = await _cacheService.GetEntityAsync(
-            GetPrefix(userId) + itemId,
+            CacheKeys.Inventory.GetAmountKey(userId, itemId),
             async (args) =>
             {
                 var entity = await GetInventoryItemEntityAsync(userId, itemId);
@@ -494,7 +494,7 @@ public class InventoryService : IInventoryService
     private Task<int> GetAmountOfLockedItem(string userId, string itemId)
     {
         return _cacheService.GetEntityAsync(
-            GetLockedAmountKey(userId, itemId),
+            CacheKeys.Inventory.GetLockedAmountKey(userId, itemId),
             async (args) =>
             {
                 var tmp = await GetLockedInventoryItemEntityAsync(userId, itemId);
@@ -524,7 +524,7 @@ public class InventoryService : IInventoryService
             modified = await _context.UpdateEntityAsync(new LockedItem { UserId = userId, ItemId = itemId, Quantity = quantity });
         }
 
-        await _cacheService.SetCacheValueAsync(GetLockedAmountKey(userId, itemId), quantity);
+        await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId), quantity);
 
         return modified;
     }
@@ -534,10 +534,4 @@ public class InventoryService : IInventoryService
             .AsNoTracking()
             .Where(x => x.ItemId == itemId).Select(x => x.UserId)
             .ToListAsync();
-
-    private static string GetPrefix(string userId) => CachePrefixKeys.Inventory + userId + ":" + CachePrefixKeys.InventoryItems;
-
-    private static string GetAmountKey(string userId, string itemId) => GetPrefix(userId) + itemId;
-
-    private static string GetLockedAmountKey(string userId, string itemId) => CachePrefixKeys.Inventory + userId + ":" + CachePrefixKeys.InventoryLockedItem + itemId;
 }

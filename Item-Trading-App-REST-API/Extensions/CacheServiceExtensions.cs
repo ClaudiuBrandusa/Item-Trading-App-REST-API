@@ -17,8 +17,8 @@ public static class CacheServiceExtensions
             entities = await readFromDb(args);
 
             if (setCache)
-                foreach (var entity in entities)
-                    await service.SetCacheValueAsync(cacheKey + (args[0] as Func<T, string>)(entity), entity);
+                foreach (var entity in entities)      
+                    await service.SetCacheValueAsync($"{cacheKey}{(args[0] as Func<T, string>)(entity)}", entity);
         }
 
         return entities;
@@ -26,9 +26,9 @@ public static class CacheServiceExtensions
 
     public static async Task<List<T>> GetEntitiesAsync<T, R>(this ICacheService service, string cacheKey, Func<object[], Task<List<R>>> readFromDb, Func<R, Task<T>> convert, bool setCache, params object[] args) where T : class
     {
-        var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToList();
+        var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToList() ?? new List<T>();
 
-        if (entities is null || entities.Count == 0)
+        if (entities.Count == 0)
         {
             var fromDb = await readFromDb(args);
 
@@ -36,11 +36,26 @@ public static class CacheServiceExtensions
                 foreach (var entity in fromDb)
                 {
                     var tmp = await convert(entity);
-                    await service.SetCacheValueAsync(cacheKey + (args[0] as Func<T, string>)(tmp), tmp);
+                    await service.SetCacheValueAsync($"{cacheKey}{(args[0] as Func<T, string>)(tmp)}", tmp);
                     entities.Add(tmp);
                 }
         }
         return entities;
+    }
+
+    public static async Task<List<string>> GetSetValuesAsync(this ICacheService service, string cacheKey, Func<object[], Task<List<string>>> readFromDb, bool setCache, params object[] args)
+    {
+        var values = (await service.ListSetValuesAsync(cacheKey)).ToList();
+
+        if (values is null || values.Count == 0)
+        {
+            values = await readFromDb(args);
+
+            if (setCache)
+                await service.AddToSet(cacheKey, values);
+        }
+
+        return values;
     }
 
     public static async Task<List<string>> GetEntityIdsAsync(this ICacheService service, string cacheKey, Func<object[], Task<List<string>>> readFromDb, bool setCache, params object[] args)
@@ -54,7 +69,7 @@ public static class CacheServiceExtensions
             if (setCache)
                 foreach (var entity in entities)
                 {
-                    await service.SetCacheValueAsync(cacheKey + entity, "");
+                    await service.SetCacheValueAsync($"{cacheKey}{entity}", "");
                     ids.Add(entity);
                 }
         }

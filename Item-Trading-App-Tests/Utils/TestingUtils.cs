@@ -1,4 +1,7 @@
 ﻿using Item_Trading_App_REST_API.Data;
+using Item_Trading_App_REST_API.Installers;
+using Mapster;
+using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -30,6 +33,14 @@ public static class TestingUtils
         return new DatabaseContext(optionsBuilder.Options);
     }
 
+    public static IMapper GetMapper()
+    {
+        var config = TypeAdapterConfig.GlobalSettings;
+        TypeAdapterConfig.GlobalSettings.RuleMap.Clear();
+        config.Scan(typeof(MapsterInstaller).Assembly);
+        return new Mapper(config);
+    }
+
     public static UserManager<TUser> GetUserManager<TUser>(IUserStore<TUser> store) where TUser : class
     {
         store ??= new Mock<IUserStore<TUser>>().Object;
@@ -42,7 +53,7 @@ public static class TestingUtils
         userValidators.Add(validator.Object);
         var pwdValidators = new List<PasswordValidator<TUser>>
         {
-            new PasswordValidator<TUser>()
+            new()
         };
         var userManager = new UserManager<TUser>(store, options.Object, new PasswordHasher<TUser>(),
             userValidators, pwdValidators, new UpperInvariantLookupNormalizer(),

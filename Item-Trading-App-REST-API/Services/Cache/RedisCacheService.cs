@@ -33,14 +33,56 @@ public class RedisCacheService : ICacheService
         return JsonSerializer.Deserialize<T>(value);
     }
 
+    public Task<long> CountSetMembers(string key)
+    {
+        return Database.SetLengthAsync(key);
+    }
+
     public Task SetCacheValueAsync(string key, string value) =>
         Database.StringSetAsync(key, value);
 
     public Task SetCacheValueAsync<T>(string key, T value) =>
         SetCacheValueAsync(key, JsonSerializer.Serialize(value));
 
+    public Task AddToSet(string key, string value)
+    {
+        return Database.SetAddAsync(key, value);
+    }
+
+    public async Task AddToSet(string key, List<string> values)
+    {
+        for(int i = 0; i < values.Count; i++)
+        {
+            await AddToSet(key, values[i]);
+        }
+    }
+
     public Task<bool> ContainsKey(string key) =>
         Database.KeyExistsAsync(key);
+
+    public async Task<bool> AnyKey(string prefix)
+    {
+        var endPoints = _connectionMultiplexer.GetEndPoints();
+
+        for(int i = 0; i< endPoints.Length; i++)
+        {
+            var server = _connectionMultiplexer.GetServer(endPoints[i]);
+
+            var keys = server.KeysAsync(Database.Database, $"{prefix}*");
+
+            await foreach (var key in keys)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public Task<bool> SetContainsValue(string key, string value)
+    {
+        return Database.SetContainsAsync(key, value);
+    }
 
     public async Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, bool removePrefix = false)
     {
@@ -50,7 +92,7 @@ public class RedisCacheService : ICacheService
         foreach (var endpoint in endPoints)
         {
             IServer server = _connectionMultiplexer.GetServer(endpoint);
-            var keys = server.KeysAsync(Database.Database, prefix + "*");
+            var keys = server.KeysAsync(Database.Database, $"{prefix}*");
             await foreach (var key in keys)
             {
                 var value = await GetCacheValueAsync(key);
@@ -61,6 +103,23 @@ public class RedisCacheService : ICacheService
         return dictionary;
     }
 
+    public async Task<string[]> ListSetValuesAsync(string key)
+    {
+        var members = await Database.SetMembersAsync(key);
+
+        return members.ToStringArray();
+    }
+
     public Task ClearCacheKeyAsync(string key) =>
         Database.KeyDeleteAsync(key);
+
+    public async Task RemoveFromSet(string key, string value)
+    {
+        await Database.SetRemoveAsync(key, value);
+
+        long length = await CountSetMembers(key);
+
+        if (length == 0)
+            await ClearCacheKeyAsync(key);
+    }
 }

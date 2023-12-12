@@ -1,4 +1,5 @@
-﻿using Item_Trading_App_REST_API.Models.Base;
+﻿using Item_Trading_App_REST_API.Extensions;
+using Item_Trading_App_REST_API.Models.Base;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -21,15 +22,7 @@ public class BaseController : Controller
 
     protected R AdaptToType<T, R>(T request, params (string, object)[] parameters)
     {
-        var builder = _mapper.From(request);
-
-        if (parameters is not null)
-            foreach (var parameter in parameters)
-            {
-                builder = builder.AddParameters(parameter.Item1, parameter.Item2);
-            }
-
-        return builder.AdaptToType<R>();
+        return _mapper.AdaptToType<T, R>(request, parameters);
     }
 
     protected ObjectResult MapResult<InputType, SucceededType, FailedType>(InputType result)
