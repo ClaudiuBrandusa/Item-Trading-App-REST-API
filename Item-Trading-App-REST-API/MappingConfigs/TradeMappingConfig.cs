@@ -14,7 +14,7 @@ public class TradeMappingConfig : IRegister
     {
         config.ForType<string, RequestTradeOffer>()
             .MapWith(str =>
-                new RequestTradeOffer { TradeOfferId = str, UserId = MapContext.Current!.Parameters["userId"].ToString() });
+                new RequestTradeOffer { TradeOfferId = str, UserId = MapContext.Current!.Parameters[nameof(RequestTradeOffer.UserId)].ToString() });
 
         config.ForType<SentTradeOffer, GetSentTradeOfferSuccessResponse>()
             .Map(dest => dest.TradeId, src => src.TradeOfferId)
@@ -36,20 +36,20 @@ public class TradeMappingConfig : IRegister
             .Map(dest => dest.TradeOffersIds, src => src.TradeOffers);
 
         config.ForType<TradeOfferRequest, CreateTradeOffer>()
-            .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters["userId"].ToString())
+            .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters[nameof(CreateTradeOffer.SenderUserId)].ToString())
             .Map(dest => dest.Items, src => src.Items.Select(t => new ItemPrice { ItemId = t.Id, Price = t.Price, Quantity = t.Quantity }));
 
         config.ForType<AcceptTradeOfferRequest, RespondTrade>()
             
-            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTrade.UserId)].ToString());
 
         config.ForType<RejectTradeOfferRequest, RespondTrade>()
-            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTrade.UserId)].ToString());
 
         config.ForType<RejectTradeOfferResult, RejectTradeOfferSuccessResponse>()
             .Map(dest => dest.Id, src => src.TradeOfferId);
 
         config.ForType<CancelTradeOfferRequest, RespondTrade>()
-            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTrade.UserId)].ToString());
     }
 }

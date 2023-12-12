@@ -25,7 +25,7 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.GetSent)]
     public async Task<IActionResult> GetSent(string tradeId)
     {
-        var result = await _tradeService.GetSentTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
+        var result = await _tradeService.GetSentTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, (nameof(RequestTradeOffer.UserId), UserId)));
 
         return MapResult<SentTradeOffer, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
     }
@@ -33,7 +33,7 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.GetSentResponded)]
     public async Task<IActionResult> GetSentResponded(string tradeId)
     {
-        var result = await _tradeService.GetSentRespondedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
+        var result = await _tradeService.GetSentRespondedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, (nameof(RequestTradeOffer.UserId), UserId)));
 
         return MapResult<SentRespondedTradeOffer, GetSentRespondedTradeOfferSuccessResponse, GetSentRespondedTradeOfferFailedResponse>(result);
     }
@@ -41,7 +41,7 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.GetReceived)]
     public async Task<IActionResult> GetReceived(string tradeId)
     {
-        var result = await _tradeService.GetReceivedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
+        var result = await _tradeService.GetReceivedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, (nameof(RequestTradeOffer.UserId), UserId)));
 
         return MapResult<ReceivedTradeOffer, GetReceivedTradeOfferSuccessResponse, GetReceivedTradeOfferFailedResponse>(result);
     }
@@ -49,7 +49,7 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.GetReceivedResponded)]
     public async Task<IActionResult> GetReceivedResponded(string tradeId)
     {
-        var result = await _tradeService.GetReceivedRespondedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, ("userId", UserId)));
+        var result = await _tradeService.GetReceivedRespondedTradeOffer(AdaptToType<string, RequestTradeOffer>(tradeId, (nameof(RequestTradeOffer.UserId), UserId)));
 
         return MapResult<ReceivedRespondedTradeOffer, GetReceivedRespondedTradeOfferSuccessResponse, GetReceivedRespondedTradeOfferFailedResponse>(result);
     }
@@ -92,7 +92,7 @@ public class TradeController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _tradeService.CreateTradeOffer(AdaptToType<TradeOfferRequest, CreateTradeOffer>(request, ("userId", UserId)));
+        var result = await _tradeService.CreateTradeOffer(AdaptToType<TradeOfferRequest, CreateTradeOffer>(request, (nameof(CreateTradeOffer.SenderUserId), UserId)));
 
         return MapResult<SentTradeOffer, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
     }
@@ -103,7 +103,7 @@ public class TradeController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _tradeService.AcceptTradeOffer(AdaptToType<AcceptTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
+        var result = await _tradeService.AcceptTradeOffer(AdaptToType<AcceptTradeOfferRequest, RespondTrade>(request, (nameof(RespondTrade.UserId), UserId)));
 
         return MapResult<AcceptTradeOfferResult, AcceptTradeOfferSuccessResponse, AcceptTradeOfferFailedResponse>(result);
     }
@@ -114,7 +114,7 @@ public class TradeController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _tradeService.RejectTradeOffer(AdaptToType<RejectTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
+        var result = await _tradeService.RejectTradeOffer(AdaptToType<RejectTradeOfferRequest, RespondTrade>(request, (nameof(RespondTrade.UserId), UserId)));
 
         return MapResult<RejectTradeOfferResult, RejectTradeOfferSuccessResponse, RejectTradeOfferFailedResponse>(result);
     }
@@ -125,7 +125,7 @@ public class TradeController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _tradeService.CancelTradeOffer(AdaptToType<CancelTradeOfferRequest, RespondTrade>(request, ("userId", UserId)));
+        var result = await _tradeService.CancelTradeOffer(AdaptToType<CancelTradeOfferRequest, RespondTrade>(request, (nameof(RespondTrade.UserId), UserId)));
 
         return MapResult<CancelTradeOfferResult, CancelTradeOfferSuccessResponse, CancelTradeOfferFailedResponse>(result);
     }

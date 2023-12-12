@@ -10,7 +10,7 @@ public class WalletMappingConfig : IRegister
     public void Register(TypeAdapterConfig config)
     {
         config.ForType<UpdateWalletRequest, UpdateWallet>()
-            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters["userId"].ToString());
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(UpdateWallet.UserId)].ToString());
 
         config.ForType<GiveCashQuery, UpdateWallet>()
             .Map(dest => dest.Quantity, src => src.Amount);

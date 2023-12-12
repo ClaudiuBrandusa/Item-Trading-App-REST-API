@@ -15,9 +15,9 @@ public class ItemMappingConfig : IRegister
             .Map(dest => dest.Description, src => src.ItemDescription);
 
         config.ForType<CreateItemRequest, CreateItem>()
-            .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters["userId"]);
+            .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters[nameof(CreateItem.SenderUserId)]);
 
         config.ForType<UpdateItemRequest, UpdateItem>()
-            .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters["userId"]);
+            .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters[nameof(UpdateItem.SenderUserId)]);
     }
 }

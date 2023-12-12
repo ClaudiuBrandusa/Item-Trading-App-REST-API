@@ -52,7 +52,7 @@ public class ItemController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var model = AdaptToType<CreateItemRequest, CreateItem>(request, ("userId", UserId));
+        var model = AdaptToType<CreateItemRequest, CreateItem>(request, (nameof(CreateItem.SenderUserId), UserId));
 
         var result = await _itemService.CreateItemAsync(model);
 
@@ -65,7 +65,7 @@ public class ItemController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var model = AdaptToType<UpdateItemRequest, UpdateItem>(request, ("userId", UserId));
+        var model = AdaptToType<UpdateItemRequest, UpdateItem>(request, (nameof(UpdateItem.SenderUserId), UserId));
 
         var result = await _itemService.UpdateItemAsync(model);
 

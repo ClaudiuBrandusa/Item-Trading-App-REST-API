@@ -64,14 +64,14 @@ public class IdentityController : BaseController
                 Errors = new[] { "Invalid user id" }
             });
 
-        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, ("username", await _identityService.GetUsername(userId))));
+        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, (nameof(UsernameSuccessResponse.Username), await _identityService.GetUsername(userId))));
     }
 
     [Authorize]
     [HttpGet(Endpoints.Identity.ListUsers)]
     public async Task<IActionResult> ListUsers(string searchString)
     {
-        var result = await _identityService.ListUsers(AdaptToType<string, ListUsers>(searchString, ("userId", UserId)));
+        var result = await _identityService.ListUsers(AdaptToType<string, ListUsers>(searchString, (nameof(Models.Identity.ListUsers.UserId), UserId)));
 
         return MapResult<UsersResult, UsersSuccessResponse, FailedResponse>(result);
     }

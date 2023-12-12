@@ -90,7 +90,7 @@ public class TradeService : ITradeService
 
             foreach(var item in items)
             {
-                var request = _mapper.From(item).AddParameters("tradeId", offer.TradeId).AdaptToType<AddTradeItemRequest>();
+                var request = _mapper.AdaptToType<ItemPrice, AddTradeItemRequest>(item, (nameof(AddTradeItemRequest.TradeId), offer.TradeId));
                 if(!await _mediator.Send(request))
                 {
                     _unitOfWork.RollbackTransaction();

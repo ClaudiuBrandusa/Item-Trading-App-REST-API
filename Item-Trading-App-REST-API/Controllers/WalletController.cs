@@ -38,7 +38,7 @@ public class WalletController : BaseController
                 Errors = new[] { "Something went wrong" }
             });
 
-        var result = await _walletService.UpdateWalletAsync(AdaptToType<UpdateWalletRequest, UpdateWallet>(request, ("userId", UserId)));
+        var result = await _walletService.UpdateWalletAsync(AdaptToType<UpdateWalletRequest, UpdateWallet>(request, (nameof(UpdateWallet.UserId), UserId)));
 
         return MapResult<WalletResult, UpdateWalletSuccessResponse, FailedResponse>(result);
     }
