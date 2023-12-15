@@ -1,12 +1,10 @@
-﻿using Item_Trading_App_REST_API.Models.Inventory;
+﻿using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Resources.Queries.Inventory;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.Inventory;
 using Item_Trading_App_REST_API.Services.Notification;
-using Item_Trading_App_Tests.Utils;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Moq;
 
 namespace Item_Trading_App_Tests;
 
@@ -38,7 +36,7 @@ public class InventoryTests
         var cacheServiceMock = new Mock<ICacheService>();
         var notificationServiceMock = new Mock<INotificationService>();
 
-        _sut = new InventoryService(TestingUtils.GetDatabaseContext(), notificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object);
+        _sut = new InventoryService(TestingUtils.GetDatabaseContext(), notificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
     }
 
     [Theory(DisplayName = "Add item to inventory")]
@@ -47,7 +45,7 @@ public class InventoryTests
     [InlineData(-1)]
     public async void AddItemToInventory(int quantity)
     {
-        var result = await _sut.AddItemAsync(new AddItem
+        var result = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
             ItemId = itemId,
             Quantity = quantity,
@@ -72,7 +70,7 @@ public class InventoryTests
     [InlineData(1, 5)]
     public async void RemoveItemFromInventory(int quantityToAdd, int quantityToDrop)
     {
-        var result = await _sut.AddItemAsync(new AddItem
+        var result = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
             ItemId = itemId,
             Quantity = quantityToAdd,
@@ -82,7 +80,7 @@ public class InventoryTests
         Assert.True(result.Success);
         Assert.Equal(quantityToAdd, result.Quantity);
 
-        result = await _sut.DropItemAsync(new DropItem
+        result = await _sut.DropItemAsync(new DropInventoryItemCommand
         {
             ItemId = itemId,
             Quantity = quantityToDrop,
@@ -106,7 +104,7 @@ public class InventoryTests
 
         if (addItem)
         {
-            var tmp = await _sut.AddItemAsync(new AddItem
+            var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityToBeAdded,
@@ -116,7 +114,7 @@ public class InventoryTests
             item_id = tmp.ItemId;
         }
 
-        var result = await _sut.HasItemAsync(new HasItem
+        var result = await _sut.HasItemAsync(new HasItemQuantityQuery
         {
             ItemId = item_id,
             Quantity = quantityToBeChecked,
@@ -144,7 +142,7 @@ public class InventoryTests
 
         if (addItem)
         {
-            var tmp = await _sut.AddItemAsync(new AddItem
+            var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityToBeAdded,
@@ -154,7 +152,7 @@ public class InventoryTests
             item_id = tmp.ItemId;
         }
 
-        var result = await _sut.GetItemAsync(new GetUsersItem
+        var result = await _sut.GetItemAsync(new GetInventoryItemQuery
         {
             UserId = userId,
             ItemId = item_id
@@ -179,14 +177,14 @@ public class InventoryTests
     {
         if (addItems)
             foreach (string item_id in itemIds)
-                await _sut.AddItemAsync(new AddItem
+                await _sut.AddItemAsync(new AddInventoryItemCommand
                 {
                     ItemId = item_id,
                     Quantity = 1,
                     UserId = userId
                 });
 
-        var result = await _sut.ListItemsAsync(new ListItems
+        var result = await _sut.ListItemsAsync(new ListInventoryItemsQuery
         {
             SearchString = "",
             UserId = userId
@@ -205,7 +203,7 @@ public class InventoryTests
     {
         if (addItem)
         {
-            await _sut.AddItemAsync(new AddItem
+            await _sut.AddItemAsync(new AddInventoryItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityAdded,
@@ -213,7 +211,7 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.LockItemAsync(new LockInventoryItem
+        var result = await _sut.LockItemAsync(new LockItemCommand
         {
             ItemId = itemId,
             Quantity = quantityLocked,
@@ -243,7 +241,7 @@ public class InventoryTests
     {
         if (addItem)
         {
-            await _sut.AddItemAsync(new AddItem
+            await _sut.AddItemAsync(new AddInventoryItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityAdded,
@@ -251,14 +249,14 @@ public class InventoryTests
             });
         }
 
-        await _sut.LockItemAsync(new LockInventoryItem
+        await _sut.LockItemAsync(new LockItemCommand
         {
             ItemId = itemId,
             Quantity = quantityLocked,
             UserId = userId
         });
 
-        var result = await _sut.UnlockItemAsync(new LockInventoryItem
+        var result = await _sut.UnlockItemAsync(new UnlockItemCommand
         {
             ItemId = itemId,
             Quantity = quantityUnlocked,
@@ -288,14 +286,14 @@ public class InventoryTests
     {
         if (addItem)
         {
-            await _sut.AddItemAsync(new AddItem
+            await _sut.AddItemAsync(new AddInventoryItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityAdded,
                 UserId = userId
             });
 
-            await _sut.LockItemAsync(new LockInventoryItem
+            await _sut.LockItemAsync(new LockItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityLocked,
@@ -303,7 +301,7 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.GetLockedAmount(new GetUsersItem
+        var result = await _sut.GetLockedAmount(new GetInventoryItemLockedAmountQuery
         {
             UserId = userId,
             ItemId = itemId
@@ -332,7 +330,7 @@ public class InventoryTests
     {
         foreach(string userId in userIds)
         {
-            await _sut.AddItemAsync(new AddItem
+            await _sut.AddItemAsync(new AddInventoryItemCommand
             {
                 ItemId = itemId,
                 UserId = userId,
@@ -340,7 +338,7 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.GetUsersThatOwnThisItem(itemId);
+        var result = await _sut.GetUsersOwningThisItem(new GetUserIdsOwningItemQuery { ItemId = itemId });
 
         Assert.True(result.UserIds.All(x => userIds.Contains(x)));
     }

@@ -44,6 +44,6 @@ public abstract class BaseHostedService : IHostedService
 
     protected void Log(string message)
     {
-        logger.LogInformation("Hosted service: " + message);
+        logger.LogInformation("Hosted service: {Message}", message);
     }
 }

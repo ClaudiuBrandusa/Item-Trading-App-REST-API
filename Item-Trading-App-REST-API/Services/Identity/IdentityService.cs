@@ -2,6 +2,8 @@
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
+using Item_Trading_App_REST_API.Resources.Commands.Identity;
+using Item_Trading_App_REST_API.Resources.Queries.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -32,7 +34,7 @@ public class IdentityService : IIdentityService
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<AuthenticationResult> RegisterAsync(Register model)
+    public async Task<AuthenticationResult> RegisterAsync(RegisterCommand model)
     {
         var user = await _userManager.FindByNameAsync(model.Username);
 
@@ -68,7 +70,7 @@ public class IdentityService : IIdentityService
         return await GetToken(newUser.Id);
     }
 
-    public async Task<AuthenticationResult> LoginAsync(Login model)
+    public async Task<AuthenticationResult> LoginAsync(LoginCommand model)
     {
         var user = await _userManager.FindByNameAsync(model.Username);
 
@@ -89,7 +91,7 @@ public class IdentityService : IIdentityService
         return await GetToken(user.Id);
     }
 
-    public async Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenData model)
+    public async Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenCommand model)
     {
         var validatedToken = GetPrincipalFromToken(model.Token);
 
@@ -121,12 +123,12 @@ public class IdentityService : IIdentityService
         return await GetToken(user.Id);
     }
 
-    public async Task<string> GetUsername(string userId)
+    public async Task<string> GetUsername(GetUsernameQuery model)
     {
-        if (string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(model.UserId))
             return "";
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(model.UserId);
 
         if (user is null)
             return "";
@@ -134,7 +136,7 @@ public class IdentityService : IIdentityService
         return user.UserName;
     }
 
-    public async Task<UsersResult> ListUsers(ListUsers model)
+    public async Task<UsersResult> ListUsers(ListUsersQuery model)
     {
         var list = string.IsNullOrEmpty(model.SearchString) ?
             await _context.Users
@@ -203,9 +205,9 @@ public class IdentityService : IIdentityService
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, await GetUsername(userId)),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("id", userId),
+            new (JwtRegisteredClaimNames.Sub, await GetUsername(new GetUsernameQuery { UserId = userId })),
+            new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new ("id", userId),
         };
 
         var userClaims = await _userManager.GetClaimsAsync(user);

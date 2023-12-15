@@ -85,57 +85,9 @@ public class RefreshTokenService : IRefreshTokenService
 
     public async Task ClearRefreshTokensAsync()
     {
-        var expiredTokens = await GetExpiredRefreshTokens();
-
-        if(expiredTokens is not null)
-        {
-            foreach(var token in expiredTokens)
-            {
-                DeleteRefreshToken(token);
-            }
-        }
-
-        await _context.SaveChangesAsync();
-
-        var usedTokens = await GetUsedRefreshTokens();
-
-        if(usedTokens is not null)
-        {
-            foreach(var token in usedTokens)
-            {
-                DeleteRefreshToken(token);
-            }
-        }
-
-        await _context.SaveChangesAsync();
-
-        var usersId = _context.Users.Select(x => x.Id).ToList();
-
-        if (usersId is null)
-            return;
-
-        foreach(string userId in usersId)
-        {
-            var tokens = _context.RefreshTokens.Where(x => Equals(x.UserId, userId)).ToList();
-
-            if (tokens is null)
-                continue;
-
-            if (tokens.Count <= _jwtSettings.AllowedRefreshTokensPerUser)
-                continue;
-
-            tokens = tokens.OrderBy(x => x.CreationDate.Ticks).ToList();
-
-            int n = tokens.Count - _jwtSettings.AllowedRefreshTokensPerUser; // number of tokens to be deleted
-
-            if (n < 1)
-                continue;
-
-            for (int i = 0; i < n; i++)
-                _context.RefreshTokens.Remove(tokens[i]);
-
-            await _context.SaveChangesAsync();
-        }
+        await ClearExpiredRefreshTokens();
+        await ClearUsedRefreshTokens();
+        await ClearOldRefreshTokens();
     }
 
     public async Task<RefreshTokenResult> GetRecentRefreshToken(string userId, string jti)
@@ -171,6 +123,101 @@ public class RefreshTokenService : IRefreshTokenService
             Used = item.Used,
             Invalidated = item.Invalidated
         };
+    }
+
+    private async Task ClearExpiredRefreshTokens()
+    {
+        using var transaction = _context.Database.BeginTransaction();
+
+        try
+        {
+            var expiredTokens = await GetExpiredRefreshTokens();
+
+            if (expiredTokens is not null)
+            {
+                foreach (var token in expiredTokens)
+                {
+                    DeleteRefreshToken(token);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            transaction.Commit();
+        }
+        catch(Exception)
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    private async Task ClearUsedRefreshTokens()
+    {
+        using var transaction = _context.Database.BeginTransaction();
+
+        try
+        {
+            var usedTokens = await GetUsedRefreshTokens();
+
+            if (usedTokens is not null)
+            {
+                foreach (var token in usedTokens)
+                {
+                    DeleteRefreshToken(token);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            transaction.Commit();
+        }
+        catch (Exception)
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    private async Task ClearOldRefreshTokens()
+    {
+        using var transaction = _context.Database.BeginTransaction();
+
+        try
+        {
+            var usersId = _context.Users.Select(x => x.Id).ToList();
+
+            if (usersId is null)
+                return;
+
+            foreach (string userId in usersId)
+            {
+                var tokens = _context.RefreshTokens.Where(x => Equals(x.UserId, userId)).ToList();
+
+                if (tokens is null)
+                    continue;
+
+                if (tokens.Count <= _jwtSettings.AllowedRefreshTokensPerUser)
+                    continue;
+
+                tokens = tokens.OrderBy(x => x.CreationDate.Ticks).ToList();
+
+                int n = tokens.Count - _jwtSettings.AllowedRefreshTokensPerUser; // number of tokens to be deleted
+
+                if (n < 1)
+                    continue;
+
+                for (int i = 0; i < n; i++)
+                    _context.RefreshTokens.Remove(tokens[i]);
+
+                await _context.SaveChangesAsync();
+            }
+
+            transaction.Commit();
+        }
+        catch (Exception)
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     private Task<List<string>> GetExpiredRefreshTokens() =>

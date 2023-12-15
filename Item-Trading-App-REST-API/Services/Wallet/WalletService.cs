@@ -1,5 +1,7 @@
 ﻿using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Wallet;
+using Item_Trading_App_REST_API.Resources.Commands.Wallet;
+using Item_Trading_App_REST_API.Resources.Queries.Wallet;
 using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 
@@ -14,9 +16,9 @@ public class WalletService : IWalletService
         _userManager = userManager;
     }
 
-    public async Task<int> GetUserCashAsync(string userId)
+    public async Task<int> GetUserCashAsync(GetUserCashQuery model)
     {
-        var user = await GetUser(userId);
+        var user = await GetUser(model.UserId);
     
         if (user is null)
             return 0;
@@ -24,9 +26,9 @@ public class WalletService : IWalletService
         return user.Cash;
     }
 
-    public async Task<WalletResult> GetWalletAsync(string userId)
+    public async Task<WalletResult> GetWalletAsync(GetUserWalletQuery model)
     {
-        var user = await GetUser(userId);
+        var user = await GetUser(model.UserId);
 
         if (user is null)
             return new WalletResult
@@ -36,47 +38,47 @@ public class WalletService : IWalletService
 
         return new WalletResult
         {
-            UserId = userId,
+            UserId = model.UserId,
             Cash = user.Cash,
             Success = true
         };
     }
 
-    public async Task<bool> GiveCashAsync(UpdateWallet model)
+    public async Task<bool> GiveCashAsync(GiveCashCommand model)
     {
         var user = await GetUser(model.UserId);
 
         if (user is null)
             return false;
 
-        if (model.Quantity < 1)
+        if (model.Amount < 1)
             return false;
 
-        user.Cash += model.Quantity;
+        user.Cash += model.Amount;
 
         await _userManager.UpdateAsync(user);
 
         return true;
     }
 
-    public async Task<bool> TakeCashAsync(UpdateWallet model)
+    public async Task<bool> TakeCashAsync(TakeCashCommand model)
     {
         var user = await GetUser(model.UserId);
 
         if (user is null)
             return false;
 
-        if (user.Cash - model.Quantity < 0)
+        if (user.Cash - model.Amount < 0)
             return false;
 
-        user.Cash -= model.Quantity;
+        user.Cash -= model.Amount;
 
         await _userManager.UpdateAsync(user);
 
         return true;
     }
 
-    public async Task<WalletResult> UpdateWalletAsync(UpdateWallet model)
+    public async Task<WalletResult> UpdateWalletAsync(UpdateWalletCommand model)
     {
         var user = await GetUser(model.UserId);
 

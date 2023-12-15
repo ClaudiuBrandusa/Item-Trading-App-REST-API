@@ -1,7 +1,7 @@
-﻿using Item_Trading_App_REST_API.Entities;
-using Item_Trading_App_REST_API.Models.Wallet;
+﻿using Item_Trading_App_REST_API.Resources.Commands.Wallet;
+using Item_Trading_App_REST_API.Entities;
+using Item_Trading_App_REST_API.Resources.Queries.Wallet;
 using Item_Trading_App_REST_API.Services.Wallet;
-using Item_Trading_App_Tests.Utils;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
@@ -38,7 +38,7 @@ public class WalletTests
             });
         }
 
-        var result = await _sut.GetWalletAsync(userId);
+        var result = await _sut.GetWalletAsync(new GetUserWalletQuery { UserId = userId });
 
         if (createUser)
         {
@@ -69,7 +69,7 @@ public class WalletTests
 
         int newCashAmount = defaultCashValue + 100;
 
-        var result = await _sut.UpdateWalletAsync(new UpdateWallet
+        var result = await _sut.UpdateWalletAsync(new UpdateWalletCommand
         {
             UserId = userId,
             Quantity = newCashAmount,
@@ -102,12 +102,12 @@ public class WalletTests
             });
         }
 
-        var userCashAmount = await _sut.GetUserCashAsync(userId);
+        var userCashAmount = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = userId });
 
         if (createUser)
             Assert.True(userCashAmount == defaultCashValue);
         else
-            Assert.True(userCashAmount == 0);
+            Assert.Equal(0, userCashAmount);
     }
 
     [Theory(DisplayName = "Take cash amount from user")]
@@ -127,10 +127,10 @@ public class WalletTests
             });
         }
 
-        var result = await _sut.TakeCashAsync(new UpdateWallet
+        var result = await _sut.TakeCashAsync(new TakeCashCommand
         {
             UserId = userId,
-            Quantity = takenAmount
+            Amount = takenAmount
         });
 
         if (createUser && takenAmount <= defaultCashValue)
@@ -156,16 +156,16 @@ public class WalletTests
             });
         }
 
-        var giveCashResult = await _sut.GiveCashAsync(new UpdateWallet
+        var giveCashResult = await _sut.GiveCashAsync(new GiveCashCommand
         {
             UserId = userId,
-            Quantity = givenAmount
+            Amount = givenAmount
         });
 
         if (createUser)
         {
             Assert.True(giveCashResult);
-            var result = await _sut.GetUserCashAsync(userId);
+            var result = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = userId });
             Assert.Equal(defaultCashValue + givenAmount, result);
         }
         else

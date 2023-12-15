@@ -5,6 +5,7 @@ using MediatR;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
 
 namespace Item_Trading_App_REST_API.Requests.Item;
 
@@ -17,7 +18,7 @@ public class GetItemHandler : HandlerBase, IRequestHandler<GetItemQuery, FullIte
     public Task<FullItemResult> Handle(GetItemQuery request, CancellationToken cancellationToken)
     {
         return Execute<IItemService, FullItemResult>(async (itemService) =>
-            await itemService.GetItemAsync(request.ItemId)
+            await itemService.GetItemAsync(request)
         );
     }
 }

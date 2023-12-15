@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Installers;
 
@@ -38,6 +39,19 @@ public class JwtInstaller : IInstaller
         {
             options.SaveToken = true;
             options.TokenValidationParameters = tokenValidationParameters;
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    if (context.HttpContext.Request.Query.ContainsKey("access_token"))
+                    {
+                        context.Token = context.HttpContext.Request.Query["access_token"];
+                    }
+
+                    return Task.CompletedTask;
+                }
+            };
         });
     }
 }

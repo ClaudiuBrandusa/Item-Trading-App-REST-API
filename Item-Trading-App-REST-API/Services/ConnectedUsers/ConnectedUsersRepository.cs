@@ -32,7 +32,7 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
         else
         {
             currentUsersConnections.Add(userId, new List<string>() { connectionId });
-            await _cacheService.SetCacheValueAsync(string.Concat(CachePrefixKeys.ActiveUsers, userId), userName);
+            await _cacheService.SetCacheValueAsync(CacheKeys.Identity.GetActiveUserKey(userId), userName);
         }
 
         await hubContext.Groups.AddToGroupAsync(connectionId, userId);
@@ -46,7 +46,7 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             currentUsersConnections[userId].Remove(connectionId);
             if (currentUsersConnections[userId].Count == 0)
             {
-                await _cacheService.ClearCacheKeyAsync(string.Concat(CachePrefixKeys.ActiveUsers, userId));
+                await _cacheService.ClearCacheKeyAsync(CacheKeys.Identity.GetActiveUserKey(userId));
                 currentUsersConnections.Remove(userId);
             }
         } else
