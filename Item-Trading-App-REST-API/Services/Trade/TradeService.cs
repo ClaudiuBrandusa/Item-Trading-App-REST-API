@@ -29,16 +29,16 @@ namespace Item_Trading_App_REST_API.Services.Trade;
 public class TradeService : ITradeService
 {
     private readonly DatabaseContext _context;
-    private readonly INotificationService _notificationService;
+    private readonly IClientNotificationService _clientNotificationService;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWorkService _unitOfWork;
 
-    public TradeService(DatabaseContext context, ICacheService cacheService, IMediator mediator, INotificationService notificationService, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeService(DatabaseContext context, ICacheService cacheService, IMediator mediator, IClientNotificationService notificationService, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
         _context = context;
-        _notificationService = notificationService;
+        _clientNotificationService = notificationService;
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
@@ -130,7 +130,7 @@ public class TradeService : ITradeService
 
         await _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetSentTradeKey(model.SenderUserId, offer.TradeId), "");
         await _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetReceivedTradeKey(model.TargetUserId, offer.TradeId), "");
-        await _notificationService.SendCreatedNotificationToUserAsync(
+        await _clientNotificationService.SendCreatedNotificationToUserAsync(
             model.TargetUserId,
             NotificationCategoryTypes.Trade,
             offer.TradeId);
@@ -255,7 +255,7 @@ public class TradeService : ITradeService
         }
 
         await _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), entity);
-        await _notificationService.SendUpdatedNotificationToUserAsync(
+        await _clientNotificationService.SendUpdatedNotificationToUserAsync(
             senderId,
             NotificationCategoryTypes.Trade,
             model.TradeId,
@@ -337,7 +337,7 @@ public class TradeService : ITradeService
         }
 
         await _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade);
-        await _notificationService.SendUpdatedNotificationToUserAsync(
+        await _clientNotificationService.SendUpdatedNotificationToUserAsync(
             senderId,
             NotificationCategoryTypes.Trade,
             model.TradeId,
@@ -429,7 +429,7 @@ public class TradeService : ITradeService
         await _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetSentTradeKey(senderId, model.TradeId));
         await _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetReceivedTradeKey(receiverId, model.TradeId));
         trade.TradeItemsId.ForEach(async itemId => await _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(itemId), trade.TradeId));
-        await _notificationService.SendUpdatedNotificationToUserAsync(
+        await _clientNotificationService.SendUpdatedNotificationToUserAsync(
             receiverId,
             NotificationCategoryTypes.Trade,
             model.TradeId, new RespondedTradeNotification

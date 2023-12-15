@@ -8,11 +8,11 @@ using System.Collections.Generic;
 
 namespace Item_Trading_App_REST_API.Services.Notification;
 
-public class NotificationService : INotificationService
+public class ClientNotificationService : IClientNotificationService
 {
     private readonly IConnectedUsersRepository _connectedUsersRepository;
 
-    public NotificationService(IConnectedUsersRepository connectedUsersRepository)
+    public ClientNotificationService(IConnectedUsersRepository connectedUsersRepository)
     {
         _connectedUsersRepository = connectedUsersRepository;
     }

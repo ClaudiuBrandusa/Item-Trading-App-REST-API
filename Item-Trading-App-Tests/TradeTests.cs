@@ -80,7 +80,7 @@ public class TradeTests
             {
                 return new Dictionary<string, string>();
             });
-        var notificationServiceMock = new Mock<INotificationService>();
+        var notificationServiceMock = new Mock<IClientNotificationService>();
 
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();
 

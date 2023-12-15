@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Notification;
 
-public interface INotificationService
+public interface IClientNotificationService
 {
     Task SendCreatedNotificationToUserAsync(string userId, string categoryType, string id, object customData = null);
 

@@ -34,7 +34,7 @@ public class InventoryTests
             });
         
         var cacheServiceMock = new Mock<ICacheService>();
-        var notificationServiceMock = new Mock<INotificationService>();
+        var notificationServiceMock = new Mock<IClientNotificationService>();
 
         _sut = new InventoryService(TestingUtils.GetDatabaseContext(), notificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
     }

@@ -33,7 +33,7 @@ public class ItemTests
 
         var cacheServiceMock = new Mock<ICacheService>();
 
-        var notificationServiceMock = new Mock<INotificationService>();
+        var notificationServiceMock = new Mock<IClientNotificationService>();
 
         _sut = new ItemService(TestingUtils.GetDatabaseContext(), cacheServiceMock.Object, notificationServiceMock.Object, mediatorMock.Object);
     }

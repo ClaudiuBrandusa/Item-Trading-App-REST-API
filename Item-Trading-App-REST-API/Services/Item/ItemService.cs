@@ -21,14 +21,14 @@ public class ItemService : IItemService
 {
     private readonly DatabaseContext _context;
     private readonly ICacheService _cacheService;
-    private readonly INotificationService _notificationService;
+    private readonly IClientNotificationService _clientNotificationService;
     private readonly IMediator _mediator;
 
-    public ItemService(DatabaseContext context, ICacheService cacheService, INotificationService notificationService, IMediator mediator)
+    public ItemService(DatabaseContext context, ICacheService cacheService, IClientNotificationService notificationService, IMediator mediator)
     {
         _context = context;
         _cacheService = cacheService;
-        _notificationService = notificationService;
+        _clientNotificationService = notificationService;
         _mediator = mediator;
     }
 
@@ -54,7 +54,7 @@ public class ItemService : IItemService
             };
 
         await SetItemCacheAsync(item.ItemId, item);
-        await _notificationService.SendCreatedNotificationToAllUsersExceptAsync(
+        await _clientNotificationService.SendCreatedNotificationToAllUsersExceptAsync(
             model.SenderUserId,
             NotificationCategoryTypes.Item,
             item.ItemId);
@@ -103,7 +103,7 @@ public class ItemService : IItemService
             };
 
         await SetItemCacheAsync(model.ItemId, item);
-        await _notificationService.SendUpdatedNotificationToAllUsersExceptAsync(
+        await _clientNotificationService.SendUpdatedNotificationToAllUsersExceptAsync(
             model.SenderUserId,
             NotificationCategoryTypes.Item,
             item.ItemId);
@@ -156,7 +156,7 @@ public class ItemService : IItemService
             };
         
         await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = model.ItemId, UserIds = usersOwningTheItem.UserIds });
-        await _notificationService.SendDeletedNotificationToAllUsersExceptAsync(
+        await _clientNotificationService.SendDeletedNotificationToAllUsersExceptAsync(
             model.UserId,
             NotificationCategoryTypes.Item,
             model.ItemId);
