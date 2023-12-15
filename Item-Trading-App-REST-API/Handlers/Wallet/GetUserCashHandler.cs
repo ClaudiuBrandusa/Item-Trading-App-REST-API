@@ -1,4 +1,5 @@
 ﻿using Item_Trading_App_REST_API.Requests.Base;
+using Item_Trading_App_REST_API.Resources.Queries.Wallet;
 using Item_Trading_App_REST_API.Services.Wallet;
 using MediatR;
 using System;
@@ -16,7 +17,7 @@ public class GetUserCashHandler : HandlerBase, IRequestHandler<GetUserCashQuery,
     public Task<int> Handle(GetUserCashQuery request, CancellationToken cancellationToken)
     {
         return Execute<IWalletService, int>(async (walletService) =>
-            await walletService.GetUserCashAsync(request.UserId)
+            await walletService.GetUserCashAsync(request)
         );
     }
 }

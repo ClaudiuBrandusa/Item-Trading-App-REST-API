@@ -3,8 +3,10 @@ using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Models.Identity;
-using Item_Trading_App_REST_API.Services.Identity;
+using Item_Trading_App_REST_API.Resources.Commands.Identity;
+using Item_Trading_App_REST_API.Resources.Queries.Identity;
 using MapsterMapper;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -14,11 +16,11 @@ namespace Item_Trading_App_REST_API.Controllers;
 
 public class IdentityController : BaseController
 {
-    private readonly IIdentityService _identityService;
+    private readonly IMediator _mediator;
 
-    public IdentityController(IIdentityService identityService, IMapper mapper) : base(mapper)
+    public IdentityController(IMapper mapper, IMediator mediator) : base(mapper)
     {
-        _identityService = identityService;
+        _mediator = mediator;
     }
 
     [HttpPost(Endpoints.Identity.Register)]
@@ -27,7 +29,9 @@ public class IdentityController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
-        var result = await _identityService.RegisterAsync(AdaptToType<UserRegisterRequest, Register>(request));
+        var model = AdaptToType<UserRegisterRequest, RegisterCommand>(request);
+
+        var result = await _mediator.Send(model);
 
         return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
@@ -38,7 +42,9 @@ public class IdentityController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
-        var result = await _identityService.LoginAsync(AdaptToType<UserLoginRequest, Login>(request));
+        var model = AdaptToType<UserLoginRequest, LoginCommand>(request);
+
+        var result = await _mediator.Send(model);
 
         return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
@@ -49,7 +55,9 @@ public class IdentityController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
-        var result = await _identityService.RefreshTokenAsync(AdaptToType<RefreshTokenRequest, RefreshTokenData>(request));
+        var model = AdaptToType<RefreshTokenRequest, RefreshTokenCommand>(request);
+
+        var result = await _mediator.Send(model);
 
         return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
@@ -64,14 +72,18 @@ public class IdentityController : BaseController
                 Errors = new[] { "Invalid user id" }
             });
 
-        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, (nameof(UsernameSuccessResponse.Username), await _identityService.GetUsername(userId))));
+        string userName = await _mediator.Send(new GetUsernameQuery { UserId = UserId });
+
+        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, (nameof(UsernameSuccessResponse.Username), userName)));
     }
 
     [Authorize]
     [HttpGet(Endpoints.Identity.ListUsers)]
     public async Task<IActionResult> ListUsers(string searchString)
     {
-        var result = await _identityService.ListUsers(AdaptToType<string, ListUsers>(searchString, (nameof(Models.Identity.ListUsers.UserId), UserId)));
+        var model = AdaptToType<string, ListUsersQuery>(searchString, (nameof(ListUsersQuery.UserId), UserId));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<UsersResult, UsersSuccessResponse, FailedResponse>(result);
     }

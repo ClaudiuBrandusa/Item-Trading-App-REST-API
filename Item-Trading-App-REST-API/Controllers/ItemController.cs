@@ -3,8 +3,10 @@ using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_REST_API.Models.Item;
-using Item_Trading_App_REST_API.Services.Item;
+using Item_Trading_App_REST_API.Resources.Commands.Item;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
 using MapsterMapper;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -15,11 +17,11 @@ namespace Item_Trading_App_REST_API.Controllers;
 [Authorize]
 public class ItemController : BaseController
 {
-    private readonly IItemService _itemService;
+    private readonly IMediator _mediator;
 
-    public ItemController(IItemService itemService, IMapper mapper) : base(mapper)
+    public ItemController(IMapper mapper, IMediator mediator) : base(mapper)
     {
-        _itemService = itemService;
+        _mediator = mediator;
     }
 
     [HttpGet(Endpoints.Item.Get)]
@@ -31,7 +33,9 @@ public class ItemController : BaseController
                 Errors = new[] { "Item ID not provided" }
             });
 
-        var result = await _itemService.GetItemAsync(itemId);
+        var model = new GetItemQuery { ItemId = itemId };
+
+        var result = await _mediator.Send(model);
 
         return MapResult<FullItemResult, ItemResponse, FailedResponse>(result);
     }
@@ -41,7 +45,9 @@ public class ItemController : BaseController
     {
         string searchString = HttpContext.Request.Query["searchstring"].ToString();
 
-        var result = await _itemService.ListItemsAsync(searchString);
+        var model = new ListItemsQuery { SearchString = searchString };
+
+        var result = await _mediator.Send(model);
 
         return MapResult<ItemsResult, ItemsResponse, FailedResponse>(result);
     }
@@ -52,9 +58,9 @@ public class ItemController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var model = AdaptToType<CreateItemRequest, CreateItem>(request, (nameof(CreateItem.SenderUserId), UserId));
+        var model = AdaptToType<CreateItemRequest, CreateItemCommand>(request, (nameof(CreateItemCommand.SenderUserId), UserId));
 
-        var result = await _itemService.CreateItemAsync(model);
+        var result = await _mediator.Send(model);
 
         return MapResult<FullItemResult, CreateItemSuccessResponse, CreateItemFailedResponse>(result);
     }
@@ -65,9 +71,9 @@ public class ItemController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var model = AdaptToType<UpdateItemRequest, UpdateItem>(request, (nameof(UpdateItem.SenderUserId), UserId));
+        var model = AdaptToType<UpdateItemRequest, UpdateItemCommand>(request, (nameof(UpdateItemCommand.SenderUserId), UserId));
 
-        var result = await _itemService.UpdateItemAsync(model);
+        var result = await _mediator.Send(model);
 
         return MapResult<FullItemResult, UpdateItemSuccessResponse, UpdateItemFailedResponse>(result);
     }
@@ -78,7 +84,9 @@ public class ItemController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _itemService.DeleteItemAsync(request.ItemId, UserId);
+        var model = AdaptToType<DeleteItemRequest, DeleteItemCommand>(request, (nameof(DeleteItemCommand.UserId), UserId));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<DeleteItemResult, DeleteItemSuccessResponse, DeleteItemFailedResponse>(result);
     }

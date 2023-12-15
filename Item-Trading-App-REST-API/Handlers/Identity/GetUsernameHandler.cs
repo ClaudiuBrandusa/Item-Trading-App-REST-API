@@ -1,4 +1,5 @@
 ﻿using Item_Trading_App_REST_API.Requests.Base;
+using Item_Trading_App_REST_API.Resources.Queries.Identity;
 using Item_Trading_App_REST_API.Services.Identity;
 using MediatR;
 using System;
@@ -16,7 +17,7 @@ public class GetUsernameHandler : HandlerBase, IRequestHandler<GetUsernameQuery,
     public Task<string> Handle(GetUsernameQuery request, CancellationToken cancellationToken)
     {
         return Execute<IIdentityService, string>(async (identityService) =>
-            await identityService.GetUsername(request.UserId)
+            await identityService.GetUsername(request)
         );
     }
 }

@@ -3,8 +3,10 @@ using Item_Trading_App_Contracts.Requests.Wallet;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Wallet;
 using Item_Trading_App_REST_API.Models.Wallet;
-using Item_Trading_App_REST_API.Services.Wallet;
+using Item_Trading_App_REST_API.Resources.Commands.Wallet;
+using Item_Trading_App_REST_API.Resources.Queries.Wallet;
 using MapsterMapper;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -14,17 +16,19 @@ namespace Item_Trading_App_REST_API.Controllers;
 [Authorize]
 public class WalletController : BaseController
 {
-    private readonly IWalletService _walletService;
+    private readonly IMediator _mediator;
 
-    public WalletController(IWalletService walletService, IMapper mapper) : base(mapper)
+    public WalletController(IMapper mapper, IMediator mediator) : base(mapper)
     {
-        _walletService = walletService;
+        _mediator = mediator;
     }
 
     [HttpGet(Endpoints.Wallet.Get)]
     public async Task<IActionResult> Get()
     {
-        var result = await _walletService.GetWalletAsync(UserId);
+        var model = AdaptToType<string, GetUserWalletQuery>(UserId);
+
+        var result = await _mediator.Send(model);
 
         return MapResult<WalletResult, WalletSuccessResponse, FailedResponse>(result);
     }
@@ -38,7 +42,9 @@ public class WalletController : BaseController
                 Errors = new[] { "Something went wrong" }
             });
 
-        var result = await _walletService.UpdateWalletAsync(AdaptToType<UpdateWalletRequest, UpdateWallet>(request, (nameof(UpdateWallet.UserId), UserId)));
+        var model = AdaptToType<UpdateWalletRequest, UpdateWalletCommand>(request, (nameof(UpdateWalletCommand.UserId), UserId));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<WalletResult, UpdateWalletSuccessResponse, FailedResponse>(result);
     }

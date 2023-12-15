@@ -1,19 +1,22 @@
-﻿using Item_Trading_App_REST_API.Requests.TradeItem;
+﻿using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
+using Item_Trading_App_REST_API.Data;
+using Item_Trading_App_REST_API.Entities;
+using Item_Trading_App_REST_API.Resources.Queries.Trade;
+using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.TradeItem;
-using Item_Trading_App_Tests.Utils;
 using MediatR;
-using Moq;
 
 namespace Item_Trading_App_Tests;
 public class TradeItemTests
 {
     private readonly ITradeItemService _sut; // service under test
+    private readonly DatabaseContext _context;
     private readonly string defaultItemId = Guid.NewGuid().ToString();
 
     public TradeItemTests()
     {
-        var _context = TestingUtils.GetDatabaseContext();
+        _context = TestingUtils.GetDatabaseContext();
         var _mapper = TestingUtils.GetMapper();
 
         var cacheServiceMock = new Mock<ICacheService>();
@@ -37,7 +40,7 @@ public class TradeItemTests
     [InlineData(-1, 1)]
     public async void AddNewTradeItem(int price, int quantity)
     {
-        var result = await _sut.AddTradeItemAsync(new AddTradeItemRequest
+        var result = await _sut.AddTradeItemAsync(new AddTradeItemCommand
         {
             ItemId = defaultItemId,
             Name = "Item",
@@ -63,12 +66,25 @@ public class TradeItemTests
     {
         var tradeItemRequests = TestingData.GetTradeItemRequests(itemPriceIds);
 
+        // _tradeService.CreateTradeOffer()
+
+        var offer = new Trade
+        {
+            TradeId = tradeItemRequests[0].TradeId,
+            SentDate = DateTime.Now
+        };
+
+        await _context.AddEntityAsync(offer);
+
         int length = itemPriceIds.Length;
 
         for (int i = 0; i < length; i++)
+        {
             await _sut.AddTradeItemAsync(tradeItemRequests[i]);
+        }
 
-        var result = await _sut.GetTradeItemsAsync(TestingData.DefaultTradeId);
+        await _context.SaveChangesAsync();
+        var result = await _sut.GetTradeItemsAsync(new GetTradeItemsQuery { TradeId = TestingData.DefaultTradeId });
 
         Assert.True(result.Count == length, "The result should be successful");
     }
@@ -86,6 +102,8 @@ public class TradeItemTests
         for (int i = 0; i < length; i++)
             await _sut.AddTradeItemAsync(tradeItemRequests[i]);
 
+        await _context.SaveChangesAsync();
+
         var result = await _sut.GetItemPricesAsync(new GetItemPricesQuery { TradeId = TestingData.DefaultTradeId });
 
         Assert.True(result.Count == length, "The result should be successful");
@@ -102,7 +120,9 @@ public class TradeItemTests
         for (int i = 0; i < itemPriceIds.Length; i++)
             await _sut.AddTradeItemAsync(tradeItemRequests[i]);
 
-        var result = await _sut.GetItemTradeIdsAsync(tradeItemRequests[0].ItemId);
+        await _context.SaveChangesAsync();
+
+        var result = await _sut.GetItemTradeIdsAsync(new ItemUsedInTradeQuery { ItemId = tradeItemRequests[0].ItemId });
 
         Assert.True(result.Count == 1, "The result should be successful");
     }

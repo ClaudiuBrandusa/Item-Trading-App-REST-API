@@ -5,20 +5,20 @@ using MediatR;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MapsterMapper;
+using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 
 namespace Item_Trading_App_REST_API.Requests.Inventory;
 
-public class UnlockItemHandler : HandlerBase, IRequestHandler<UnlockItemQuery, LockItemResult>
+public class UnlockItemHandler : HandlerBase, IRequestHandler<UnlockItemCommand, LockItemResult>
 {
-    public UnlockItemHandler(IServiceProvider serviceProvider, IMapper mapper) : base(serviceProvider, mapper)
+    public UnlockItemHandler(IServiceProvider serviceProvider) : base(serviceProvider)
     {
     }
 
-    public Task<LockItemResult> Handle(UnlockItemQuery request, CancellationToken cancellationToken)
+    public Task<LockItemResult> Handle(UnlockItemCommand request, CancellationToken cancellationToken)
     {
         return Execute<IInventoryService, LockItemResult>(async (inventoryService) =>
-            await inventoryService.UnlockItemAsync(Map<UnlockItemQuery, LockInventoryItem>(request), true)
+            await inventoryService.UnlockItemAsync(request)
         );
     }
 }

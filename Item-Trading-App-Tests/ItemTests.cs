@@ -1,10 +1,11 @@
-using Item_Trading_App_REST_API.Models.Item;
+using Item_Trading_App_REST_API.Models.Inventory;
+using Item_Trading_App_REST_API.Resources.Commands.Item;
+using Item_Trading_App_REST_API.Resources.Queries.Inventory;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.Item;
 using Item_Trading_App_REST_API.Services.Notification;
-using Item_Trading_App_Tests.Utils;
 using MediatR;
-using Moq;
 
 namespace Item_Trading_App_Tests;
 
@@ -24,6 +25,12 @@ public class ItemTests
                 return Task.CompletedTask;
             });
 
+        mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<UsersOwningItem>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<UsersOwningItem> request, CancellationToken ct) =>
+            {
+                return new UsersOwningItem { ItemId = ((GetUserIdsOwningItemQuery)request).ItemId};
+            });
+
         var cacheServiceMock = new Mock<ICacheService>();
 
         var notificationServiceMock = new Mock<INotificationService>();
@@ -36,7 +43,7 @@ public class ItemTests
     {
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
-            new CreateItem
+            new CreateItemCommand
             {
                 SenderUserId = userId,
                 ItemName = itemName,
@@ -58,7 +65,7 @@ public class ItemTests
         {
             // add one item
             var addItemResult = await _sut.CreateItemAsync(
-                new CreateItem
+                new CreateItemCommand
                 {
                     SenderUserId = userId,
                     ItemName = itemName,
@@ -71,7 +78,7 @@ public class ItemTests
         string newDescription = itemDescription + "_Updated";
 
         var updateItemResult = await _sut.UpdateItemAsync(
-            new UpdateItem
+            new UpdateItemCommand
             {
                 ItemId = item_id,
                 ItemName = newItemName,
@@ -103,7 +110,7 @@ public class ItemTests
         {
             // add one item
             var addItemResult = await _sut.CreateItemAsync(
-                new CreateItem
+                new CreateItemCommand
                 {
                     SenderUserId = userId,
                     ItemName = itemName,
@@ -112,7 +119,7 @@ public class ItemTests
             item_id = addItemResult.ItemId;
         }
 
-        var deleteItemResult = await _sut.DeleteItemAsync(item_id, userId);
+        var deleteItemResult = await _sut.DeleteItemAsync(new DeleteItemCommand { ItemId = item_id, UserId = userId });
 
         Assert.NotNull(deleteItemResult);
         if (shouldCreateTheItemFirst)
@@ -126,14 +133,14 @@ public class ItemTests
     {
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
-            new CreateItem
+            new CreateItemCommand
             {
                 SenderUserId = userId,
                 ItemName = itemName,
                 ItemDescription = itemDescription
             });
 
-        var result = await _sut.ListItemsAsync();
+        var result = await _sut.ListItemsAsync(new());
 
         Assert.NotNull(result);
         Assert.True(result.Success, "The response should be a success");
@@ -152,7 +159,7 @@ public class ItemTests
         {
             // add one item
                 var addItemResult = await _sut.CreateItemAsync(
-                new CreateItem
+                new CreateItemCommand
                 {
                     SenderUserId = userId,
                     ItemName = itemName,
@@ -162,7 +169,7 @@ public class ItemTests
         }
 
 
-        var getItemResult = await _sut.GetItemAsync(item_id);
+        var getItemResult = await _sut.GetItemAsync(new GetItemQuery { ItemId = item_id });
 
         if (shouldCreateTheItemFirst)
         {
@@ -180,14 +187,14 @@ public class ItemTests
     {
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
-            new CreateItem
+            new CreateItemCommand
             {
                 SenderUserId = userId,
                 ItemName = itemName,
                 ItemDescription = itemDescription
             });
             
-        var getItemNameResult = await _sut.GetItemNameAsync(addItemResult.ItemId);
+        var getItemNameResult = await _sut.GetItemNameAsync(new GetItemNameQuery { ItemId = addItemResult.ItemId });
         Assert.NotNull(getItemNameResult);
         Assert.Equal(getItemNameResult, itemName);
     }
@@ -197,14 +204,14 @@ public class ItemTests
     {
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
-            new CreateItem
+            new CreateItemCommand
             {
                 SenderUserId = userId,
                 ItemName = itemName,
                 ItemDescription = itemDescription
             });
 
-        var getItemDescriptionResult = await _sut.GetItemDescriptionAsync(addItemResult.ItemId);
+        var getItemDescriptionResult = await _sut.GetItemDescriptionAsync(new GetItemDescriptionQuery { ItemId = addItemResult.ItemId });
         Assert.NotNull(getItemDescriptionResult);
         Assert.Equal(getItemDescriptionResult, itemDescription);
     }

@@ -3,13 +3,11 @@ using Item_Trading_App_REST_API.Installers;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Moq;
 using System.Text;
 
 namespace Item_Trading_App_Tests.Utils;

@@ -4,8 +4,10 @@ using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Inventory;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
-using Item_Trading_App_REST_API.Services.Inventory;
+using Item_Trading_App_REST_API.Resources.Commands.Inventory;
+using Item_Trading_App_REST_API.Resources.Queries.Inventory;
 using MapsterMapper;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -16,11 +18,11 @@ namespace Item_Trading_App_REST_API.Controllers;
 [Authorize]
 public class InventoryController : BaseController
 {
-    private readonly IInventoryService _inventoryService;
+    private readonly IMediator _mediator;
 
-    public InventoryController(IInventoryService inventoryService, IMapper mapper) : base(mapper)
+    public InventoryController(IMapper mapper, IMediator mediator) : base(mapper)
     {
-        _inventoryService = inventoryService;
+        _mediator = mediator;
     }
 
     [HttpPut(Endpoints.Inventory.Add)]
@@ -29,7 +31,9 @@ public class InventoryController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _inventoryService.AddItemAsync(AdaptToType<AddItemRequest, AddItem>(request, (nameof(AddItem.UserId), UserId)));
+        var model = AdaptToType<AddItemRequest, AddInventoryItemCommand>(request, (nameof(AddInventoryItemCommand.UserId), UserId), (nameof(AddInventoryItemCommand.Notify), true));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<QuantifiedItemResult, AddItemSuccessResponse, AddItemFailedResponse>(result);
     }
@@ -40,7 +44,9 @@ public class InventoryController : BaseController
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
-        var result = await _inventoryService.DropItemAsync(AdaptToType<DropItemRequest, DropItem>(request, (nameof(DropItem.UserId), UserId)));
+        var model = AdaptToType<DropItemRequest, DropInventoryItemCommand>(request, (nameof(DropInventoryItemCommand.UserId), UserId), (nameof(DropInventoryItemCommand.Notify), true));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<QuantifiedItemResult, AddItemSuccessResponse, AddItemFailedResponse>(result);
     }
@@ -54,7 +60,9 @@ public class InventoryController : BaseController
                 Errors = new[] { "Item ID was not provided" }
             });
 
-        var result = await _inventoryService.GetItemAsync(AdaptToType<string, GetUsersItem>(itemId, (nameof(GetUsersItem.UserId), UserId)));
+        var model = AdaptToType<string, GetInventoryItemQuery>(itemId, (nameof(GetInventoryItemQuery.UserId), UserId));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<QuantifiedItemResult, GetItemSuccessResponse, GetItemFailedResponse>(result);
     }
@@ -64,7 +72,9 @@ public class InventoryController : BaseController
     {
         string searchString = HttpContext.Request.Query["searchstring"].ToString();
 
-        var result = await _inventoryService.ListItemsAsync(AdaptToType<string , ListItems>(searchString, (nameof(ListItems.UserId), UserId)));
+        var model = AdaptToType<string, ListInventoryItemsQuery>(searchString, (nameof(ListInventoryItemsQuery.UserId), UserId));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<ItemsResult, ListItemsSuccessResponse, FailedResponse>(result);
     }
@@ -72,7 +82,9 @@ public class InventoryController : BaseController
     [HttpGet(Endpoints.Inventory.GetLockedAmount)]
     public async Task<IActionResult> GetLockedAmount(string itemId)
     {
-        var result = await _inventoryService.GetLockedAmount(AdaptToType<string, GetUsersItem>(itemId, (nameof(GetUsersItem.UserId), UserId)));
+        var model = AdaptToType<string, GetInventoryItemLockedAmountQuery>(itemId, (nameof(GetInventoryItemLockedAmountQuery.UserId), UserId));
+
+        var result = await _mediator.Send(model);
 
         return MapResult<LockedItemAmountResult, GetLockedAmountSuccessResponse, GetLockedAmountFailedResponse>(result);
     }

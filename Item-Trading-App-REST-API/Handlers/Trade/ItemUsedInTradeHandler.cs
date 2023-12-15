@@ -1,5 +1,5 @@
 ﻿using Item_Trading_App_REST_API.Requests.Base;
-using Item_Trading_App_REST_API.Requests.Trade;
+using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Services.TradeItem;
 using MediatR;
 using System;
@@ -18,7 +18,7 @@ public class ItemUsedInTradeHandler : HandlerBase, IRequestHandler<ItemUsedInTra
     public Task<bool> Handle(ItemUsedInTradeQuery request, CancellationToken cancellationToken)
     {
         return Execute<ITradeItemService, bool>(async (tradeService) =>
-            (await tradeService.GetItemTradeIdsAsync(request.ItemId)).Any()
+            (await tradeService.GetItemTradeIdsAsync(request)).Any()
         );
     }
 }

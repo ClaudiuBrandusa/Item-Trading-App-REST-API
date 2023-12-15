@@ -1,13 +1,12 @@
-﻿using Item_Trading_App_REST_API.Data;
+﻿using Item_Trading_App_REST_API.Resources.Commands.Identity;
+using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
+using Item_Trading_App_REST_API.Resources.Queries.Identity;
 using Item_Trading_App_REST_API.Services.Identity;
-using Item_Trading_App_Tests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Moq;
 
 namespace Item_Trading_App_Tests;
 
@@ -85,7 +84,7 @@ public class IdentityTests
     [InlineData("", "", "")]
     public async void RegisterUser(string userName, string email, string password)
     {
-        var result = await _sut.RegisterAsync(new Register
+        var result = await _sut.RegisterAsync(new RegisterCommand
         {
             Username = userName,
             Email = email,
@@ -110,14 +109,14 @@ public class IdentityTests
     [InlineData("", "")]
     public async void LoginUser(string userName, string password)
     {
-        await _sut.RegisterAsync(new Register
+        await _sut.RegisterAsync(new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
         });
 
-        var result = await _sut.LoginAsync(new Login
+        var result = await _sut.LoginAsync(new LoginCommand
         {
             Username = userName,
             Password = password
@@ -141,14 +140,14 @@ public class IdentityTests
     [InlineData("", "")]
     public async void RefreshToken(string userName, string password)
     {
-        var registerResult = await _sut.RegisterAsync(new Register
+        var registerResult = await _sut.RegisterAsync(new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
         });
 
-        var result = await _sut.RefreshTokenAsync(new RefreshTokenData
+        var result = await _sut.RefreshTokenAsync(new RefreshTokenCommand
         {
             Token = registerResult.Token,
             RefreshToken = registerResult.RefreshToken
@@ -172,14 +171,18 @@ public class IdentityTests
     [InlineData("", "")]
     public async void GetUsername(string userName, string password)
     {
-        await _sut.RegisterAsync(new Register
+        var registerResult = await _sut.RegisterAsync(new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
         });
 
-        var result = await _sut.GetUsername(userName);
+        await _dbContext.SaveChangesAsync();
+
+        var userId = registerResult.Success ? (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())!.Id : "";
+
+        var result = await _sut.GetUsername(new GetUsernameQuery { UserId = userId });
 
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
@@ -199,7 +202,7 @@ public class IdentityTests
     public async void ListUsers(string userName, string password, int count)
     {
         for (int i = 0; i < count; i++)
-            await _sut.RegisterAsync(new Register
+            await _sut.RegisterAsync(new RegisterCommand
             {
                 Username = userName + $"+{i}",
                 Email = "Test@a.com",
@@ -208,7 +211,7 @@ public class IdentityTests
 
         string userId = _dbContext.Users.FirstOrDefault()?.Id ?? "";
 
-        var result = await _sut.ListUsers(new ListUsers
+        var result = await _sut.ListUsers(new ListUsersQuery
         {
             SearchString = userName,
             UserId = userId

@@ -3,8 +3,10 @@ using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Extensions;
 using Item_Trading_App_REST_API.Models.Item;
-using Item_Trading_App_REST_API.Requests.Item;
-using Item_Trading_App_REST_API.Requests.TradeItem;
+using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
+using Item_Trading_App_REST_API.Resources.Queries.Trade;
+using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
 using MapsterMapper;
 using MediatR;
@@ -31,28 +33,28 @@ public class TradeItemService : ITradeItemService
         _mapper = mapper;
     }
 
-    public async Task<bool> AddTradeItemAsync(AddTradeItemRequest model)
+    public async Task<bool> AddTradeItemAsync(AddTradeItemCommand model)
     {
         if (string.IsNullOrEmpty(model.ItemId) || string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.Name)) return false;
 
         if (model.Quantity < 1 || model.Price < 1) return false;
 
-        var tradeContent = _mapper.AdaptToType<AddTradeItemRequest, TradeContent>(model);
+        var tradeContent = _mapper.AdaptToType<AddTradeItemCommand, TradeContent>(model);
 
-        await _context.TradeContent.AddAsync(tradeContent);
-        
+        await _context.AddAsync(tradeContent);
+
         await _cacheService.SetCacheValueAsync(CacheKeys.TradeItem.GetTradeItemKey(model.TradeId, model.ItemId), model);
         await _cacheService.AddToSet(CacheKeys.UsedItem.GetUsedItemKey(model.ItemId), model.TradeId);
 
         return true;
     }
 
-    public async Task<List<Models.Trade.TradeItem>> GetTradeItemsAsync(string tradeId)
+    public async Task<List<Models.TradeItems.TradeItem>> GetTradeItemsAsync(GetTradeItemsQuery model)
     {
-        return await GetTradeContentAsAsync(tradeId,
+        return await GetTradeContentAsAsync(model.TradeId,
             (TradeContent content) =>
-                _mapper.AdaptToType<TradeContent, Models.Trade.TradeItem>(content),
-            (Models.Trade.TradeItem tradeItem) =>
+                _mapper.AdaptToType<TradeContent, Models.TradeItems.TradeItem>(content),
+            (Models.TradeItems.TradeItem tradeItem) =>
                 tradeItem.ItemId
             );
     }
@@ -62,14 +64,14 @@ public class TradeItemService : ITradeItemService
         return GetItemPricesAsync(model.TradeId);
     }
 
-    public Task<List<string>> GetItemTradeIdsAsync(string itemId)
+    public Task<List<string>> GetItemTradeIdsAsync(ItemUsedInTradeQuery model)
     {
-        return _cacheService.GetSetValuesAsync(CacheKeys.UsedItem.GetUsedItemKey(itemId), async (args) =>
+        return _cacheService.GetSetValuesAsync(CacheKeys.UsedItem.GetUsedItemKey(model.ItemId), async (args) =>
         {
             return await _context
                 .TradeContent
                 .AsNoTracking()
-                .Where(x => x.ItemId == itemId)
+                .Where(x => x.ItemId == model.ItemId)
                 .Select(x => x.TradeId)
                 .ToListAsync();
         },

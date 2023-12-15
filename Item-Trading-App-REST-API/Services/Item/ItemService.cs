@@ -8,10 +8,12 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Item_Trading_App_REST_API.Requests.Item;
-using Item_Trading_App_REST_API.Requests.Inventory;
 using Item_Trading_App_REST_API.Extensions;
-using Item_Trading_App_REST_API.Requests.Trade;
+using Item_Trading_App_REST_API.Resources.Queries.Trade;
+using Item_Trading_App_REST_API.Resources.Queries.Inventory;
+using Item_Trading_App_REST_API.Resources.Commands.Inventory;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
+using Item_Trading_App_REST_API.Resources.Commands.Item;
 
 namespace Item_Trading_App_REST_API.Services.Item;
 
@@ -30,7 +32,7 @@ public class ItemService : IItemService
         _mediator = mediator;
     }
 
-    public async Task<FullItemResult> CreateItemAsync(CreateItem model)
+    public async Task<FullItemResult> CreateItemAsync(CreateItemCommand model)
     {
         if(model is null)
             return new FullItemResult
@@ -66,7 +68,7 @@ public class ItemService : IItemService
         };
     }
 
-    public async Task<FullItemResult> UpdateItemAsync(UpdateItem model)
+    public async Task<FullItemResult> UpdateItemAsync(UpdateItemCommand model)
     {
         if(model is null)
             return new FullItemResult
@@ -115,15 +117,15 @@ public class ItemService : IItemService
         };
     }
 
-    public async Task<DeleteItemResult> DeleteItemAsync(string itemId, string senderUserId)
+    public async Task<DeleteItemResult> DeleteItemAsync(DeleteItemCommand model)
     {
-        if(string.IsNullOrEmpty(itemId))
+        if(string.IsNullOrEmpty(model.ItemId))
             return new DeleteItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
-        var isUsedInATrade = await _mediator.Send(new ItemUsedInTradeQuery { ItemId = itemId });
+        var isUsedInATrade = await _mediator.Send(new ItemUsedInTradeQuery { ItemId = model.ItemId });
 
         if (isUsedInATrade)
             return new DeleteItemResult
@@ -131,13 +133,13 @@ public class ItemService : IItemService
                 Errors = new[] { "Unable to delete an item that is used in a trade" }
             };
 
-        var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItem { ItemId = itemId });
+        var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItemQuery { ItemId = model.ItemId });
 
-        string cacheKey = CacheKeys.Item.GetItemKey(itemId);
+        string cacheKey = CacheKeys.Item.GetItemKey(model.ItemId);
 
         var item = await _cacheService.GetEntityAsync(
             cacheKey,
-            (args) => GetItemEntityAsync(itemId));
+            (args) => GetItemEntityAsync(model.ItemId));
 
         if (item is null)
             return new DeleteItemResult
@@ -153,37 +155,37 @@ public class ItemService : IItemService
                 Errors = new[] { "Unable to remove item" }
             };
         
-        await _mediator.Send(new ItemDeleted { ItemId = itemId, UserIds = usersOwningTheItem });
+        await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = model.ItemId, UserIds = usersOwningTheItem.UserIds });
         await _notificationService.SendDeletedNotificationToAllUsersExceptAsync(
-            senderUserId,
+            model.UserId,
             NotificationCategoryTypes.Item,
-            itemId);
+            model.ItemId);
         
         return new DeleteItemResult
         {
-            ItemId = itemId,
+            ItemId = model.ItemId,
             ItemName = item.Name,
             Success = true
         };
     }
 
-    public async Task<FullItemResult> GetItemAsync(string itemId)
+    public async Task<FullItemResult> GetItemAsync(GetItemQuery model)
     {
-        if(string.IsNullOrEmpty(itemId))
+        if(string.IsNullOrEmpty(model.ItemId))
             return new FullItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         var item = await _cacheService.GetEntityAsync(
-            CacheKeys.Item.GetItemKey(itemId),
-            (args) => GetItemEntityAsync(itemId),
+            CacheKeys.Item.GetItemKey(model.ItemId),
+            (args) => GetItemEntityAsync(model.ItemId),
             true);
 
         if (item is null)
             return new FullItemResult
             {
-                ItemId = itemId,
+                ItemId = model.ItemId,
                 Errors = new[] { "Item not found" }
             };
 
@@ -196,7 +198,7 @@ public class ItemService : IItemService
         };
     }
 
-    public async Task<ItemsResult> ListItemsAsync(string searchString = "")
+    public async Task<ItemsResult> ListItemsAsync(ListItemsQuery model)
     {
         var items = await _cacheService.GetEntitiesAsync(
             CacheKeys.Item.GetItemsKey(),
@@ -204,8 +206,8 @@ public class ItemService : IItemService
             true,
             (Entities.Item x) => x.ItemId);
 
-        if (!string.IsNullOrEmpty(searchString))
-            items = items.Where(x => x.Name.ToLower().StartsWith(searchString.ToLower())).ToList();
+        if (!string.IsNullOrEmpty(model.SearchString))
+            items = items.Where(x => x.Name.ToLower().StartsWith(model.SearchString.ToLower())).ToList();
 
         return new ItemsResult
         {
@@ -214,21 +216,21 @@ public class ItemService : IItemService
         };
     }
 
-    public async Task<string> GetItemNameAsync(string itemId)
+    public async Task<string> GetItemNameAsync(GetItemNameQuery model)
     {
         var entity = await _cacheService.GetEntityAsync(
-            CacheKeys.Item.GetItemKey(itemId),
-            (args) => GetItemEntityAsync(itemId),
+            CacheKeys.Item.GetItemKey(model.ItemId),
+            (args) => GetItemEntityAsync(model.ItemId),
             true);
 
         return entity?.Name ?? "";
     }
 
-    public async Task<string> GetItemDescriptionAsync(string itemId)
+    public async Task<string> GetItemDescriptionAsync(GetItemDescriptionQuery model)
     {
         var entity = await _cacheService.GetEntityAsync(
-            CacheKeys.Item.GetItemKey(itemId),
-            (args) => GetItemEntityAsync(itemId),
+            CacheKeys.Item.GetItemKey(model.ItemId),
+            (args) => GetItemEntityAsync(model.ItemId),
             true);
 
         return entity?.Description ?? "";

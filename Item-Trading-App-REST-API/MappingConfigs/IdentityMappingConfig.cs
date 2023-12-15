@@ -1,5 +1,5 @@
 ﻿using Item_Trading_App_Contracts.Responses.Identity;
-using Item_Trading_App_REST_API.Models.Identity;
+using Item_Trading_App_REST_API.Resources.Queries.Identity;
 using Mapster;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Linq;
@@ -16,8 +16,8 @@ public class IdentityMappingConfig : IRegister
         config.ForType<string, UsernameSuccessResponse>()
             .MapWith(str => new UsernameSuccessResponse { UserId = str, Username = MapContext.Current!.Parameters[nameof(UsernameSuccessResponse.Username)].ToString() });
 
-        config.ForType<string, ListUsers>()
-            .MapWith(str => new ListUsers { SearchString = str, UserId = MapContext.Current!.Parameters[nameof(ListUsers.UserId)].ToString() });
+        config.ForType<string, ListUsersQuery>()
+            .MapWith(str => new ListUsersQuery { SearchString = str, UserId = MapContext.Current!.Parameters[nameof(ListUsersQuery.UserId)].ToString() });
 
     }
 }
