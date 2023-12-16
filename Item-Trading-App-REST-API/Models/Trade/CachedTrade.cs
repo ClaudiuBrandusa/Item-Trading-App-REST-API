@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Item_Trading_App_REST_API.Models.Trade;
 
@@ -17,5 +16,5 @@ public record CachedTrade
 
     public DateTime? ResponseDate { get; set; } = null;
 
-    public List<string> TradeItemsId { get; set; } = new List<string>();
+    public string[] TradeItemsId { get; set; }
 }

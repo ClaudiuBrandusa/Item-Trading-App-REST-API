@@ -24,11 +24,11 @@ public class ItemService : IItemService
     private readonly IClientNotificationService _clientNotificationService;
     private readonly IMediator _mediator;
 
-    public ItemService(DatabaseContext context, ICacheService cacheService, IClientNotificationService notificationService, IMediator mediator)
+    public ItemService(DatabaseContext context, ICacheService cacheService, IClientNotificationService clientNotificationService, IMediator mediator)
     {
         _context = context;
         _cacheService = cacheService;
-        _clientNotificationService = notificationService;
+        _clientNotificationService = clientNotificationService;
         _mediator = mediator;
     }
 
@@ -202,12 +202,12 @@ public class ItemService : IItemService
     {
         var items = await _cacheService.GetEntitiesAsync(
             CacheKeys.Item.GetItemsKey(),
-            (args) => _context.Items.AsNoTracking().ToListAsync(),
+            (args) => _context.Items.AsNoTracking().ToArrayAsync(),
             true,
             (Entities.Item x) => x.ItemId);
 
         if (!string.IsNullOrEmpty(model.SearchString))
-            items = items.Where(x => x.Name.ToLower().StartsWith(model.SearchString.ToLower())).ToList();
+            items = items.Where(x => x.Name.ToLower().StartsWith(model.SearchString.ToLower())).ToArray();
 
         return new ItemsResult
         {

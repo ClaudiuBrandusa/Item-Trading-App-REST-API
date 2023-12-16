@@ -49,9 +49,9 @@ public class RedisCacheService : ICacheService
         return Database.SetAddAsync(key, value);
     }
 
-    public async Task AddToSet(string key, List<string> values)
+    public async Task AddToSet(string key, string[] values)
     {
-        for(int i = 0; i < values.Count; i++)
+        for(int i = 0; i < values.Length; i++)
         {
             await AddToSet(key, values[i]);
         }

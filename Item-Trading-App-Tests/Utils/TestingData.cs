@@ -1,33 +1,33 @@
-﻿using Item_Trading_App_REST_API.Models.Item;
+﻿using Item_Trading_App_REST_API.Models.TradeItems;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
 
 namespace Item_Trading_App_Tests.Utils;
 
 public static class TestingData
 {
-    private static readonly Dictionary<string, ItemPrice> itemPrices = new();
+    private static readonly Dictionary<string, TradeItem> itemPrices = new();
     private static readonly Dictionary<string, AddTradeItemCommand> tradeItemRequests = new();
     public static readonly string DefaultTradeId = Guid.NewGuid().ToString();
 
     static TestingData()
     {
-        string[] itemPriceIds = { "1", "2", "3", "4", "5" };
+        string[] tradeItemIds = { "1", "2", "3", "4", "5" };
 
-        foreach(string itemPriceId in itemPriceIds)
+        foreach(string tradeItemId in tradeItemIds)
         {
-            string itemName = $"item_name_{itemPriceId}";
+            string itemName = $"item_name_{tradeItemId}";
 
-            itemPrices.Add(itemPriceId, new ItemPrice
+            itemPrices.Add(tradeItemId, new TradeItem
             {
-                ItemId = itemPriceId,
+                ItemId = tradeItemId,
                 Name = itemName,
                 Price = 1,
                 Quantity = 1
             });
 
-            tradeItemRequests.Add(itemPriceId, new AddTradeItemCommand
+            tradeItemRequests.Add(tradeItemId, new AddTradeItemCommand
             {
-                ItemId = itemPriceId,
+                ItemId = tradeItemId,
                 Name = itemName,
                 Price = 1,
                 Quantity = 1,
@@ -36,13 +36,13 @@ public static class TestingData
         }
     }
 
-    public static List<ItemPrice> GetItemPrices(string[] itemPriceIds)
+    public static TradeItem[] GetTradeItems(string[] tradeItemIds)
     {
-        return itemPrices.Where(x => itemPriceIds.Contains(x.Key)).Select(x => x.Value).ToList();
+        return itemPrices.Where(x => tradeItemIds.Contains(x.Key)).Select(x => x.Value).ToArray();
     }
 
-    public static AddTradeItemCommand[] GetTradeItemRequests(string[] itemPriceIds)
+    public static AddTradeItemCommand[] GetTradeItemRequests(string[] tradeItemIds)
     {
-        return tradeItemRequests.Where(x => itemPriceIds.Contains(x.Key)).Select(x => x.Value with { ItemId = Guid.NewGuid().ToString() }).ToArray();
+        return tradeItemRequests.Where(x => tradeItemIds.Contains(x.Key)).Select(x => x.Value with { ItemId = Guid.NewGuid().ToString() }).ToArray();
     }
 }

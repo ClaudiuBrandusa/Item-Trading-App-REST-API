@@ -1,6 +1,5 @@
 ﻿using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
 using Item_Trading_App_REST_API.Data;
-using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
@@ -58,72 +57,41 @@ public class TradeItemTests
         }
     }
 
-    [Theory(DisplayName = "Get trade items")]
+    [Theory(DisplayName = "Get item prices")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void GetTradeItems(params string[] itemPriceIds)
+    public async void GetTradeItems(params string[] tradeItemIds)
     {
-        var tradeItemRequests = TestingData.GetTradeItemRequests(itemPriceIds);
+        var tradeItemRequests = TestingData.GetTradeItemRequests(tradeItemIds);
 
-        // _tradeService.CreateTradeOffer()
-
-        var offer = new Trade
-        {
-            TradeId = tradeItemRequests[0].TradeId,
-            SentDate = DateTime.Now
-        };
-
-        await _context.AddEntityAsync(offer);
-
-        int length = itemPriceIds.Length;
+        int length = tradeItemIds.Length;
 
         for (int i = 0; i < length; i++)
-        {
             await _sut.AddTradeItemAsync(tradeItemRequests[i]);
-        }
 
         await _context.SaveChangesAsync();
+
         var result = await _sut.GetTradeItemsAsync(new GetTradeItemsQuery { TradeId = TestingData.DefaultTradeId });
 
-        Assert.True(result.Count == length, "The result should be successful");
+        Assert.True(result.Length == length, "The result should be successful");
     }
 
     [Theory(DisplayName = "Get item prices")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void GetItemPrices(params string[] itemPriceIds)
+    public async void GetItemTradeIdsAsync(params string[] tradeItemIds)
     {
-        var tradeItemRequests = TestingData.GetTradeItemRequests(itemPriceIds);
+        var tradeItemRequests = TestingData.GetTradeItemRequests(tradeItemIds);
 
-        int length = itemPriceIds.Length;
-
-        for (int i = 0; i < length; i++)
-            await _sut.AddTradeItemAsync(tradeItemRequests[i]);
-
-        await _context.SaveChangesAsync();
-
-        var result = await _sut.GetItemPricesAsync(new GetItemPricesQuery { TradeId = TestingData.DefaultTradeId });
-
-        Assert.True(result.Count == length, "The result should be successful");
-    }
-
-    [Theory(DisplayName = "Get item prices")]
-    [InlineData("1")]
-    [InlineData("1", "2", "3")]
-    [InlineData("1", "2", "3", "4", "5")]
-    public async void GetItemTradeIdsAsync(params string[] itemPriceIds)
-    {
-        var tradeItemRequests = TestingData.GetTradeItemRequests(itemPriceIds);
-
-        for (int i = 0; i < itemPriceIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
             await _sut.AddTradeItemAsync(tradeItemRequests[i]);
 
         await _context.SaveChangesAsync();
 
         var result = await _sut.GetItemTradeIdsAsync(new ItemUsedInTradeQuery { ItemId = tradeItemRequests[0].ItemId });
 
-        Assert.True(result.Count == 1, "The result should be successful");
+        Assert.True(result.Length == 1, "The result should be successful");
     }
 }

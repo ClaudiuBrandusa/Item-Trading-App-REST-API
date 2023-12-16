@@ -4,7 +4,6 @@ using Item_Trading_App_REST_API.Constants;
 using Item_Trading_App_REST_API.Services.ConnectedUsers;
 using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace Item_Trading_App_REST_API.Services.Notification;
 
@@ -25,7 +24,7 @@ public class ClientNotificationService : IClientNotificationService
     public Task SendCreatedNotificationToAllUsersAsync(string categoryType, string id, object customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
 
-    public Task SendCreatedNotificationToUsersAsync(List<string> userIds, string categoryType, string id, object customData = null) =>
+    public Task SendCreatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
 
     public Task SendCreatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object customData = null) =>
@@ -41,7 +40,7 @@ public class ClientNotificationService : IClientNotificationService
     public Task SendMessageNotificationToAllUsersAsync(string content, DateTime dateTime) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateMessageNotification(content, dateTime));
 
-    public Task SendMessageNotificationToUsersAsync(List<string> userIds, string content, DateTime dateTime) =>
+    public Task SendMessageNotificationToUsersAsync(string[] userIds, string content, DateTime dateTime) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateMessageNotification(content, dateTime));
 
     public Task SendMessageNotificationToAllUsersExceptAsync(string userId, string content, DateTime dateTime) =>
@@ -57,7 +56,7 @@ public class ClientNotificationService : IClientNotificationService
     public Task SendUpdatedNotificationToAllUsersAsync(string categoryType, string id, object customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
 
-    public Task SendUpdatedNotificationToUsersAsync(List<string> userIds, string categoryType, string id, object customData = null) =>
+    public Task SendUpdatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
 
     public Task SendUpdatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object customData = null) =>
@@ -73,7 +72,7 @@ public class ClientNotificationService : IClientNotificationService
     public Task SendDeletedNotificationToAllUsersAsync(string categoryType, string id, object customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
 
-    public Task SendDeletedNotificationToUsersAsync(List<string> userIds, string categoryType, string id, object customData = null) =>
+    public Task SendDeletedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
 
     public Task SendDeletedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object customData = null) =>

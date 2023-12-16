@@ -1,5 +1,4 @@
-﻿using Item_Trading_App_REST_API.Models.Item;
-using Item_Trading_App_REST_API.Models.Trade;
+﻿using Item_Trading_App_REST_API.Models.Trade;
 using MediatR;
 using System.Collections.Generic;
 
@@ -11,5 +10,5 @@ public record CreateTradeOfferCommand : IRequest<SentTradeOfferResult>
 
     public string TargetUserId { get; set; }
 
-    public IEnumerable<ItemPrice> Items { get; set; }
+    public IEnumerable<Models.TradeItems.TradeItem> Items { get; set; }
 }

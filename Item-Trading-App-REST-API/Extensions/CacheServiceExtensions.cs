@@ -8,11 +8,11 @@ namespace Item_Trading_App_REST_API.Extensions;
 
 public static class CacheServiceExtensions
 {
-    public static async Task<List<T>> GetEntitiesAsync<T>(this ICacheService service, string cacheKey, Func<object[], Task<List<T>>> readFromDb, bool setCache, params object[] args) where T : class
+    public static async Task<T[]> GetEntitiesAsync<T>(this ICacheService service, string cacheKey, Func<object[], Task<T[]>> readFromDb, bool setCache, params object[] args) where T : class
     {
-        var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToList();
+        var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToArray();
 
-        if (entities is null || entities.Count == 0)
+        if (entities is null || entities.Length == 0)
         {
             entities = await readFromDb(args);
 
@@ -24,7 +24,7 @@ public static class CacheServiceExtensions
         return entities;
     }
 
-    public static async Task<List<T>> GetEntitiesAsync<T, R>(this ICacheService service, string cacheKey, Func<object[], Task<List<R>>> readFromDb, Func<R, Task<T>> convert, bool setCache, params object[] args) where T : class
+    public static async Task<T[]> GetEntitiesAsync<T, R>(this ICacheService service, string cacheKey, Func<object[], Task<R[]>> readFromDb, Func<R, Task<T>> convert, bool setCache, params object[] args) where T : class
     {
         var entities = (await service.ListWithPrefix<T>(cacheKey))?.Values.ToList() ?? new List<T>();
 
@@ -39,15 +39,21 @@ public static class CacheServiceExtensions
                     await service.SetCacheValueAsync($"{cacheKey}{(args[0] as Func<T, string>)(tmp)}", tmp);
                     entities.Add(tmp);
                 }
+            else
+                foreach (var entity in fromDb)
+                {
+                    var tmp = await convert(entity);
+                    entities.Add(tmp);
+                }
         }
-        return entities;
+        return entities.ToArray();
     }
 
-    public static async Task<List<string>> GetSetValuesAsync(this ICacheService service, string cacheKey, Func<object[], Task<List<string>>> readFromDb, bool setCache, params object[] args)
+    public static async Task<string[]> GetSetValuesAsync(this ICacheService service, string cacheKey, Func<object[], Task<string[]>> readFromDb, bool setCache, params object[] args)
     {
-        var values = (await service.ListSetValuesAsync(cacheKey)).ToList();
+        var values = (await service.ListSetValuesAsync(cacheKey)).ToArray();
 
-        if (values is null || values.Count == 0)
+        if (values is null || values.Length == 0)
         {
             values = await readFromDb(args);
 
@@ -58,7 +64,7 @@ public static class CacheServiceExtensions
         return values;
     }
 
-    public static async Task<List<string>> GetEntityIdsAsync(this ICacheService service, string cacheKey, Func<object[], Task<List<string>>> readFromDb, bool setCache, params object[] args)
+    public static async Task<string[]> GetEntityIdsAsync(this ICacheService service, string cacheKey, Func<object[], Task<string[]>> readFromDb, bool setCache, params object[] args)
     {
         var ids = (await service.ListWithPrefix<string>(cacheKey, true)).Keys.ToList();
 
@@ -74,7 +80,7 @@ public static class CacheServiceExtensions
                 }
         }
 
-        return ids;
+        return ids.ToArray();
     }
 
     public static async Task<T> GetEntityAsync<T>(this ICacheService service, string cacheKey, Func<object[], Task<T>> readFromDb, bool setCache = false, params object[] args) where T : new()

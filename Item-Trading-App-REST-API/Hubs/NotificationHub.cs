@@ -15,10 +15,10 @@ public class NotificationHub : Hub
     private readonly IConnectedUsersRepository _connectedUsersRepository;
     private readonly IClientNotificationService _clientNotificationService;
 
-    public NotificationHub(IConnectedUsersRepository connectedUsersRepository, IClientNotificationService notificationService)
+    public NotificationHub(IConnectedUsersRepository connectedUsersRepository, IClientNotificationService clientNotificationService)
     {
         _connectedUsersRepository = connectedUsersRepository;
-        _clientNotificationService = notificationService;
+        _clientNotificationService = clientNotificationService;
     }
 
     public override async Task OnConnectedAsync()
