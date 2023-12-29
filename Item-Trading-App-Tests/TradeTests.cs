@@ -1,6 +1,5 @@
 ﻿using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Inventory;
-using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Models.Trade;
 using Item_Trading_App_REST_API.Models.TradeItems;
 using Item_Trading_App_REST_API.Resources.Commands.Trade;
@@ -12,6 +11,7 @@ using Item_Trading_App_REST_API.Services.Notification;
 using Item_Trading_App_REST_API.Services.Trade;
 using Item_Trading_App_REST_API.Services.UnitOfWork;
 using MediatR;
+using Moq;
 
 namespace Item_Trading_App_Tests;
 
@@ -58,44 +58,39 @@ public class TradeTests
                 var tradeContent = _mapper.From((AddTradeItemCommand)request).AdaptToType<TradeContent>();
                 _context.TradeContent.Add(tradeContent);
             });
-        mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<List<TradeItem>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IRequest<List<TradeItem>> request, CancellationToken ct) =>
+        mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<TradeItem[]>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<TradeItem[]> request, CancellationToken ct) =>
             {
-                return currentTradeItems[((GetTradeItemsQuery)request).TradeId];
-            });
-        mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<List<ItemPrice>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IRequest<List<ItemPrice>> request, CancellationToken ct) =>
-            {
-                return currentTradeItems[((GetItemPricesQuery)request).TradeId].Select(x => new ItemPrice { ItemId = x.ItemId, Name = "", Price = 0, Quantity = x.Quantity}).ToList();
+                return currentTradeItems[((GetTradeItemsQuery)request).TradeId].Select(x => new TradeItem { ItemId = x.ItemId, Name = "", Price = 0, Quantity = x.Quantity}).ToArray();
             });
 
         var cacheServiceMock = new Mock<ICacheService>();
-        cacheServiceMock.Setup(x => x.ListWithPrefix<ItemPrice>(It.IsAny<string>(), It.IsAny<bool>()))
+        cacheServiceMock.Setup(x => x.ListWithPrefix<TradeItem>(It.IsAny<string>(), It.IsAny<bool>()))
             .ReturnsAsync((string prefix, bool removePrefix) =>
             {
-                return new Dictionary<string, ItemPrice>();
+                return new Dictionary<string, TradeItem>();
             });
         cacheServiceMock.Setup(x => x.ListWithPrefix<string>(It.IsAny<string>(), It.IsAny<bool>()))
             .ReturnsAsync((string prefix, bool removePrefix) =>
             {
                 return new Dictionary<string, string>();
             });
-        var notificationServiceMock = new Mock<INotificationService>();
+        var clientNotificationServiceMock = new Mock<IClientNotificationService>();
 
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();
 
-        _sut = new TradeService(_context, cacheServiceMock.Object, mediatorMock.Object, notificationServiceMock.Object, _mapper, unitOfWorkMock.Object);
+        _sut = new TradeService(_context, cacheServiceMock.Object, mediatorMock.Object, clientNotificationServiceMock.Object, _mapper, unitOfWorkMock.Object);
     }
 
     [Theory(DisplayName = "Create trade offer")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void CreateTrade(params string[] itemPriceIds)
+    public async void CreateTrade(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for(int i = 0; i < itemPriceIds.Length; i++)
+        for(int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;
@@ -110,18 +105,18 @@ public class TradeTests
 
         Assert.True(result.Success, "The result should be successful");
         Assert.False(string.IsNullOrEmpty(result.TradeOfferId), "The trade offer id must not be empty or null");
-        Assert.True(result.Items.All(x => itemPriceIds.Contains(x.ItemId)), "The trade offer's items should contain all of the inserted items");
+        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)), "The trade offer's items should contain all of the inserted items");
         Assert.Equal(defaultUserName, result.ReceiverName);
     }
 
     [Theory(DisplayName = "Get sent trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async void GetSentTrade(params string[] itemPriceIds)
+    public async void GetSentTrade(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for (int i = 0; i < itemPriceIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;
@@ -141,23 +136,23 @@ public class TradeTests
         });
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(itemPriceIds.Length, result.Items.Count());
-        Assert.True(result.Items.All(x => itemPriceIds.Contains(x.ItemId)));
+        Assert.Equal(tradeItemIds.Length, result.Items.Count());
+        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)));
         Assert.Equal(receiverUserId, result.ReceiverId);
     }
 
     [Theory(DisplayName = "Get sent trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetSentTrades(int numberOfTradeOffers, params string[] itemPriceIds)
+    public async void GetSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         List<string> tradeOfferIds = new();
 
         for(int i = 0; i < numberOfTradeOffers; i++)
         {
-            var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-            for (int j = 0; j < itemPriceIds.Length; j++)
+            for (int j = 0; j < tradeItemIds.Length; j++)
             {
                 itemPrices[j].Price += j;
                 itemPrices[j].Quantity += j * 2;
@@ -182,15 +177,15 @@ public class TradeTests
     [Theory(DisplayName = "Get responded sent trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetRespondedSentTrades(int numberOfTradeOffers, params string[] itemPriceIds)
+    public async void GetRespondedSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         List<string> tradeOfferIds = new();
 
         for (int i = 0; i < numberOfTradeOffers; i++)
         {
-            var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-            for (int j = 0; j < itemPriceIds.Length; j++)
+            for (int j = 0; j < tradeItemIds.Length; j++)
             {
                 itemPrices[j].Price += j;
                 itemPrices[j].Quantity += j * 2;
@@ -221,11 +216,11 @@ public class TradeTests
     [Theory(DisplayName = "Get received trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async void GetReceivedTrade(params string[] itemPriceIds)
+    public async void GetReceivedTrade(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for (int i = 0; i < itemPriceIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;
@@ -245,23 +240,23 @@ public class TradeTests
         });
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(itemPriceIds.Length, result.Items.Count());
-        Assert.True(result.Items.All(x => itemPriceIds.Contains(x.ItemId)));
+        Assert.Equal(tradeItemIds.Length, result.Items.Count());
+        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)));
         Assert.Equal(senderUserId, result.SenderId);
     }
 
     [Theory(DisplayName = "Get received trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetReceivedTrades(int numberOfTradeOffers, params string[] itemPriceIds)
+    public async void GetReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         List<string> tradeOfferIds = new();
 
         for (int i = 0; i < numberOfTradeOffers; i++)
         {
-            var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-            for (int j = 0; j < itemPriceIds.Length; j++)
+            for (int j = 0; j < tradeItemIds.Length; j++)
             {
                 itemPrices[j].Price += j;
                 itemPrices[j].Quantity += j * 2;
@@ -286,15 +281,15 @@ public class TradeTests
     [Theory(DisplayName = "Get responded received trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetRespondedReceivedTrades(int numberOfTradeOffers, params string[] itemPriceIds)
+    public async void GetRespondedReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         List<string> tradeOfferIds = new();
 
         for (int i = 0; i < numberOfTradeOffers; i++)
         {
-            var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-            for (int j = 0; j < itemPriceIds.Length; j++)
+            for (int j = 0; j < tradeItemIds.Length; j++)
             {
                 itemPrices[j].Price += j;
                 itemPrices[j].Quantity += j * 2;
@@ -326,11 +321,11 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void AcceptTradeOffer(params string[] itemPriceIds)
+    public async void AcceptTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for (int i = 0; i < itemPriceIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;
@@ -358,11 +353,11 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void RejectTradeOffer(params string[] itemPriceIds)
+    public async void RejectTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for (int i = 0; i < itemPriceIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;
@@ -390,11 +385,11 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void CancelTradeOffer(params string[] itemPriceIds)
+    public async void CancelTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetItemPrices(itemPriceIds);
+        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for (int i = 0; i < itemPriceIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;

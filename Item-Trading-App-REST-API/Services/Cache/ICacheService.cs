@@ -17,7 +17,7 @@ public interface ICacheService
 
     Task AddToSet(string key, string value);
 
-    Task AddToSet(string key, List<string> values);
+    Task AddToSet(string key, string[] values);
 
     Task<bool> ContainsKey(string key);
 

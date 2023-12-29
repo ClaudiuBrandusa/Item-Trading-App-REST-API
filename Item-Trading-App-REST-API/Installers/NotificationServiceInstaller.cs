@@ -8,6 +8,6 @@ public class NotificationServiceInstaller : IInstaller
 {
     public void InstallServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddTransient<INotificationService, NotificationService>();
+        services.AddTransient<IClientNotificationService, ClientNotificationService>();
     }
 }

@@ -2,7 +2,6 @@
 using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Extensions;
-using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
@@ -11,8 +10,6 @@ using Item_Trading_App_REST_API.Services.Cache;
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -49,22 +46,12 @@ public class TradeItemService : ITradeItemService
         return true;
     }
 
-    public async Task<List<Models.TradeItems.TradeItem>> GetTradeItemsAsync(GetTradeItemsQuery model)
+    public Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(GetTradeItemsQuery model)
     {
-        return await GetTradeContentAsAsync(model.TradeId,
-            (TradeContent content) =>
-                _mapper.AdaptToType<TradeContent, Models.TradeItems.TradeItem>(content),
-            (Models.TradeItems.TradeItem tradeItem) =>
-                tradeItem.ItemId
-            );
+        return GetTradeItemsAsync(model.TradeId);
     }
 
-    public Task<List<ItemPrice>> GetItemPricesAsync(GetItemPricesQuery model)
-    {
-        return GetItemPricesAsync(model.TradeId);
-    }
-
-    public Task<List<string>> GetItemTradeIdsAsync(ItemUsedInTradeQuery model)
+    public Task<string[]> GetItemTradeIdsAsync(ItemUsedInTradeQuery model)
     {
         return _cacheService.GetSetValuesAsync(CacheKeys.UsedItem.GetUsedItemKey(model.ItemId), async (args) =>
         {
@@ -73,42 +60,24 @@ public class TradeItemService : ITradeItemService
                 .AsNoTracking()
                 .Where(x => x.ItemId == model.ItemId)
                 .Select(x => x.TradeId)
-                .ToListAsync();
+                .ToArrayAsync();
         },
         true);
     }
 
-    private async Task<List<ItemPrice>> GetItemPricesAsync(string tradeId)
-    {
-        return await GetTradeContentAsAsync(tradeId,
-            async (TradeContent content) =>
-                _mapper.AdaptToType<TradeContent, ItemPrice>(content, (nameof(ItemPrice.Name), await GetItemNameAsync(content.ItemId))
-            ),
-            (itemPrice) =>
-                itemPrice.ItemId
-            );
-    }
-
-    private Task<List<T>> GetTradeContentAsAsync<T>(string tradeId, Func<TradeContent, Task<T>> mapFromTradeContentFunc, Func<T, string> getEntityIdFunc) where T : class
+    private Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(string tradeId)
     {
         return _cacheService.GetEntitiesAsync(CacheKeys.TradeItem.GetTradeItemKey(tradeId, ""), async (args) =>
         {
-            return await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToListAsync();
+            return await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToArrayAsync();
         }, async (TradeContent content) =>
         {
-            return await mapFromTradeContentFunc(content);
-        }, true, (T entity) => getEntityIdFunc(entity));
-    }
-
-    private Task<List<T>> GetTradeContentAsAsync<T>(string tradeId, Func<TradeContent, T> mapFromTradeContentFunc, Func<T, string> getEntityIdFunc) where T : class
-    {
-        return _cacheService.GetEntitiesAsync(CacheKeys.TradeItem.GetTradeItemKey(tradeId, ""), async (args) =>
-        {
-            return await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToListAsync();
-        }, (TradeContent content) =>
-        {
-            return Task.FromResult(mapFromTradeContentFunc(content));
-        }, true, (T entity) => getEntityIdFunc(entity));
+            return _mapper.AdaptToType<TradeContent, Models.TradeItems.TradeItem>(content, (nameof(Models.TradeItems.TradeItem.Name), await GetItemNameAsync(content.ItemId)));
+        },
+        true,
+        (Models.TradeItems.TradeItem tradeItem) =>
+            tradeItem.ItemId
+        );
     }
 
     private Task<string> GetItemNameAsync(string itemId) => _mediator.Send(new GetItemNameQuery { ItemId = itemId });

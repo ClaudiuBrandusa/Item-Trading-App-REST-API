@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.ConnectedUsers;
 
@@ -13,7 +12,7 @@ public interface IConnectedUsersRepository
 
     Task NotifyUsersAsync(object notification);
 
-    Task NotifyUsersAsync(List<string> userIds, object notification);
+    Task NotifyUsersAsync(string[] userIds, object notification);
 
     Task NotifyAllUsersExceptAsync(string userId, object notification);
 }

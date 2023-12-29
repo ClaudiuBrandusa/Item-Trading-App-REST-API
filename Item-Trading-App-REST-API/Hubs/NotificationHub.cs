@@ -13,12 +13,12 @@ namespace Item_Trading_App_REST_API.Hubs;
 public class NotificationHub : Hub
 {
     private readonly IConnectedUsersRepository _connectedUsersRepository;
-    private readonly INotificationService _notificationService;
+    private readonly IClientNotificationService _clientNotificationService;
 
-    public NotificationHub(IConnectedUsersRepository connectedUsersRepository, INotificationService notificationService)
+    public NotificationHub(IConnectedUsersRepository connectedUsersRepository, IClientNotificationService clientNotificationService)
     {
         _connectedUsersRepository = connectedUsersRepository;
-        _notificationService = notificationService;
+        _clientNotificationService = clientNotificationService;
     }
 
     public override async Task OnConnectedAsync()
@@ -27,8 +27,8 @@ public class NotificationHub : Hub
         var name = Context.GetHttpContext().User.Claims.FirstOrDefault(c => Equals(c.Type, ClaimTypes.NameIdentifier))?.Value;
 
         if(!await _connectedUsersRepository.AddConnectionIdToUser(Context.ConnectionId, userId, name))
-            await _notificationService.SendMessageNotificationToAllUsersExceptAsync(userId, $"User {name} has connected!", DateTime.Now);
-        await _notificationService.SendMessageNotificationToUserAsync(userId, "Welcome!", DateTime.Now);
+            await _clientNotificationService.SendMessageNotificationToAllUsersExceptAsync(userId, $"User {name} has connected!", DateTime.Now);
+        await _clientNotificationService.SendMessageNotificationToUserAsync(userId, "Welcome!", DateTime.Now);
 
         await base.OnConnectedAsync();
     }

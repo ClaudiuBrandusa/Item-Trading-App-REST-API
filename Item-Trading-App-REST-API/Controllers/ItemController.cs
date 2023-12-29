@@ -41,10 +41,8 @@ public class ItemController : BaseController
     }
 
     [HttpGet(Endpoints.Item.List)]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> List([FromQuery] string searchString)
     {
-        string searchString = HttpContext.Request.Query["searchstring"].ToString();
-
         var model = new ListItemsQuery { SearchString = searchString };
 
         var result = await _mediator.Send(model);

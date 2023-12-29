@@ -34,9 +34,9 @@ public class InventoryTests
             });
         
         var cacheServiceMock = new Mock<ICacheService>();
-        var notificationServiceMock = new Mock<INotificationService>();
+        var clientNotificationServiceMock = new Mock<IClientNotificationService>();
 
-        _sut = new InventoryService(TestingUtils.GetDatabaseContext(), notificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
+        _sut = new InventoryService(TestingUtils.GetDatabaseContext(), clientNotificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
     }
 
     [Theory(DisplayName = "Add item to inventory")]

@@ -5,7 +5,6 @@ using Item_Trading_App_REST_API.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -220,17 +219,17 @@ public class RefreshTokenService : IRefreshTokenService
         }
     }
 
-    private Task<List<string>> GetExpiredRefreshTokens() =>
+    private Task<string[]> GetExpiredRefreshTokens() =>
         _context.RefreshTokens
             .Where(x => x.ExpiryDate < DateTime.UtcNow)
             .Select(x => x.Token)
-            .ToListAsync();
+            .ToArrayAsync();
 
-    private Task<List<string>> GetUsedRefreshTokens() =>
+    private Task<string[]> GetUsedRefreshTokens() =>
         _context.RefreshTokens
             .Where(x => x.Used)
             .Select(x => x.Token)
-            .ToListAsync();
+            .ToArrayAsync();
 
     private void DeleteRefreshToken(string refreshToken)
     {

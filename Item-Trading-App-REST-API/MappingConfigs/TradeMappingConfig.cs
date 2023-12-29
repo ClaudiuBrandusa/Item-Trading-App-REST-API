@@ -1,8 +1,8 @@
 ﻿using Item_Trading_App_Contracts.Base.Item;
 using Item_Trading_App_Contracts.Requests.Trade;
 using Item_Trading_App_Contracts.Responses.Trade;
-using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Models.Trade;
+using Item_Trading_App_REST_API.Models.TradeItems;
 using Item_Trading_App_REST_API.Resources.Commands.Trade;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Mapster;
@@ -67,7 +67,7 @@ public class TradeMappingConfig : IRegister
 
         config.ForType<TradeOfferRequest, CreateTradeOfferCommand>()
             .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters[nameof(CreateTradeOfferCommand.SenderUserId)].ToString())
-            .Map(dest => dest.Items, src => src.Items.Select(t => new ItemPrice { ItemId = t.Id, Price = t.Price, Quantity = t.Quantity }));
+            .Map(dest => dest.Items, src => src.Items.Select(t => new TradeItem { ItemId = t.Id, Price = t.Price, Quantity = t.Quantity }));
 
         config.ForType<AcceptTradeOfferRequest, RespondTradeCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTradeCommand.UserId)].ToString())

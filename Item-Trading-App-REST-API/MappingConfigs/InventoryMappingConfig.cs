@@ -21,6 +21,10 @@ public class InventoryMappingConfig : IRegister
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(AddInventoryItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(AddInventoryItemCommand.Notify)]);
 
+        config.ForType<TradeItem, DropInventoryItemCommand>()
+            .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(DropInventoryItemCommand.UserId)])
+            .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(DropInventoryItemCommand.Notify)]);
+
         config.ForType<QuantifiedItemResult, AddItemFailedResponse>()
             .IgnoreNonMapped(true)
             .Map(dest => dest.Errors, src => src.Errors);
@@ -46,15 +50,12 @@ public class InventoryMappingConfig : IRegister
 
         config.ForType<AddInventoryItemCommand, InventoryItem>()
             .Map(dest => dest.Id, src => src.ItemId);
-
-        config.ForType<DropInventoryItemCommand, InventoryItem>()
-            .Map(dest => dest.Id, src => src.ItemId);
         
-        config.ForType<ItemPrice, LockItemCommand>()
+        config.ForType<TradeItem, LockItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(LockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(LockItemCommand.Notify)]);
 
-        config.ForType<ItemPrice, HasItemQuantityQuery>()
+        config.ForType<TradeItem, HasItemQuantityQuery>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(LockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(LockItemCommand.Notify)]);
 

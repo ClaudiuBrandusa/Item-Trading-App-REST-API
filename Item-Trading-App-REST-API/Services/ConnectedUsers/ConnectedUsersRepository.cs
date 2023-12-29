@@ -65,14 +65,14 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
     }
 
     public Task NotifyUsersAsync(object notification) =>
-        NotifyUsersAsync(currentUsersConnections.Keys.ToList(), notification);
+        NotifyUsersAsync(currentUsersConnections.Keys.ToArray(), notification);
 
-    public Task NotifyUsersAsync(List<string> userIds, object notification) =>
+    public Task NotifyUsersAsync(string[] userIds, object notification) =>
         hubContext.Clients.Groups(userIds).SendAsync("notify", notification);
 
     public Task NotifyAllUsersExceptAsync(string userId, object notification)
     {
-        var keys = currentUsersConnections.Keys.Where(x => !x.Equals(userId)).ToList();
+        var keys = currentUsersConnections.Keys.Where(x => !x.Equals(userId)).ToArray();
 
         return NotifyUsersAsync(keys, notification);
     }

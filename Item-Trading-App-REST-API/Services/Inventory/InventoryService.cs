@@ -22,15 +22,15 @@ namespace Item_Trading_App_REST_API.Services.Inventory;
 public class InventoryService : IInventoryService
 {
     private readonly DatabaseContext _context;
-    private readonly INotificationService _notificationService;
+    private readonly IClientNotificationService _clientNotificationService;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public InventoryService(DatabaseContext context, INotificationService notificationService, ICacheService cacheService, IMediator mediator, IMapper mapper)
+    public InventoryService(DatabaseContext context, IClientNotificationService clientNotificationService, ICacheService cacheService, IMediator mediator, IMapper mapper)
     {
         _context = context;
-        _notificationService = notificationService;
+        _clientNotificationService = clientNotificationService;
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
@@ -122,19 +122,21 @@ public class InventoryService : IInventoryService
                 Errors = new[] { "Something went wrong" }
             };
 
+        int quantity = model.Quantity - await GetAmountOfLockedItem(model.UserId, model.ItemId);
+
         if (model.Notify)
-            await _notificationService.SendUpdatedNotificationToUserAsync(
+            await _clientNotificationService.SendUpdatedNotificationToUserAsync(
                 model.UserId,
                 NotificationCategoryTypes.Inventory,
                 model.ItemId,
-                new InventoryItemQuantityNotification { AddAmount = true, Amount = model.Quantity });
+                new InventoryItemQuantityNotification { AddAmount = true, Amount = quantity });
 
         return new QuantifiedItemResult
         {
             ItemId = model.ItemId,
             ItemName = itemData.ItemName,
             ItemDescription = itemData.ItemDescription,
-            Quantity = model.Quantity,
+            Quantity = quantity,
             Success = true
         };
     }
@@ -205,7 +207,7 @@ public class InventoryService : IInventoryService
                 UserId = model.UserId,
                 Quantity = item.Quantity,
             });
-            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId), _mapper.AdaptToType<DropInventoryItemCommand, InventoryItem>(model));
+            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId), item);
             await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedAmount);
         }
 
@@ -215,22 +217,24 @@ public class InventoryService : IInventoryService
                 Errors = new[] { "Something went wrong" }
             };
 
+        int quantity = freeItems - model.Quantity;
+
         if (model.Notify)
-            await _notificationService.SendUpdatedNotificationToUserAsync(
+            await _clientNotificationService.SendUpdatedNotificationToUserAsync(
                 model.UserId,
                 NotificationCategoryTypes.Inventory,
                 model.ItemId,
                 new InventoryItemQuantityNotification
                 {
                     AddAmount = false,
-                    Amount = item.Quantity
+                    Amount = quantity
                 });
 
         return new QuantifiedItemResult
         {
             ItemId = model.ItemId,
             ItemName = await _mediator.Send(new GetItemNameQuery { ItemId = model.ItemId }),
-            Quantity = item.Quantity,
+            Quantity = quantity,
             Success = true
         };
     }
@@ -279,7 +283,7 @@ public class InventoryService : IInventoryService
                 .AsNoTracking()
                 .Where(oi => Equals(oi.UserId, model.UserId))
                 .Select(x => _mapper.AdaptToType<OwnedItem, InventoryItem>(x))
-                .ToListAsync(),
+                .ToArrayAsync(),
             true,
             (InventoryItem item) => item.Id);
 
@@ -333,7 +337,7 @@ public class InventoryService : IInventoryService
             amount -= model.Quantity;
 
         if (model.Notify)
-            await _notificationService.SendUpdatedNotificationToUserAsync(
+            await _clientNotificationService.SendUpdatedNotificationToUserAsync(
                 model.UserId,
                 NotificationCategoryTypes.Inventory,
                 model.ItemId,
@@ -391,7 +395,7 @@ public class InventoryService : IInventoryService
             };
 
         if (model.Notify)
-            await _notificationService.SendUpdatedNotificationToUserAsync(
+            await _clientNotificationService.SendUpdatedNotificationToUserAsync(
                 model.UserId,
                 NotificationCategoryTypes.Inventory,
                 model.ItemId,
@@ -452,7 +456,7 @@ public class InventoryService : IInventoryService
             await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, model.ItemId));
         };
         
-        await _notificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
+        await _clientNotificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
     }
 
     private Task<OwnedItem> GetInventoryItemEntityAsync(string userId, string itemId) => 
@@ -526,9 +530,9 @@ public class InventoryService : IInventoryService
         return modified;
     }
 
-    private Task<List<string>> ListUsersThatOwnItemAsync(string itemId) =>
+    private Task<string[]> ListUsersThatOwnItemAsync(string itemId) =>
         _context.OwnedItems
             .AsNoTracking()
             .Where(x => x.ItemId == itemId).Select(x => x.UserId)
-            .ToListAsync();
+            .ToArrayAsync();
 }
