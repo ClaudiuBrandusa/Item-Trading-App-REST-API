@@ -219,7 +219,6 @@ public class TradeService : ITradeService
                 };
             }
 
-
             if (!await TakeItemsAsync(senderId, model.TradeId))
             {
                 _unitOfWork.RollbackTransaction();
@@ -451,7 +450,7 @@ public class TradeService : ITradeService
         if (string.IsNullOrEmpty(model.UserId))
             return new TradeOffersResult
             {
-                Errors = new[] { "Invalid user ID" }
+                Errors = new[] { "Invalid input data" }
             };
 
         var idList = await GetReceivedTradeOffersIdList(model.UserId);
@@ -474,7 +473,7 @@ public class TradeService : ITradeService
         if (string.IsNullOrEmpty(model.UserId))
             return new TradeOffersResult
             {
-                Errors = new[] { "Invalid user ID" }
+                Errors = new[] { "Invalid input data" }
             };
 
         var idList = await GetReceivedTradeOffersIdList(model.UserId, true);
@@ -497,7 +496,7 @@ public class TradeService : ITradeService
         if (string.IsNullOrEmpty(model.UserId))
             return new TradeOffersResult
             {
-                Errors = new[] { "Invalid user ID" }
+                Errors = new[] { "Invalid input data" }
             };
 
         var idList = await GetSentTradeOffersIdList(model.UserId);
@@ -520,7 +519,7 @@ public class TradeService : ITradeService
         if (string.IsNullOrEmpty(model.UserId))
             return new TradeOffersResult
             {
-                Errors = new[] { "" }
+                Errors = new[] { "Invalid input data" }
             };
 
         var idList = await GetSentTradeOffersIdList(model.UserId, true);
@@ -734,9 +733,9 @@ public class TradeService : ITradeService
             CacheKeys.Trade.GetTradeKey(tradeId),
             async (args) =>
             {
-                var trade = _context.Trades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
-                var sentTrade = _context.SentTrades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
-                var receivedTrade = _context.ReceivedTrades.AsNoTracking().FirstOrDefault(t => Equals(t.TradeId, tradeId));
+                var trade = await GetTradeEntityAsync(tradeId);
+                var sentTrade = await GetSentTradeEntityAsync(tradeId);
+                var receivedTrade = await GetReceivedTradeEntityAsync(tradeId);
 
                 return new CachedTrade
                 {
@@ -808,6 +807,15 @@ public class TradeService : ITradeService
         return tradeItems.Length != 0;
     }
 
+    private Task<Entities.Trade> GetTradeEntityAsync(string tradeId) =>
+        GetTradeQuery(_context, tradeId);
+
+    private Task<Entities.SentTrade> GetSentTradeEntityAsync(string tradeId) =>
+        GetSentTradeQuery(_context, tradeId);
+
+    private Task<Entities.ReceivedTrade> GetReceivedTradeEntityAsync(string tradeId) =>
+        GetReceivedTradeQuery(_context, tradeId);
+    
     private async Task<int> GetTotalPrice(string tradeOfferId)
     {
         var list = await GetTradeItemsAsync(tradeOfferId);
@@ -828,4 +836,29 @@ public class TradeService : ITradeService
     private Task<string> GetUsernameAsync(string userId) => _mediator.Send(new GetUsernameQuery { UserId = userId });
 
     private Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(string tradeId) => _mediator.Send(new GetTradeItemsQuery { TradeId = tradeId });
+
+    #region Queries
+
+    private static readonly Func<DatabaseContext, string, Task<Entities.Trade>> GetTradeQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string tradeId) =>
+            context.Trades
+                .AsNoTracking()
+                .FirstOrDefault(t => Equals(t.TradeId, tradeId))
+        );
+    
+    private static readonly Func<DatabaseContext, string, Task<Entities.SentTrade>> GetSentTradeQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string tradeId) =>
+            context.SentTrades
+                .AsNoTracking()
+                .FirstOrDefault(t => Equals(t.TradeId, tradeId))
+        );
+
+    private static readonly Func<DatabaseContext, string, Task<Entities.ReceivedTrade>> GetReceivedTradeQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string tradeId) =>
+            context.ReceivedTrades
+                .AsNoTracking()
+                .FirstOrDefault(t => Equals(t.TradeId, tradeId))
+        );
+
+    #endregion Queries
 }
