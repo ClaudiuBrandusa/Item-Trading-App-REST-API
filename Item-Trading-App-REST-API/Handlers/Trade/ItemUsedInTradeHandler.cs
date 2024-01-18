@@ -1,6 +1,9 @@
-﻿using Item_Trading_App_REST_API.Requests.Base;
+﻿using Item_Trading_App_REST_API.Extensions;
+using Item_Trading_App_REST_API.Requests.Base;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Services.TradeItem;
+using MapsterMapper;
 using MediatR;
 using System;
 using System.Linq;
@@ -11,14 +14,17 @@ namespace Item_Trading_App_REST_API.Handlers.Trade;
 
 public class ItemUsedInTradeHandler : HandlerBase, IRequestHandler<ItemUsedInTradeQuery, bool>
 {
-    public ItemUsedInTradeHandler(IServiceProvider serviceProvider) : base(serviceProvider)
+    private readonly IMapper _mapper;
+
+    public ItemUsedInTradeHandler(IServiceProvider serviceProvider, IMapper mapper) : base(serviceProvider)
     {
+        _mapper = mapper;
     }
 
     public Task<bool> Handle(ItemUsedInTradeQuery request, CancellationToken cancellationToken)
     {
         return Execute<ITradeItemService, bool>(async (tradeService) =>
-            (await tradeService.GetItemTradeIdsAsync(request)).Any()
+            (await tradeService.GetItemTradeIdsAsync(_mapper.AdaptToType<ItemUsedInTradeQuery, GetTradesUsingTheItemQuery>(request))).Any()
         );
     }
 }

@@ -49,6 +49,16 @@ public class ItemController : BaseController
 
         return MapResult<ItemsResult, ItemsResponse, FailedResponse>(result);
     }
+    
+    [HttpGet(Endpoints.Item.ListTradesUsingTheItem)]
+    public async Task<IActionResult> GetTradesUsingTheItem([FromQuery] string itemId)
+    {
+        var model = new GetTradesUsingTheItemQuery { ItemId = itemId };
+
+        var results = await _mediator.Send(model);
+
+        return Ok(new TradesUsingTheItemResponse { ItemId = itemId, TradeIds = results });
+    }
 
     [HttpPost(Endpoints.Item.Create)]
     public async Task<IActionResult> Create([FromBody] CreateItemRequest request)

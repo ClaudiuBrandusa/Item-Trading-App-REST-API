@@ -1,10 +1,10 @@
 ﻿using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
 using Item_Trading_App_REST_API.Data;
-using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.TradeItem;
 using MediatR;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
 
 namespace Item_Trading_App_Tests;
 public class TradeItemTests
@@ -90,7 +90,7 @@ public class TradeItemTests
 
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetItemTradeIdsAsync(new ItemUsedInTradeQuery { ItemId = tradeItemRequests[0].ItemId });
+        var result = await _sut.GetItemTradeIdsAsync(new GetTradesUsingTheItemQuery { ItemId = tradeItemRequests[0].ItemId });
 
         Assert.True(result.Length == 1, "The result should be successful");
     }

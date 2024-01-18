@@ -1,5 +1,5 @@
 ﻿using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
-using Item_Trading_App_REST_API.Resources.Queries.Trade;
+using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using System.Threading.Tasks;
 
@@ -21,5 +21,5 @@ public interface ITradeItemService
     /// <summary>
     /// Returns an array of the trade ids that contain the item with the given id
     /// </summary>
-    Task<string[]> GetItemTradeIdsAsync(ItemUsedInTradeQuery model);
+    Task<string[]> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model);
 }
