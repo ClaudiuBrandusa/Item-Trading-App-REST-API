@@ -14,6 +14,7 @@ using Item_Trading_App_REST_API.Resources.Queries.Inventory;
 using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Commands.Item;
+using MapsterMapper;
 
 namespace Item_Trading_App_REST_API.Services.Item;
 
@@ -23,13 +24,15 @@ public class ItemService : IItemService
     private readonly ICacheService _cacheService;
     private readonly IClientNotificationService _clientNotificationService;
     private readonly IMediator _mediator;
+    private readonly IMapper _mapper;
 
-    public ItemService(DatabaseContext context, ICacheService cacheService, IClientNotificationService clientNotificationService, IMediator mediator)
+    public ItemService(DatabaseContext context, ICacheService cacheService, IClientNotificationService clientNotificationService, IMediator mediator, IMapper mapper)
     {
         _context = context;
         _cacheService = cacheService;
         _clientNotificationService = clientNotificationService;
         _mediator = mediator;
+        _mapper = mapper;
     }
 
     public async Task<FullItemResult> CreateItemAsync(CreateItemCommand model)
@@ -40,12 +43,7 @@ public class ItemService : IItemService
                 Errors = new[] { "Something went wrong" }
             };
 
-        var item = new Entities.Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = model.ItemName,
-            Description = model.ItemDescription
-        };
+        var item = _mapper.AdaptToType<CreateItemCommand, Entities.Item>(model, (nameof(Entities.Item.ItemId), Guid.NewGuid().ToString()));
 
         if (!await _context.AddEntityAsync(item))
             return new FullItemResult
@@ -236,10 +234,19 @@ public class ItemService : IItemService
         return entity?.Description ?? "";
     }
 
-    private Task<Entities.Item> GetItemEntityAsync(string itemId)
-    {
-        return _context.Items.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId);
-    }
+    private Task<Entities.Item> GetItemEntityAsync(string itemId) =>
+        GetItemQuery(_context, itemId);
 
     private Task SetItemCacheAsync(string itemId, Entities.Item entity) => _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(itemId), entity);
+
+    #region Queries
+
+    private static readonly Func<DatabaseContext, string, Task<Entities.Item>> GetItemQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string itemId) =>
+            context.Items
+                .AsNoTracking()
+                .FirstOrDefault(x => x.ItemId == itemId)
+        );
+
+    #endregion Queries
 }

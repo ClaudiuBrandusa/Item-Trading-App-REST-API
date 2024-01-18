@@ -4,7 +4,6 @@ using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Extensions;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
-using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
 using MapsterMapper;
@@ -51,7 +50,7 @@ public class TradeItemService : ITradeItemService
         return GetTradeItemsAsync(model.TradeId);
     }
 
-    public Task<string[]> GetItemTradeIdsAsync(ItemUsedInTradeQuery model)
+    public Task<string[]> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model)
     {
         return _cacheService.GetSetValuesAsync(CacheKeys.UsedItem.GetUsedItemKey(model.ItemId), async (args) =>
         {

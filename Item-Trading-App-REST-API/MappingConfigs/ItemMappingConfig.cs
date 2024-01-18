@@ -23,5 +23,10 @@ public class ItemMappingConfig : IRegister
 
         config.ForType<DeleteItemRequest, DeleteItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(DeleteItemCommand.UserId)]);
+
+        config.ForType<CreateItemCommand, Entities.Item>()
+            .Map(dest => dest.ItemId, src => MapContext.Current!.Parameters[nameof(Entities.Item.ItemId)])
+            .Map(dest => dest.Name, src => src.ItemName)
+            .Map(dest => dest.Description, src => src.ItemDescription);
     }
 }

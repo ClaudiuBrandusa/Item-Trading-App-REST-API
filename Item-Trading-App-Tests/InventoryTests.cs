@@ -65,10 +65,11 @@ public class InventoryTests
     }
 
     [Theory(DisplayName = "Remove item from inventory")]
-    [InlineData(1, 1)]
-    [InlineData(5, 1)]
-    [InlineData(1, 5)]
-    public async void RemoveItemFromInventory(int quantityToAdd, int quantityToDrop)
+    [InlineData(1, 1, 0)]
+    [InlineData(5, 1, 1)]
+    [InlineData(5, 1, 5)]
+    [InlineData(1, 5, 0)]
+    public async void RemoveItemFromInventory(int quantityToAdd, int quantityToDrop, int quantityToBeLocked)
     {
         var result = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
@@ -80,6 +81,19 @@ public class InventoryTests
         Assert.True(result.Success);
         Assert.Equal(quantityToAdd, result.Quantity);
 
+        if (quantityToBeLocked > 0)
+        {
+            var lockResult = await _sut.LockItemAsync(new LockItemCommand
+            {
+                ItemId = itemId,
+                Quantity = quantityToBeLocked,
+                UserId = userId
+            });
+
+            Assert.True(lockResult.Success);
+            Assert.Equal(lockResult.Quantity, quantityToBeLocked);
+        }
+
         result = await _sut.DropItemAsync(new DropInventoryItemCommand
         {
             ItemId = itemId,
@@ -87,9 +101,11 @@ public class InventoryTests
             UserId = userId
         });
 
-        Assert.True(result.Success == quantityToAdd >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
-        if (quantityToAdd >= quantityToDrop)
-            Assert.Equal(quantityToAdd - quantityToDrop, result.Quantity);
+        int freeQuantity = quantityToAdd - quantityToBeLocked;
+
+        Assert.True(result.Success == freeQuantity >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
+        if (freeQuantity >= quantityToDrop)
+            Assert.Equal(freeQuantity - quantityToDrop, result.Quantity);
     }
 
     [Theory(DisplayName = "Has item inventory")]
