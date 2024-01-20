@@ -3,4 +3,6 @@
 public record ListTradesQuery
 {
     public string UserId { get; set; }
+
+    public string[] TradeItemIds { get; set; } = new string[0];
 }

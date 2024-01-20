@@ -23,8 +23,8 @@ public class ItemUsedInTradeHandler : HandlerBase, IRequestHandler<ItemUsedInTra
 
     public Task<bool> Handle(ItemUsedInTradeQuery request, CancellationToken cancellationToken)
     {
-        return Execute<ITradeItemService, bool>(async (tradeService) =>
-            (await tradeService.GetItemTradeIdsAsync(_mapper.AdaptToType<ItemUsedInTradeQuery, GetTradesUsingTheItemQuery>(request))).Any()
+        return Execute<ITradeItemService, bool>(async (tradeItemService) =>
+            (await tradeItemService.GetItemTradeIdsAsync(_mapper.AdaptToType<ItemUsedInTradeQuery, GetTradesUsingTheItemQuery>(request))).Any()
         );
     }
 }

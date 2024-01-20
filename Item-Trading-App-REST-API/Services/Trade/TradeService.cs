@@ -453,7 +453,7 @@ public class TradeService : ITradeService
                 Errors = new[] { "Invalid input data" }
             };
 
-        var idList = await GetReceivedTradeOffersIdList(model.UserId);
+        var idList = await GetReceivedTradeOffersIdList(model.UserId, model.TradeItemIds);
 
         if (idList is null)
             return new TradeOffersResult
@@ -476,7 +476,7 @@ public class TradeService : ITradeService
                 Errors = new[] { "Invalid input data" }
             };
 
-        var idList = await GetReceivedTradeOffersIdList(model.UserId, true);
+        var idList = await GetReceivedTradeOffersIdList(model.UserId, model.TradeItemIds, true);
 
         if (idList is null)
             return new TradeOffersResult
@@ -499,7 +499,7 @@ public class TradeService : ITradeService
                 Errors = new[] { "Invalid input data" }
             };
 
-        var idList = await GetSentTradeOffersIdList(model.UserId);
+        var idList = await GetSentTradeOffersIdList(model.UserId, model.TradeItemIds);
 
         if (idList is null)
             return new TradeOffersResult
@@ -522,7 +522,7 @@ public class TradeService : ITradeService
                 Errors = new[] { "Invalid input data" }
             };
 
-        var idList = await GetSentTradeOffersIdList(model.UserId, true);
+        var idList = await GetSentTradeOffersIdList(model.UserId, model.TradeItemIds, true);
 
         if (idList is null)
             return new TradeOffersResult
@@ -675,7 +675,7 @@ public class TradeService : ITradeService
         };
     }
 
-    private async Task<string[]> GetSentTradeOffersIdList(string userId, bool responded = false)
+    private async Task<string[]> GetSentTradeOffersIdList(string userId, string[] tradeItems, bool responded = false)
     {
         var list = await _cacheService.GetEntityIdsAsync(
             CacheKeys.Trade.GetSentTradeKey(userId, ""),
@@ -686,10 +686,10 @@ public class TradeService : ITradeService
                 .ToArrayAsync(),
             true);
 
-        return await FilterTradeOffers(list, responded);
+        return await FilterTradeOffers(list, tradeItems, responded);
     }
 
-    private async Task<string[]> GetReceivedTradeOffersIdList(string userId, bool responded = false)
+    private async Task<string[]> GetReceivedTradeOffersIdList(string userId, string[] tradeItems, bool responded = false)
     {
         var list = await _cacheService.GetEntityIdsAsync(
             CacheKeys.Trade.GetReceivedTradeKey(userId, ""),
@@ -700,15 +700,47 @@ public class TradeService : ITradeService
                 .ToArrayAsync(),
             true);
 
-        return await FilterTradeOffers(list, responded);
+        return await FilterTradeOffers(list, tradeItems, responded);
     }
 
-    private async Task<string[]> FilterTradeOffers(string[] tradeOffersList, bool responded = false)
+    private async Task<string[]> FilterTradeOffers(string[] tradeOffersList, string[] tradeItems, bool responded = false)
     {
-        return await tradeOffersList
-            .ToAsyncEnumerable()
-            .WhereAwait(async x => await IsResponded(x) == responded)
-            .ToArrayAsync();
+        var trades = new List<string>();
+        
+        foreach(string tradeId in tradeOffersList)
+        {
+            var response = await IsResponded(tradeId);
+
+            if (response == responded)
+                trades.Add(tradeId);
+        }
+
+        if (tradeItems.Length > 0)
+        {
+            var remainedTrades = new List<string>();
+
+            foreach (var trade in trades)
+            {
+                bool keepTrade = false;
+
+                for (int i = 0; i < tradeItems.Length; i++)
+                {
+                    bool hasTradeItem = await _mediator.Send(new HasTradeItemQuery { TradeId = trade, ItemId = tradeItems[i] });
+                    
+                    if (hasTradeItem)
+                    {
+                        keepTrade = true;
+                        break;
+                    }
+                }
+
+                if (keepTrade) remainedTrades.Add(trade);
+            }
+
+            trades = remainedTrades;
+        }
+
+        return trades.ToArray();
     }
 
     private async Task<bool> IsResponded(string tradeId) => (await GetTradeResponseAsync(tradeId)) is not null;

@@ -45,6 +45,15 @@ public class TradeItemService : ITradeItemService
         return true;
     }
 
+    public async Task<bool> HasTradeItem(HasTradeItemQuery model)
+    {
+        return (await _context.TradeContent
+                .FirstOrDefaultAsync(x => 
+                    x.TradeId == model.TradeId &&
+                    x.ItemId == model.ItemId))
+                is not default(TradeContent);
+    }
+
     public Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(GetTradeItemsQuery model)
     {
         return GetTradeItemsAsync(model.TradeId);

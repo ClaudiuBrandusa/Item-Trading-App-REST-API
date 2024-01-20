@@ -12,6 +12,10 @@ public interface ITradeItemService
     /// </summary>
     Task<bool> AddTradeItemAsync(AddTradeItemCommand model);
 
+    /// <summary>
+    /// Checks if the trade has the item with the given id
+    /// </summary>
+    Task<bool> HasTradeItem(HasTradeItemQuery model);
 
     /// <summary>
     /// Returns the trade items of the given trade id as an array
