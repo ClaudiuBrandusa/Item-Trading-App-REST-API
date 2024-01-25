@@ -31,5 +31,7 @@ public interface ICacheService
 
     Task ClearCacheKeyAsync(string key);
 
+    Task ClearCacheKeysStartingWith(string key);
+
     Task RemoveFromSet(string key, string value);
 }

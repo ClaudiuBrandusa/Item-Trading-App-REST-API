@@ -15,7 +15,7 @@ public interface ITradeItemService
     /// <summary>
     /// Checks if the trade has the item with the given id
     /// </summary>
-    Task<bool> HasTradeItem(HasTradeItemQuery model);
+    Task<bool> HasTradeItemAsync(HasTradeItemQuery model);
 
     /// <summary>
     /// Returns the trade items of the given trade id as an array
@@ -26,4 +26,6 @@ public interface ITradeItemService
     /// Returns an array of the trade ids that contain the item with the given id
     /// </summary>
     Task<string[]> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model);
+
+    Task<bool> RemoveTradeItemsAsync(RemoveTradeItemsCommand model);
 }

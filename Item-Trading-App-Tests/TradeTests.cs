@@ -1,11 +1,15 @@
 ﻿using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Trade;
+using Item_Trading_App_REST_API.Models.TradeItemHistory;
 using Item_Trading_App_REST_API.Models.TradeItems;
 using Item_Trading_App_REST_API.Resources.Commands.Trade;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
+using Item_Trading_App_REST_API.Resources.Commands.TradeItemHistory;
+using Item_Trading_App_REST_API.Resources.Queries.Inventory;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
+using Item_Trading_App_REST_API.Resources.Queries.TradeItemHistory;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.Notification;
 using Item_Trading_App_REST_API.Services.Trade;
@@ -58,10 +62,30 @@ public class TradeTests
                 var tradeContent = _mapper.From((AddTradeItemCommand)request).AdaptToType<TradeContent>();
                 _context.TradeContent.Add(tradeContent);
             });
-        mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<TradeItem[]>>(), It.IsAny<CancellationToken>()))
+        mediatorMock.Setup(x => x.Send(It.IsAny<GetTradeItemsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IRequest<TradeItem[]> request, CancellationToken ct) =>
             {
                 return currentTradeItems[((GetTradeItemsQuery)request).TradeId].Select(x => new TradeItem { ItemId = x.ItemId, Name = "", Price = 0, Quantity = x.Quantity}).ToArray();
+            });
+        mediatorMock.Setup(x => x.Send(It.IsAny<GetTradeItemsHistoryQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<TradeItem[]> request, CancellationToken ct) =>
+            {
+                return currentTradeItems[((GetTradeItemsHistoryQuery)request).TradeId].Select(x => new TradeItem { ItemId = x.ItemId, Name = "", Price = 0, Quantity = x.Quantity }).ToArray();
+            });
+        mediatorMock.Setup(x => x.Send(It.IsAny<AddTradeItemsHistoryCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<TradeItemHistoryBaseResult> request, CancellationToken ct) =>
+            {
+                return new TradeItemHistoryBaseResult { Success = true };
+            });
+        mediatorMock.Setup(x => x.Send(It.IsAny<RemoveTradeItemsCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<bool> request, CancellationToken ct) =>
+            {
+                return true;
+            });
+        mediatorMock.Setup(x => x.Send(It.IsAny<HasItemQuantityQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<bool> request, CancellationToken ct) =>
+            {
+                return true;
             });
 
         var cacheServiceMock = new Mock<ICacheService>();

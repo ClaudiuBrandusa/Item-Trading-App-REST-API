@@ -69,7 +69,9 @@ public class TradeItemTests
             TradeId = TestingData.DefaultTradeId
         });
 
-        var result = await _sut.HasTradeItem(new HasTradeItemQuery { TradeId = TestingData.DefaultTradeId, ItemId = defaultItemId });
+        await _context.SaveChangesAsync();
+
+        var result = await _sut.HasTradeItemAsync(new HasTradeItemQuery { TradeId = TestingData.DefaultTradeId, ItemId = defaultItemId });
 
         Assert.True(result, "The result value should be true");
     }

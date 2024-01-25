@@ -45,10 +45,10 @@ public class TradeItemService : ITradeItemService
         return true;
     }
 
-    public async Task<bool> HasTradeItem(HasTradeItemQuery model)
+    public async Task<bool> HasTradeItemAsync(HasTradeItemQuery model)
     {
         return (await _context.TradeContent
-                .FirstOrDefaultAsync(x => 
+                .FirstOrDefaultAsync(x =>
                     x.TradeId == model.TradeId &&
                     x.ItemId == model.ItemId))
                 is not default(TradeContent);
@@ -71,6 +71,22 @@ public class TradeItemService : ITradeItemService
                 .ToArrayAsync();
         },
         true);
+    }
+    public async Task<bool> RemoveTradeItemsAsync(RemoveTradeItemsCommand model)
+    {
+        var result = await _context
+            .TradeContent
+            .Where(x => x.TradeId == model.TradeId)
+            .ExecuteDeleteAsync();
+
+        if (result == 0) return false;
+
+        if (!model.KeepCache)
+        {
+            await _cacheService.ClearCacheKeysStartingWith(CacheKeys.TradeItem.GetTradeItemKey(model.TradeId, ""));
+        }
+
+        return true;
     }
 
     private Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(string tradeId)

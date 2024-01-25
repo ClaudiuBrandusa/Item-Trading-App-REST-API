@@ -113,6 +113,21 @@ public class RedisCacheService : ICacheService
     public Task ClearCacheKeyAsync(string key) =>
         Database.KeyDeleteAsync(key);
 
+    public async Task ClearCacheKeysStartingWith(string key)
+    {
+        var endPoints = _connectionMultiplexer.GetEndPoints();
+
+        for(int i = 0; i < endPoints.Length; i++)
+        {
+            IServer server = _connectionMultiplexer.GetServer(endPoints[i]);
+            var cacheKeys = server.KeysAsync(Database.Database, $"{key}");
+            await foreach (var cacheKey in cacheKeys)
+            {
+                await Database.KeyDeleteAsync(cacheKey);
+            }
+        }
+    }
+
     public async Task RemoveFromSet(string key, string value)
     {
         await Database.SetRemoveAsync(key, value);

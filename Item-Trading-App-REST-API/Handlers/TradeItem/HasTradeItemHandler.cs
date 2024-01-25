@@ -17,7 +17,7 @@ public class HasTradeItemHandler : HandlerBase, IRequestHandler<HasTradeItemQuer
     public Task<bool> Handle(HasTradeItemQuery request, CancellationToken cancellationToken)
     {
         return Execute(async (ITradeItemService tradeItemService) =>
-            await tradeItemService.HasTradeItem(request)
+            await tradeItemService.HasTradeItemAsync(request)
         );
     }
 }
