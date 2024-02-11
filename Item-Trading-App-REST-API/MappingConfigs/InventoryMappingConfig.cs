@@ -4,6 +4,7 @@ using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Models.TradeItems;
 using Item_Trading_App_REST_API.Resources.Commands.Inventory;
+using Item_Trading_App_REST_API.Resources.Events.Inventory;
 using Item_Trading_App_REST_API.Resources.Queries.Inventory;
 using Mapster;
 
@@ -62,5 +63,12 @@ public class InventoryMappingConfig : IRegister
         config.ForType<TradeItem, UnlockItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(UnlockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(UnlockItemCommand.Notify)]);
+
+        config.ForType<LockItemCommand, InventoryItemLockedEvent>()
+            .Map(dest => dest.Quantity, src => MapContext.Current!.Parameters[nameof(InventoryItemLockedEvent.Quantity)]);
+
+        config.ForType<UnlockItemCommand, InventoryItemUnlockedEvent>()
+            .Map(dest => dest.Quantity, src => MapContext.Current!.Parameters[nameof(InventoryItemUnlockedEvent.Quantity)]);
     }
 }
+

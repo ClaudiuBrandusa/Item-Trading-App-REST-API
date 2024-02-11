@@ -32,19 +32,19 @@ public class TradeMappingConfig : IRegister
 
         config.ForType<string, ListSentTradesQuery>()
             .MapWith(str =>
-                new ListSentTradesQuery { UserId = str });
+                new ListSentTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
 
         config.ForType<string, ListRespondedSentTradesQuery>()
             .MapWith(str =>
-                new ListRespondedSentTradesQuery { UserId = str });
+                new ListRespondedSentTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
 
         config.ForType<string, ListReceivedTradesQuery>()
             .MapWith(str =>
-                new ListReceivedTradesQuery { UserId = str });
+                new ListReceivedTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
 
         config.ForType<string, ListRespondedReceivedTradesQuery>()
             .MapWith(str =>
-                new ListRespondedReceivedTradesQuery { UserId = str });
+                new ListRespondedReceivedTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
         
         config.ForType<SentTradeOfferResult, GetSentTradeOfferSuccessResponse>()
             .Map(dest => dest.TradeId, src => src.TradeOfferId)

@@ -10,60 +10,60 @@ public interface ITradeService
     /// <summary>
     /// Creates the trade offer
     /// </summary>
-    public Task<SentTradeOfferResult> CreateTradeOffer(CreateTradeOfferCommand model);
+    public Task<SentTradeOfferResult> CreateTradeOfferAsync(CreateTradeOfferCommand model);
 
     /// <summary>
     /// Returns a sent trade offer
     /// </summary>
-    public Task<SentTradeOfferResult> GetSentTradeOffer(RequestTradeOfferQuery requestTradeOffer);
+    public Task<SentTradeOfferResult> GetSentTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
 
     /// <summary>
     /// Returns a responded sent trade offer
     /// </summary>
-    public Task<RespondedSentTradeOfferResult> GetRespondedSentTradeOffer(RequestTradeOfferQuery requestTradeOffer);
+    public Task<RespondedSentTradeOfferResult> GetRespondedSentTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
 
     /// <summary>
     /// Returns a received trade offer
     /// </summary>
-    public Task<ReceivedTradeOfferResult> GetReceivedTradeOffer(RequestTradeOfferQuery requestTradeOffer);
+    public Task<ReceivedTradeOfferResult> GetReceivedTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
 
     /// <summary>
     /// Returns a responded received trade offer
     /// </summary>
-    public Task<RespondedReceivedTradeOfferResult> GetReceivedRespondedTradeOffer(RequestTradeOfferQuery requestTradeOffer);
+    public Task<RespondedReceivedTradeOfferResult> GetReceivedRespondedTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
 
     /// <summary>
     /// Returns all of the sent trade offers
     /// </summary>
-    public Task<TradeOffersResult> GetSentTradeOffers(ListTradesQuery model);
+    public Task<TradeOffersResult> GetSentTradeOffersAsync(ListTradesQuery model);
 
     /// <summary>
     /// Returns all of the responded sent trade offers
     /// </summary>
-    public Task<TradeOffersResult> GetSentRespondedTradeOffers(ListTradesQuery model);
+    public Task<TradeOffersResult> GetSentRespondedTradeOffersAsync(ListTradesQuery model);
 
     /// <summary>
     /// Returns all of the received trade offers
     /// </summary>
-    public Task<TradeOffersResult> GetReceivedTradeOffers(ListTradesQuery model);
+    public Task<TradeOffersResult> GetReceivedTradeOffersAsync(ListTradesQuery model);
 
     /// <summary>
     /// Returns all of the responded received trade offers
     /// </summary>
-    public Task<TradeOffersResult> GetReceivedRespondedTradeOffers(ListTradesQuery model);
+    public Task<TradeOffersResult> GetReceivedRespondedTradeOffersAsync(ListTradesQuery model);
 
     /// <summary>
     /// Accepts the trade offer
     /// </summary>
-    public Task<RespondedTradeOfferResult> AcceptTradeOffer(RespondTradeCommand model);
+    public Task<RespondedTradeOfferResult> AcceptTradeOfferAsync(RespondTradeCommand model);
 
     /// <summary>
     /// Rejects the trade offer
     /// </summary>
-    public Task<RespondedTradeOfferResult> RejectTradeOffer(RespondTradeCommand model);
+    public Task<RespondedTradeOfferResult> RejectTradeOfferAsync(RespondTradeCommand model);
 
     /// <summary>
     /// Cancels the trade offer
     /// </summary>
-    public Task<CancelTradeOfferResult> CancelTradeOffer(CancelTradeCommand model);
+    public Task<CancelTradeOfferResult> CancelTradeOfferAsync(CancelTradeCommand model);
 }

@@ -65,9 +65,9 @@ public class TradeController : BaseController
     }
 
     [HttpGet(Endpoints.Trade.ListSent)]
-    public async Task<IActionResult> ListSent()
+    public async Task<IActionResult> ListSent([FromQuery] string[] tradeItemIds)
     {
-        var model = AdaptToType<string, ListSentTradesQuery>(UserId);
+        var model = AdaptToType<string, ListSentTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
 
         var results = await _mediator.Send(model);
 
@@ -75,9 +75,9 @@ public class TradeController : BaseController
     }
 
     [HttpGet(Endpoints.Trade.ListSentResponded)]
-    public async Task<IActionResult> ListSentResponded()
+    public async Task<IActionResult> ListSentResponded([FromQuery] string[] tradeItemIds)
     {
-        var model = AdaptToType<string, ListRespondedSentTradesQuery>(UserId);
+        var model = AdaptToType<string, ListRespondedSentTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
 
         var results = await _mediator.Send(model);
 
@@ -85,9 +85,9 @@ public class TradeController : BaseController
     }
 
     [HttpGet(Endpoints.Trade.ListReceived)]
-    public async Task<IActionResult> ListReceived()
+    public async Task<IActionResult> ListReceived([FromQuery] string[] tradeItemIds)
     {
-        var model = AdaptToType<string, ListReceivedTradesQuery>(UserId);
+        var model = AdaptToType<string, ListReceivedTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
 
         var results = await _mediator.Send(model);
 
@@ -95,9 +95,9 @@ public class TradeController : BaseController
     }
 
     [HttpGet(Endpoints.Trade.ListReceivedResponded)]
-    public async Task<IActionResult> ListReceivedResponded()
+    public async Task<IActionResult> ListReceivedResponded([FromQuery] string[] tradeItemIds)
     {
-        var model = AdaptToType<string, ListRespondedReceivedTradesQuery>(UserId);
+        var model = AdaptToType<string, ListRespondedReceivedTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
 
         var results = await _mediator.Send(model);
 

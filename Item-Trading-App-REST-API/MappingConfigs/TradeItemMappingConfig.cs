@@ -14,5 +14,12 @@ public class TradeItemMappingConfig : IRegister
 
         config.ForType<TradeContent, TradeItem>()
             .Map(dest => dest.Name, src => MapContext.Current!.Parameters[nameof(TradeItem.Name)].ToString());
+
+        config.ForType<TradeContentHistory, TradeItem>()
+            .Map(dest => dest.Name, src => src.ItemName);
+
+        config.ForType<TradeItem, TradeContentHistory>()
+            .Map(dest => dest.ItemName, src => src.Name)
+            .Map(dest => dest.TradeId, src => MapContext.Current!.Parameters[nameof(TradeContentHistory.TradeId)].ToString());
     }
 }

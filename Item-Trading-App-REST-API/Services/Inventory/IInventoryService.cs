@@ -46,12 +46,12 @@ public interface IInventoryService
     /// <summary>
     /// Returns the amount of the item with the given itemId for the user with the given id
     /// </summary>
-    Task<LockedItemAmountResult> GetLockedAmount(GetInventoryItemLockedAmountQuery model);
+    Task<LockedItemAmountResult> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model);
 
     /// <summary>
     /// Returns the user ids that own the item with the given itemId
     /// </summary>
-    Task<UsersOwningItem> GetUsersOwningThisItem(GetUserIdsOwningItemQuery model);
+    Task<UsersOwningItem> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model);
 
     /// <summary>
     /// Sends the notifications and clears the cached used by the deleted item

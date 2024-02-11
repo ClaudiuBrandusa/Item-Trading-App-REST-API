@@ -33,9 +33,7 @@ public class ItemTests
 
         var cacheServiceMock = new Mock<ICacheService>();
 
-        var clientNotificationServiceMock = new Mock<IClientNotificationService>();
-
-        _sut = new ItemService(TestingUtils.GetDatabaseContext(), cacheServiceMock.Object, clientNotificationServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
+        _sut = new ItemService(TestingUtils.GetDatabaseContext(), cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
     }
 
     [Fact(DisplayName = "Create a new Item")]

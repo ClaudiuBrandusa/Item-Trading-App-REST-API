@@ -57,6 +57,25 @@ public class TradeItemTests
         }
     }
 
+    [Fact(DisplayName = "Has trade item")]
+    public async void HasTradeItem()
+    {
+        await _sut.AddTradeItemAsync(new AddTradeItemCommand
+        {
+            ItemId = defaultItemId,
+            Name = "Item",
+            Price = 1,
+            Quantity = 1,
+            TradeId = TestingData.DefaultTradeId
+        });
+
+        await _context.SaveChangesAsync();
+
+        var result = await _sut.HasTradeItemAsync(new HasTradeItemQuery { TradeId = TestingData.DefaultTradeId, ItemId = defaultItemId });
+
+        Assert.True(result, "The result value should be true");
+    }
+
     [Theory(DisplayName = "Get item prices")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]

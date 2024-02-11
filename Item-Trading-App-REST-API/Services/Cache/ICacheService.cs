@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using StackExchange.Redis;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Cache;
@@ -31,5 +32,9 @@ public interface ICacheService
 
     Task ClearCacheKeyAsync(string key);
 
+    Task ClearCacheKeysStartingWith(string key);
+
     Task RemoveFromSet(string key, string value);
+
+    Task RemoveFromSet(string key, RedisValue[] values);
 }

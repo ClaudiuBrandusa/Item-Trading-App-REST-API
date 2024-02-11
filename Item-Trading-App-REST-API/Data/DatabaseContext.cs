@@ -27,6 +27,8 @@ public class DatabaseContext : IdentityDbContext
 
     public DbSet<TradeContent> TradeContent { get; set; }
 
+    public DbSet<TradeContentHistory> TradeContentHistory { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS));
@@ -50,6 +52,9 @@ public class DatabaseContext : IdentityDbContext
 
         modelBuilder.Entity<TradeContent>()
             .HasKey(li => new { li.ItemId, li.TradeId });
+
+        modelBuilder.Entity<TradeContentHistory>()
+            .HasKey(tch => new { tch.ItemId, tch.TradeId });
 
         modelBuilder.Entity<User>()
             .Property(u => u.Cash)
