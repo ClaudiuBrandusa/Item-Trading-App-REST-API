@@ -33,8 +33,8 @@ public static class TestingUtils
 
     public static IMapper GetMapper()
     {
-        var config = TypeAdapterConfig.GlobalSettings;
-        TypeAdapterConfig.GlobalSettings.RuleMap.Clear();
+        var config = TypeAdapterConfig.GlobalSettings.Clone();
+        config.RuleMap.Clear();
         config.Scan(typeof(MapsterInstaller).Assembly);
         return new Mapper(config);
     }

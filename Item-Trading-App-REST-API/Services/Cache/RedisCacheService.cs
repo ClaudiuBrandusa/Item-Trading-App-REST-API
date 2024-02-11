@@ -134,7 +134,23 @@ public class RedisCacheService : ICacheService
 
         long length = await CountSetMembers(key);
 
+        await HandleEmptySet(length, key);
+    }
+
+    public async Task RemoveFromSet(string key, RedisValue[] values)
+    {
+        await Database.SetRemoveAsync(key, values);
+
+        long length = await CountSetMembers(key);
+
+        await HandleEmptySet(length, key);
+    }
+
+    private Task HandleEmptySet(long length, string key)
+    {
         if (length == 0)
-            await ClearCacheKeyAsync(key);
+            return ClearCacheKeyAsync(key);
+
+        return Task.CompletedTask;
     }
 }

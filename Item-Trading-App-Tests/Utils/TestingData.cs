@@ -41,6 +41,11 @@ public static class TestingData
         return itemPrices.Where(x => tradeItemIds.Contains(x.Key)).Select(x => x.Value).ToArray();
     }
 
+    public static string GetTradeItemName(string tradeItemId)
+    {
+        return itemPrices.Where(x => x.Key == tradeItemId).FirstOrDefault().Value.Name;
+    }
+
     public static AddTradeItemCommand[] GetTradeItemRequests(string[] tradeItemIds)
     {
         return tradeItemRequests.Where(x => tradeItemIds.Contains(x.Key)).Select(x => x.Value with { ItemId = Guid.NewGuid().ToString() }).ToArray();
