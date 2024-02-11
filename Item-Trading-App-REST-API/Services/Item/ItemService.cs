@@ -2,7 +2,6 @@
 using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Cache;
-using Item_Trading_App_REST_API.Services.Notification;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,11 +9,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Extensions;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
-using Item_Trading_App_REST_API.Resources.Queries.Inventory;
-using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Commands.Item;
 using MapsterMapper;
+using Item_Trading_App_REST_API.Resources.Events.Item;
 
 namespace Item_Trading_App_REST_API.Services.Item;
 
@@ -22,15 +20,13 @@ public class ItemService : IItemService
 {
     private readonly DatabaseContext _context;
     private readonly ICacheService _cacheService;
-    private readonly IClientNotificationService _clientNotificationService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public ItemService(DatabaseContext context, ICacheService cacheService, IClientNotificationService clientNotificationService, IMediator mediator, IMapper mapper)
+    public ItemService(DatabaseContext context, ICacheService cacheService, IMediator mediator, IMapper mapper)
     {
         _context = context;
         _cacheService = cacheService;
-        _clientNotificationService = clientNotificationService;
         _mediator = mediator;
         _mapper = mapper;
     }
@@ -51,12 +47,11 @@ public class ItemService : IItemService
                 Errors = new[] { "Unable to add this item" }
             };
 
-        await SetItemCacheAsync(item.ItemId, item);
-        await _clientNotificationService.SendCreatedNotificationToAllUsersExceptAsync(
-            model.SenderUserId,
-            NotificationCategoryTypes.Item,
-            item.ItemId);
-
+        await Task.WhenAll(
+            _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(item.ItemId), item),
+            _mediator.Publish(new ItemCreatedEvent { Item = item, SenderUserId = model.SenderUserId })
+        );
+        
         return new FullItemResult
         {
             ItemId = item.ItemId,
@@ -68,7 +63,7 @@ public class ItemService : IItemService
 
     public async Task<FullItemResult> UpdateItemAsync(UpdateItemCommand model)
     {
-        if(model is null)
+        if(model is null || string.IsNullOrEmpty(model.ItemName))
             return new FullItemResult
             {
                 Errors = new[] { "Something went wrong" }
@@ -84,12 +79,8 @@ public class ItemService : IItemService
                 Errors = new[] { "Something went wrong" }
             };
 
-        if(!string.IsNullOrEmpty(model.ItemName))
-            if(!Equals(item.Name, model.ItemName))
-                item.Name = model.ItemName;
-        
-        if(!Equals(item.Description, model.ItemDescription))
-            item.Description = model.ItemDescription;
+        item.Name = model.ItemName;        
+        item.Description = model.ItemDescription;
 
         if (!await _context.UpdateEntityAsync(item))
             return new FullItemResult
@@ -100,11 +91,10 @@ public class ItemService : IItemService
                 Errors = new[] { "Unable to update item" }
             };
 
-        await SetItemCacheAsync(model.ItemId, item);
-        await _clientNotificationService.SendUpdatedNotificationToAllUsersExceptAsync(
-            model.SenderUserId,
-            NotificationCategoryTypes.Item,
-            item.ItemId);
+        await Task.WhenAll(
+            _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(item.ItemId), item),
+            _mediator.Publish(new ItemUpdatedEvent { Item = item, SenderUserId = model.SenderUserId })   
+        );
 
         return new FullItemResult
         {
@@ -131,8 +121,6 @@ public class ItemService : IItemService
                 Errors = new[] { "Unable to delete an item that is used in a trade" }
             };
 
-        var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItemQuery { ItemId = model.ItemId });
-
         string cacheKey = CacheKeys.Item.GetItemKey(model.ItemId);
 
         var item = await _cacheService.GetEntityAsync(
@@ -152,12 +140,8 @@ public class ItemService : IItemService
             {
                 Errors = new[] { "Unable to remove item" }
             };
-        
-        await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = model.ItemId, UserIds = usersOwningTheItem.UserIds });
-        await _clientNotificationService.SendDeletedNotificationToAllUsersExceptAsync(
-            model.UserId,
-            NotificationCategoryTypes.Item,
-            model.ItemId);
+
+        await _mediator.Publish(new ItemDeletedEvent { ItemId = model.ItemId, UserId = model.UserId });
         
         return new DeleteItemResult
         {
@@ -236,8 +220,6 @@ public class ItemService : IItemService
 
     private Task<Entities.Item> GetItemEntityAsync(string itemId) =>
         GetItemQuery(_context, itemId);
-
-    private Task SetItemCacheAsync(string itemId, Entities.Item entity) => _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(itemId), entity);
 
     #region Queries
 

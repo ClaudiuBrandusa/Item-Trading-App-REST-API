@@ -18,7 +18,7 @@ public class GetInventoryItemLockedAmountHandler : HandlerBase, IRequestHandler<
     public Task<LockedItemAmountResult> Handle(GetInventoryItemLockedAmountQuery request, CancellationToken cancellationToken)
     {
         return Execute<IInventoryService, LockedItemAmountResult>(async inventoryService =>
-            await inventoryService.GetLockedAmount(request)
+            await inventoryService.GetLockedAmountAsync(request)
         );
     }
 }

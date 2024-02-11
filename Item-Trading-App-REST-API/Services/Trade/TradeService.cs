@@ -795,20 +795,15 @@ public class TradeService : ITradeService
     {
         var tradeIds = new List<string>();
 
-        var tasks = tradeOffersList
-            .Select(async (tradeOfferId) =>
-            {
-                var response = await IsRespondedAsync(tradeOfferId);
+        for (int i = 0; i < tradeOffersList.Length; i++)
+        {
+            string tradeOfferId = tradeOffersList[i];
 
-                if (response == responded)
-                    return tradeOfferId;
+            var response = await IsRespondedAsync(tradeOfferId);
 
-                return "";
-            });
-
-        await Task.WhenAll(tasks);
-
-        tasks.Where(x => x.Result.Length > 0).ToList().ForEach(x => tradeIds.Add(x.Result));
+            if (response == responded)
+                tradeIds.Add(tradeOfferId);
+        }
 
         var remainedTrades = new List<string>();
 

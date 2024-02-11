@@ -317,7 +317,7 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.GetLockedAmount(new GetInventoryItemLockedAmountQuery
+        var result = await _sut.GetLockedAmountAsync(new GetInventoryItemLockedAmountQuery
         {
             UserId = userId,
             ItemId = itemId
@@ -354,7 +354,7 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.GetUsersOwningThisItem(new GetUserIdsOwningItemQuery { ItemId = itemId });
+        var result = await _sut.GetUsersOwningThisItemAsync(new GetUserIdsOwningItemQuery { ItemId = itemId });
 
         Assert.True(result.UserIds.All(x => userIds.Contains(x)));
     }

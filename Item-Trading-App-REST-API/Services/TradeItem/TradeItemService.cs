@@ -3,6 +3,7 @@ using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Extensions;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
+using Item_Trading_App_REST_API.Resources.Events.TradeItem;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
@@ -37,21 +38,28 @@ public class TradeItemService : ITradeItemService
 
         var tradeContent = _mapper.AdaptToType<AddTradeItemCommand, TradeContent>(model);
 
-        await _context.AddAsync(tradeContent);
+        var itemNameTask = GetItemNameAsync(model.ItemId);
 
-        await _cacheService.SetCacheValueAsync(CacheKeys.TradeItem.GetTradeItemKey(model.TradeId, model.ItemId), model);
-        await _cacheService.AddToSet(CacheKeys.UsedItem.GetUsedItemKey(model.ItemId), model.TradeId);
+        await Task.WhenAll(
+            _context.AddAsync(tradeContent).AsTask(),
+            itemNameTask
+        );
+
+        await TradeItemCreated(tradeContent, itemNameTask.Result, model.TradeId);
 
         return true;
     }
 
     public async Task<bool> HasTradeItemAsync(HasTradeItemQuery model)
     {
-        return (await _context.TradeContent
-                .FirstOrDefaultAsync(x =>
-                    x.TradeId == model.TradeId &&
-                    x.ItemId == model.ItemId))
-                is not default(TradeContent);
+        return await _cacheService.GetEntityAsync(CacheKeys.TradeItem.GetTradeItemKey(model.TradeId, model.ItemId), async (args) =>
+        {
+            return await _context
+                .TradeContent
+                .AsNoTracking()
+                .Where(x => x.TradeId == model.TradeId && x.ItemId == model.ItemId)
+                .FirstOrDefaultAsync();
+        }, true) is not default(TradeContent);
     }
 
     public Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(GetTradeItemsQuery model)
@@ -81,10 +89,7 @@ public class TradeItemService : ITradeItemService
 
         if (result == 0) return false;
 
-        if (!model.KeepCache)
-        {
-            await _cacheService.ClearCacheKeysStartingWith(CacheKeys.TradeItem.GetTradeItemKey(model.TradeId, ""));
-        }
+        await TradeItemRemoved(model.TradeId, model.KeepCache);
 
         return true;
     }
@@ -93,7 +98,11 @@ public class TradeItemService : ITradeItemService
     {
         return _cacheService.GetEntitiesAsync(CacheKeys.TradeItem.GetTradeItemKey(tradeId, ""), async (args) =>
         {
-            return await _context.TradeContent.AsNoTracking().Where(t => Equals(t.TradeId, tradeId)).ToArrayAsync();
+            return await _context
+                .TradeContent
+                .AsNoTracking()
+                .Where(t => Equals(t.TradeId, tradeId))
+                .ToArrayAsync();
         }, async (TradeContent content) =>
         {
             return _mapper.AdaptToType<TradeContent, Models.TradeItems.TradeItem>(content, (nameof(Models.TradeItems.TradeItem.Name), await GetItemNameAsync(content.ItemId)));
@@ -102,6 +111,30 @@ public class TradeItemService : ITradeItemService
         (Models.TradeItems.TradeItem tradeItem) =>
             tradeItem.ItemId
         );
+    }
+
+    private Task TradeItemCreated(TradeContent tradeContent, string itemName, string tradeId)
+    {
+        var tradeItem = _mapper.AdaptToType<TradeContent, Models.TradeItems.TradeItem>(tradeContent, (nameof(Models.TradeItems.TradeItem.Name), itemName));
+
+        var eventNotification = new TradeItemAddedEvent
+        {
+            TradeId = tradeId,
+            Data = tradeItem
+        };
+
+        return _mediator.Publish(eventNotification);
+    }
+
+    private Task TradeItemRemoved(string tradeId, bool keepCache)
+    {
+        var eventNotification = new TradeItemRemovedEvent
+        {
+            TradeId = tradeId,
+            KeepCache = keepCache
+        };
+
+        return _mediator.Publish(eventNotification);
     }
 
     private Task<string> GetItemNameAsync(string itemId) => _mediator.Send(new GetItemNameQuery { ItemId = itemId });

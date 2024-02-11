@@ -18,7 +18,7 @@ public class GetUserIdsOwningItemHandler : HandlerBase, IRequestHandler<GetUserI
     public Task<UsersOwningItem> Handle(GetUserIdsOwningItemQuery request, CancellationToken cancellationToken)
     {
         return Execute<IInventoryService, UsersOwningItem>(async (inventoryService) =>
-            await inventoryService.GetUsersOwningThisItem(request)
+            await inventoryService.GetUsersOwningThisItemAsync(request)
         );
     }
 }
