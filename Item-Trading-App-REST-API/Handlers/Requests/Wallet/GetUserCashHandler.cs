@@ -1,23 +1,22 @@
-﻿using Item_Trading_App_REST_API.Handlers.Requests.Base;
-using Item_Trading_App_REST_API.Resources.Queries.Wallet;
+﻿using Item_Trading_App_REST_API.Resources.Queries.Wallet;
 using Item_Trading_App_REST_API.Services.Wallet;
 using MediatR;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Wallet;
 
-public class GetUserCashHandler : HandlerBase, IRequestHandler<GetUserCashQuery, int>
+public class GetUserCashHandler : IRequestHandler<GetUserCashQuery, int>
 {
-    public GetUserCashHandler(IServiceProvider serviceProvider) : base(serviceProvider)
+    private readonly IWalletService _walletService;
+
+    public GetUserCashHandler(IWalletService walletService)
     {
+        _walletService = walletService;
     }
 
     public Task<int> Handle(GetUserCashQuery request, CancellationToken cancellationToken)
     {
-        return Execute<IWalletService, int>(async (walletService) =>
-            await walletService.GetUserCashAsync(request)
-        );
+        return _walletService.GetUserCashAsync(request);
     }
 }

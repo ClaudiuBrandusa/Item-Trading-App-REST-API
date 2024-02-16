@@ -8,6 +8,6 @@ public class UnitOfWorkInstaller : IInstaller
 {
     public void InstallServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddTransient<IUnitOfWorkService, UnitOfWorkService>();
+        services.AddScoped<IUnitOfWorkService, UnitOfWorkService>();
     }
 }

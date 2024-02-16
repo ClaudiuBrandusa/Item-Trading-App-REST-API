@@ -1,8 +1,10 @@
 ﻿using Item_Trading_App_REST_API.Entities;
 using Item_Trading_App_REST_API.Models.Inventory;
+using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Models.Trade;
 using Item_Trading_App_REST_API.Models.TradeItemHistory;
 using Item_Trading_App_REST_API.Models.TradeItems;
+using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Resources.Commands.Trade;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItem;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItemHistory;
@@ -92,7 +94,23 @@ public class TradeTests
             {
                 return true;
             });
-
+        mediatorMock.Setup(x => x.Send(It.IsAny<AddInventoryItemCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<QuantifiedItemResult> request, CancellationToken ct) =>
+             {
+                 return new QuantifiedItemResult
+                 {
+                     Success = true
+                 };
+             });
+        mediatorMock.Setup(x => x.Send(It.IsAny<DropInventoryItemCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<QuantifiedItemResult> request, CancellationToken ct) =>
+            {
+                return new QuantifiedItemResult
+                {
+                    Success = true
+                };
+            });
+        
         var cacheServiceMock = new Mock<ICacheService>();
         cacheServiceMock.Setup(x => x.ListWithPrefix<TradeItem>(It.IsAny<string>(), It.IsAny<bool>()))
             .ReturnsAsync((string prefix, bool removePrefix) =>

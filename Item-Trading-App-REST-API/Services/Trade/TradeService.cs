@@ -25,6 +25,8 @@ using Item_Trading_App_REST_API.Models.Base;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItemHistory;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItemHistory;
 using Item_Trading_App_REST_API.Resources.Events.Trades;
+using Item_Trading_App_REST_API.Models.Inventory;
+using Item_Trading_App_REST_API.Models.Item;
 
 namespace Item_Trading_App_REST_API.Services.Trade;
 
@@ -820,8 +822,8 @@ public class TradeService : ITradeService
     private async Task<bool> UnlockTradeItemsAsync(string userId, string tradeId)
     {
         var tradeItems = await GetTradeItemsAsync(tradeId, false);
-        
-        var tasks = new Task[tradeItems.Length]; 
+
+        var tasks = new Task<LockItemResult>[tradeItems.Length];
 
         for (int i = 0; i < tradeItems.Length; i++)
         {
@@ -829,13 +831,16 @@ public class TradeService : ITradeService
 
             if (item is null)
                 continue;
-            
+
             var request = _mapper.AdaptToType<Models.TradeItems.TradeItem, UnlockItemCommand>(item, ((string, object))(nameof(UnlockItemCommand.UserId), userId), (nameof(UnlockItemCommand.Notify), true));
 
             tasks[i] = _mediator.Send(request);
         }
 
         await Task.WhenAll(tasks);
+
+        if (tasks.Select(x => x.Result).Any(x => !x.Success))
+            return false;
 
         return tradeItems.Length != 0;
     }
@@ -844,7 +849,7 @@ public class TradeService : ITradeService
     private async Task<bool> GiveItemsAsync(string userId, string tradeId)
     {
         var tradeItems = await GetTradeItemsAsync(tradeId, false);
-        var tasks = new Task[tradeItems.Length];
+        var tasks = new Task<QuantifiedItemResult>[tradeItems.Length];
 
         for (int i = 0; i < tradeItems.Length; i++)
         {
@@ -855,6 +860,9 @@ public class TradeService : ITradeService
 
         await Task.WhenAll(tasks);
 
+        if (tasks.Select(x => x.Result).Any(x => !x.Success))
+            return false;
+
         return tradeItems.Length != 0;
     }
 
@@ -862,7 +870,7 @@ public class TradeService : ITradeService
     private async Task<bool> TakeItemsAsync(string userId, string tradeId)
     {
         var tradeItems = await GetTradeItemsAsync(tradeId, false);
-        var tasks = new Task[tradeItems.Length];
+        var tasks = new Task<QuantifiedItemResult>[tradeItems.Length];
 
         for (int i = 0; i < tradeItems.Length; i++)
         {
@@ -872,6 +880,9 @@ public class TradeService : ITradeService
         }
 
         await Task.WhenAll(tasks);
+
+        if (tasks.Select(x => x.Result).Any(x => !x.Success))
+            return false;
 
         return tradeItems.Length != 0;
     }

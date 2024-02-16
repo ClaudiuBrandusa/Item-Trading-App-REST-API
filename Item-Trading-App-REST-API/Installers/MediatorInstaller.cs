@@ -11,7 +11,6 @@ public class MediatorInstaller : IInstaller
         services.AddMediatR(x =>
         {
             x.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-            x.Lifetime = ServiceLifetime.Singleton;
         });
     }
 }

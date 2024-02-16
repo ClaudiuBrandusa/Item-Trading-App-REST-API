@@ -32,7 +32,7 @@ public class InventoryTests
             {
                 return "Item";
             });
-        
+
         var cacheServiceMock = new Mock<ICacheService>();
         var clientNotificationServiceMock = new Mock<IClientNotificationService>();
 
