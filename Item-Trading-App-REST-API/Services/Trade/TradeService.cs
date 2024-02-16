@@ -45,10 +45,10 @@ public class TradeService : ITradeService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<SentTradeOfferResult> CreateTradeOfferAsync(CreateTradeOfferCommand model)
+    public async Task<TradeOfferResult> CreateTradeOfferAsync(CreateTradeOfferCommand model)
     {
         if (model is null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.TargetUserId) || model.Items is null)
-            return new SentTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid input data" }
             };
@@ -57,17 +57,17 @@ public class TradeService : ITradeService
         Entities.Trade offer;
 
         _unitOfWork.BeginTransaction();
-
+        
         try
         {
             await ProcessTradeItemsFromInputModelAsync(model, items);
 
             if (items.Count == 0)
-                return new SentTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Invalid input data" }
                 };
-
+            
             offer = new Entities.Trade
             {
                 TradeId = Guid.NewGuid().ToString(),
@@ -95,37 +95,43 @@ public class TradeService : ITradeService
         catch (Exception)
         {
             _unitOfWork.RollbackTransaction();
-            return new SentTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
         }
 
-        await SetCacheForCreatedTradeAsync(offer, model);
+        var receiverUsernameTask = GetUsernameAsync(model.TargetUserId);
+        var senderUsernameTask = GetUsernameAsync(model.SenderUserId);
 
-        var usernameTask = GetUsernameAsync(model.TargetUserId);
+        await Task.WhenAll(
+            SetCacheForCreatedTradeAsync(offer, model),
+            _mediator.Publish(new TradeCreatedEvent
+            {
+                TradeId = offer.TradeId,
+                ReceiverId = model.TargetUserId,
+            }),
+            receiverUsernameTask,
+            senderUsernameTask
+        );
 
-        await _mediator.Publish(new TradeCreatedEvent
+        return new TradeOfferResult
         {
             TradeId = offer.TradeId,
+            SenderId = model.SenderUserId,
+            SenderName = await senderUsernameTask,
             ReceiverId = model.TargetUserId,
-        });
-
-        return new SentTradeOfferResult
-        {
-            TradeOfferId = offer.TradeId,
-            ReceiverId = model.TargetUserId,
-            ReceiverName = await usernameTask,
+            ReceiverName = await receiverUsernameTask,
             Items = items,
-            SentDate = offer.SentDate,
+            CreationDate = offer.SentDate,
             Success = true
         };
     }
 
-    public async Task<RespondedTradeOfferResult> AcceptTradeOfferAsync(RespondTradeCommand model)
+    public async Task<TradeOfferResult> AcceptTradeOfferAsync(RespondTradeCommand model)
     {
         if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid IDs" }
             };
@@ -133,21 +139,21 @@ public class TradeService : ITradeService
         string receiverId = await GetReceiverIdAsync(model.TradeId);
 
         if (!Equals(receiverId, model.UserId))
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid userId" }
             };
 
         var trade = await GetCachedTradeAsync(model.TradeId);
 
-        if (trade is null)
-            return new RespondedTradeOfferResult
+        if (string.IsNullOrEmpty(trade.TradeId))
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         if (trade.Response is not null)
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Already responded" }
             };
@@ -155,7 +161,7 @@ public class TradeService : ITradeService
         int price = await GetTotalPriceAsync(model.TradeId);
 
         if (price > await _mediator.Send(new GetUserCashQuery { UserId = model.UserId }))
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "User has not enough money" }
             };
@@ -169,7 +175,7 @@ public class TradeService : ITradeService
             if (!await _mediator.Send(new TakeCashCommand { UserId = model.UserId, Amount = price }))
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -181,7 +187,7 @@ public class TradeService : ITradeService
             if (!await UnlockTradeItemsAsync(senderId, model.TradeId))
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -190,7 +196,7 @@ public class TradeService : ITradeService
             if (!await GiveItemsAsync(model.UserId, model.TradeId))
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -199,7 +205,7 @@ public class TradeService : ITradeService
             if (!await TakeItemsAsync(senderId, model.TradeId))
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -208,7 +214,7 @@ public class TradeService : ITradeService
             if (!await _mediator.Send(new GiveCashCommand { UserId = senderId, Amount = price }))
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -219,7 +225,7 @@ public class TradeService : ITradeService
             if (!respondTradeResult.Success)
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = respondTradeResult.Errors
                 };
@@ -232,38 +238,44 @@ public class TradeService : ITradeService
         catch (Exception)
         {
             _unitOfWork.RollbackTransaction();
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
         }
 
-        await _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade);
+        var senderNameTask = GetUsernameAsync(senderId);
+        var receiverNameTask = GetUsernameAsync(receiverId);
 
-        var usernameTask = GetUsernameAsync(senderId);
+        await Task.WhenAll(
+            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade),
+            _mediator.Publish(new TradeRespondedEvent
+            {
+                TradeId = model.TradeId,
+                SenderId = senderId,
+                Response = true
+            }),
+            senderNameTask,
+            receiverNameTask
+        );
 
-        await _mediator.Publish(new TradeRespondedEvent
+        return new TradeOfferResult
         {
             TradeId = model.TradeId,
             SenderId = senderId,
-            Response = true
-        });
-
-        return new RespondedTradeOfferResult
-        {
-            TradeOfferId = model.TradeId,
-            SenderId = senderId,
-            SenderName = await usernameTask,
-            ReceivedDate = trade.SentDate,
-            ResponseDate = (DateTime)trade.ResponseDate,
+            SenderName = await senderNameTask,
+            ReceiverId = receiverId,
+            ReceiverName = await receiverNameTask,
+            CreationDate = trade.SentDate,
+            ResponseDate = trade.ResponseDate,
             Success = true
         };
     }
 
-    public async Task<RespondedTradeOfferResult> RejectTradeOfferAsync(RespondTradeCommand model)
+    public async Task<TradeOfferResult> RejectTradeOfferAsync(RespondTradeCommand model)
     {
         if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid IDs" }
             };
@@ -271,21 +283,21 @@ public class TradeService : ITradeService
         string receiverId = await GetReceiverIdAsync(model.TradeId);
 
         if (!Equals(receiverId, model.UserId))
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid userId" }
             };
 
         var trade = await GetCachedTradeAsync(model.TradeId);
 
-        if (trade is null)
-            return new RespondedTradeOfferResult
+        if (string.IsNullOrEmpty(trade.TradeId))
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         if (trade.Response is not null)
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Already responded" }
             };
@@ -300,7 +312,7 @@ public class TradeService : ITradeService
             if (!await UnlockTradeItemsAsync(senderId, model.TradeId))
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -311,7 +323,7 @@ public class TradeService : ITradeService
             if (!respondTradeResult.Success)
             {
                 _unitOfWork.RollbackTransaction();
-                return new RespondedTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = respondTradeResult.Errors
                 };
@@ -324,38 +336,44 @@ public class TradeService : ITradeService
         catch (Exception)
         {
             _unitOfWork.RollbackTransaction();
-            return new RespondedTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
         }
 
-        await _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade);
+        var senderNameTask = GetUsernameAsync(senderId);
+        var receiverNameTask = GetUsernameAsync(senderId);
 
-        var usernameTask = GetUsernameAsync(senderId);
+        await Task.WhenAll(
+            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade),
+            _mediator.Publish(new TradeRespondedEvent
+            {
+                TradeId = model.TradeId,
+                SenderId = senderId,
+                Response = false
+            }),
+            senderNameTask,
+            receiverNameTask
+        );
 
-        await _mediator.Publish(new TradeRespondedEvent
+        return new TradeOfferResult
         {
             TradeId = model.TradeId,
             SenderId = senderId,
-            Response = false
-        });
-
-        return new RespondedTradeOfferResult
-        {
-            TradeOfferId = model.TradeId,
-            SenderId = senderId,
-            SenderName = await usernameTask,
-            ReceivedDate = trade.SentDate,
-            ResponseDate = (DateTime)trade.ResponseDate,
+            SenderName = await senderNameTask,
+            ReceiverId = receiverId,
+            ReceiverName = await receiverNameTask,
+            CreationDate = trade.SentDate,
+            ResponseDate = trade.ResponseDate,
             Success = true
         };
     }
 
-    public async Task<CancelTradeOfferResult> CancelTradeOfferAsync(CancelTradeCommand model)
+    public async Task<TradeOfferResult> CancelTradeOfferAsync(CancelTradeCommand model)
     {
         if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
-            return new CancelTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid IDs" }
             };
@@ -363,21 +381,21 @@ public class TradeService : ITradeService
         string senderId = await GetSenderIdAsync(model.TradeId);
 
         if (!Equals(senderId, model.UserId))
-            return new CancelTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid userId" }
             };
 
         var trade = await GetCachedTradeAsync(model.TradeId);
 
-        if (trade is null)
-            return new CancelTradeOfferResult
+        if (string.IsNullOrEmpty(trade.TradeId))
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
 
         if (trade.Response.HasValue)
-            return new CancelTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Unable to cancel a trade that already got a response" }
             };
@@ -390,7 +408,7 @@ public class TradeService : ITradeService
             if (!await UnlockTradeItemsAsync(model.UserId, model.TradeId))
             {
                 _unitOfWork.RollbackTransaction();
-                return new CancelTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -402,7 +420,7 @@ public class TradeService : ITradeService
             if (!await _context.RemoveEntityAsync(new Entities.Trade { TradeId = model.TradeId }))
             {
                 _unitOfWork.RollbackTransaction();
-                return new CancelTradeOfferResult
+                return new TradeOfferResult
                 {
                     Errors = new[] { "Something went wrong" }
                 };
@@ -413,310 +431,83 @@ public class TradeService : ITradeService
         catch (Exception)
         {
             _unitOfWork.RollbackTransaction();
-            return new CancelTradeOfferResult
+            return new TradeOfferResult
             {
                 Errors = new[] { "Something went wrong" }
             };
         }
 
-        await ClearCacheUsedForTradeAsync(model.TradeId, senderId, receiverId, trade.TradeItemsId);
-
-        var usernameTask = GetUsernameAsync(receiverId);
-
-        await _mediator.Publish(new TradeCancelledEvent
-        {
-            TradeId = model.TradeId,
-            ReceiverId = receiverId
-        });
-
-        return new CancelTradeOfferResult
-        {
-            TradeOfferId = model.TradeId,
-            ReceiverId = receiverId,
-            ReceiverName = await usernameTask,
-            Success = true
-        };
-    }
-
-    public async Task<TradeOffersResult> GetReceivedTradeOffersAsync(ListTradesQuery model)
-    {
-        if (string.IsNullOrEmpty(model.UserId))
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var idList = await GetReceivedTradeOffersIdListAsync(model.UserId, model.TradeItemIds);
-
-        if (idList is null)
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        return new TradeOffersResult
-        {
-            TradeOffers = idList,
-            Success = true
-        };
-    }
-
-    public async Task<TradeOffersResult> GetReceivedRespondedTradeOffersAsync(ListTradesQuery model)
-    {
-        if (string.IsNullOrEmpty(model.UserId))
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var idList = await GetReceivedTradeOffersIdListAsync(model.UserId, model.TradeItemIds, true);
-
-        if (idList is null)
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        return new TradeOffersResult
-        {
-            TradeOffers = idList,
-            Success = true
-        };
-    }
-
-    public async Task<TradeOffersResult> GetSentTradeOffersAsync(ListTradesQuery model)
-    {
-        if (string.IsNullOrEmpty(model.UserId))
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var idList = await GetSentTradeOffersIdListAsync(model.UserId, model.TradeItemIds);
-
-        if (idList is null)
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        return new TradeOffersResult
-        {
-            TradeOffers = idList,
-            Success = true
-        };
-    }
-
-    public async Task<TradeOffersResult> GetSentRespondedTradeOffersAsync(ListTradesQuery model)
-    {
-        if (string.IsNullOrEmpty(model.UserId))
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var idList = await GetSentTradeOffersIdListAsync(model.UserId, model.TradeItemIds, true);
-
-        if (idList is null)
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        return new TradeOffersResult
-        {
-            TradeOffers = idList,
-            Success = true
-        };
-    }
-
-    public async Task<SentTradeOfferResult> GetSentTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
-    {
-        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            return new SentTradeOfferResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var trade = await GetCachedTradeAsync(requestTradeOffer.TradeOfferId);
-
-        if (!Equals(requestTradeOffer.UserId, trade.SenderUserId))
-            return new SentTradeOfferResult
-            {
-                Errors = new[] { "User has not sent this trade offer" }
-            };
-
-        var usernameTask = GetUsernameAsync(trade.ReceiverUserId);
-        var tradeItemsTask = GetTradeItemsAsync(requestTradeOffer.TradeOfferId, false);
+        var senderNameTask = GetUsernameAsync(senderId);
+        var receiverNameTask = GetUsernameAsync(receiverId);
 
         await Task.WhenAll(
-            usernameTask,
-            tradeItemsTask
+             ClearCacheUsedForTradeAsync(model.TradeId, senderId, receiverId, trade.TradeItemsId),
+             _mediator.Publish(new TradeCancelledEvent
+             {
+                 TradeId = model.TradeId,
+                 ReceiverId = receiverId
+             }),
+             senderNameTask,
+             receiverNameTask
         );
 
-        string receiverName = usernameTask.Result;
-        var tradeItems = tradeItemsTask.Result;
-
-        return new SentTradeOfferResult
+        return new TradeOfferResult
         {
-            TradeOfferId = trade.TradeId,
-            ReceiverId = trade.ReceiverUserId,
-            ReceiverName = receiverName,
-            SentDate = trade.SentDate,
-            Items = tradeItems,
+            TradeId = model.TradeId,
+            SenderId = senderId,
+            SenderName = await senderNameTask,
+            ReceiverId = receiverId,
+            ReceiverName = await receiverNameTask,
+            CreationDate = trade.SentDate,
             Success = true
         };
     }
 
-    public async Task<RespondedSentTradeOfferResult> GetRespondedSentTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
+    public Task<TradeOffersResult> GetReceivedTradeOffersAsync(ListTradesQuery model)
     {
-        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            return new RespondedSentTradeOfferResult
+        return ListTradesAsync(model with { TradeDirection = TradeDirection.Received });
+    }
+
+    public Task<TradeOffersResult> GetSentTradeOffersAsync(ListTradesQuery model)
+    {
+        return ListTradesAsync(model with { TradeDirection = TradeDirection.Sent });
+    }
+
+    public async Task<TradeOfferResult> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
+    {
+        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeId))
+            return new TradeOfferResult
             {
                 Errors = new[] { "Invalid input data" }
             };
 
-        var trade = await GetCachedTradeAsync(requestTradeOffer.TradeOfferId);
+        var trade = await GetCachedTradeAsync(requestTradeOffer.TradeId);
 
-        if (!Equals(requestTradeOffer.UserId, trade.SenderUserId))
-            return new RespondedSentTradeOfferResult
-            {
-                Errors = new[] { "User has not sent this trade offer" }
-            };
-
+        var senderNameTask = GetUsernameAsync(trade.SenderUserId);
+        var receiverNameTask = GetUsernameAsync(trade.ReceiverUserId);
+        var tradeItemsTask = GetTradeItemsAsync(requestTradeOffer.TradeId, false);
         var responseTask = GetTradeResponseAsync(trade.TradeId);
         var tradeResponseDateTask = GetTradeResponseDateAsync(trade.TradeId);
 
         await Task.WhenAll(
+            senderNameTask,
+            receiverNameTask,
+            tradeItemsTask,
             responseTask,
             tradeResponseDateTask
         );
 
-        var response = responseTask.Result;
-        var responseDate = tradeResponseDateTask.Result;
-
-        if (response is null || responseDate is null)
-            return new RespondedSentTradeOfferResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        var usernameTask = GetUsernameAsync(trade.SenderUserId);
-        var tradeItemsTask = GetTradeItemsAsync(requestTradeOffer.TradeOfferId, false);
-
-        await Task.WhenAll(
-            usernameTask,
-            tradeItemsTask
-        );
-
-        var senderName = usernameTask.Result;
-        var tradeItems = tradeItemsTask.Result;
-
-        return new RespondedSentTradeOfferResult
+        return new TradeOfferResult
         {
-            TradeOfferId = requestTradeOffer.TradeOfferId,
-            ReceiverId = trade.ReceiverUserId,
-            ReceiverName = senderName,
-            Response = (bool)response,
-            ResponseDate = (DateTime)responseDate,
-            SentDate = trade.SentDate,
-            Items = tradeItems,
-            Success = true
-        };
-    }
-
-    public async Task<ReceivedTradeOfferResult> GetReceivedTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
-    {
-        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            return new ReceivedTradeOfferResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var trade = await GetCachedTradeAsync(requestTradeOffer.TradeOfferId);
-
-        if (!Equals(requestTradeOffer.UserId, trade.ReceiverUserId))
-            return new ReceivedTradeOfferResult
-            {
-                Errors = new[] { "User has not sent this trade offer" }
-            };
-
-        var usernameTask = GetUsernameAsync(trade.SenderUserId);
-        var tradeItemsTask = GetTradeItemsAsync(requestTradeOffer.TradeOfferId, false);
-
-        await Task.WhenAll(
-            usernameTask,
-            tradeItemsTask
-        );
-
-        var senderName = usernameTask.Result;
-        var tradeItems = tradeItemsTask.Result;
-
-        return new ReceivedTradeOfferResult
-        {
-            TradeOfferId = trade.TradeId,
+            TradeId = trade.TradeId,
             SenderId = trade.SenderUserId,
-            SenderName = senderName,
-            SentDate = trade.SentDate,
-            Items = tradeItems,
-            Success = true
-        };
-    }
-
-    public async Task<RespondedReceivedTradeOfferResult> GetReceivedRespondedTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
-    {
-        if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeOfferId) || string.IsNullOrEmpty(requestTradeOffer.UserId))
-            return new RespondedReceivedTradeOfferResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        var trade = await GetCachedTradeAsync(requestTradeOffer.TradeOfferId);
-
-        if (!Equals(requestTradeOffer.UserId, trade.ReceiverUserId))
-            return new RespondedReceivedTradeOfferResult
-            {
-                Errors = new[] { "User has not sent this trade offer" }
-            };
-
-        var tradeResponseTask = GetTradeResponseAsync(trade.TradeId);
-        var tradeResponseDateTask = GetTradeResponseDateAsync(trade.TradeId);
-
-        await Task.WhenAll(
-            tradeResponseTask,
-            tradeResponseDateTask
-        );
-
-        var response = tradeResponseTask.Result;
-        var responseDate = tradeResponseDateTask.Result;
-
-        if (response is null || responseDate is null)
-            return new RespondedReceivedTradeOfferResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        var senderIdTask = GetSenderIdAsync(requestTradeOffer.TradeOfferId);
-        var tradeItemsTask = GetTradeItemsAsync(requestTradeOffer.TradeOfferId, true);
-
-        await Task.WhenAll(
-            senderIdTask,
-            tradeItemsTask
-        );
-
-        var senderId = senderIdTask.Result;
-        var senderName = await GetUsernameAsync(senderId);
-        var tradeItems = tradeItemsTask.Result;
-
-        return new RespondedReceivedTradeOfferResult
-        {
-            TradeOfferId = requestTradeOffer.TradeOfferId,
-            SenderId = senderId,
-            SenderName = senderName,
-            Response = (bool)response,
-            ResponseDate = (DateTime)responseDate,
-            SentDate = trade.SentDate,
-            Items = tradeItems,
+            SenderName = await senderNameTask,
+            ReceiverId = trade.ReceiverUserId,
+            ReceiverName = await receiverNameTask,
+            CreationDate = trade.SentDate,
+            Response = await responseTask,
+            ResponseDate = await tradeResponseDateTask,
+            Items = await tradeItemsTask,
             Success = true
         };
     }
@@ -763,6 +554,34 @@ public class TradeService : ITradeService
         return Task.WhenAll(tasks);
     }
 
+    private async Task<TradeOffersResult> ListTradesAsync(ListTradesQuery model)
+    {
+        if (string.IsNullOrEmpty(model.UserId))
+            return new TradeOffersResult
+            {
+                Errors = new[] { "Invalid input data" }
+            };
+
+        string[] idList;
+
+        if (model.TradeDirection == TradeDirection.Sent)
+            idList = await GetSentTradeOffersIdListAsync(model.UserId, model.TradeItemIds, model.Responded);
+        else
+            idList = await GetReceivedTradeOffersIdListAsync(model.UserId, model.TradeItemIds, model.Responded);
+
+        if (idList is null)
+            return new TradeOffersResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        return new TradeOffersResult
+        {
+            TradeOffers = idList,
+            Success = true
+        };
+    }
+
     private async Task<string[]> GetSentTradeOffersIdListAsync(string userId, string[] tradeItems, bool responded = false)
     {
         var list = await _cacheService.GetEntityIdsAsync(
@@ -805,32 +624,43 @@ public class TradeService : ITradeService
                 tradeIds.Add(tradeOfferId);
         }
 
-        var remainedTrades = new List<string>();
+        var remainedTradeIds = new List<string>();
 
         if (tradeItems.Length > 0)
         {
-            foreach (var tradeId in tradeIds)
-            {
-                bool keepTrade = false;
+            await FilterTradesByTradeItemsAsync(tradeIds, tradeItems, remainedTradeIds);
 
-                for (int i = 0; i < tradeItems.Length; i++)
-                {
-                    bool hasTradeItem = await _mediator.Send(new HasTradeItemQuery { TradeId = tradeId, ItemId = tradeItems[i] });
-
-                    if (hasTradeItem)
-                    {
-                        keepTrade = true;
-                        break;
-                    }
-                }
-
-                if (keepTrade) remainedTrades.Add(tradeId);
-            }
-
-            tradeIds = remainedTrades;
+            tradeIds = remainedTradeIds;
         }
 
         return tradeIds.ToArray();
+    }
+
+    private async Task FilterTradesByTradeItemsAsync(List<string> tradeIds, string[] tradeItems, List<string> remainedTradeIds)
+    {
+        foreach (var tradeId in tradeIds)
+        {
+            bool keepTrade = false;
+
+            for (int i = 0; i < tradeItems.Length; i++)
+            {
+                bool hasTradeItem = await _mediator.Send(
+                    new HasTradeItemQuery
+                    {
+                        TradeId = tradeId,
+                        ItemId = tradeItems[i]
+                    }
+                );
+
+                if (hasTradeItem)
+                {
+                    keepTrade = true;
+                    break;
+                }
+            }
+
+            if (keepTrade) remainedTradeIds.Add(tradeId);
+        }
     }
 
     private async Task ProcessTradeItemsFromInputModelAsync(CreateTradeOfferCommand model, List<Models.TradeItems.TradeItem> outputList)
@@ -866,29 +696,30 @@ public class TradeService : ITradeService
         await Task.WhenAll(tasks);
     }
 
-    private Task AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId)
+    private async ValueTask AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId)
     {
-        return Task.WhenAll(
-                _context.AddAsync(
-                    new Entities.SentTrade
-                    {
-                        TradeId = tradeId,
-                        SenderId = senderUserId
-                    }).AsTask(),
-                _context.AddAsync(
-                    new Entities.ReceivedTrade
-                    {
-                        TradeId = tradeId,
-                        ReceiverId = receiverUserId
-                    }).AsTask()
-            );
+        var sentTradeTask = _context.AddAsync(
+            new Entities.SentTrade
+            {
+                TradeId = tradeId,
+                SenderId = senderUserId
+            });
+        var receivedTradeTask = _context.AddAsync(
+            new Entities.ReceivedTrade
+            {
+                TradeId = tradeId,
+                ReceiverId = receiverUserId
+            });
+
+        await sentTradeTask;
+        await receivedTradeTask;
     }
 
     private Task UpdateTradeEntityAsync(CachedTrade trade, bool response)
     {
         trade.Response = response;
         trade.ResponseDate = DateTime.Now;
-
+        
         return _context.UpdateEntityAsync(
             new Entities.Trade
             {
@@ -926,14 +757,14 @@ public class TradeService : ITradeService
     {
         var cachedTrade = await GetCachedTradeAsync(tradeId);
 
-        return cachedTrade?.ReceiverUserId ?? string.Empty;
+        return cachedTrade.ReceiverUserId ?? string.Empty;
     }
 
     private async Task<string> GetSenderIdAsync(string tradeId)
     {
         var cachedTrade = await GetCachedTradeAsync(tradeId);
 
-        return cachedTrade?.SenderUserId ?? string.Empty;
+        return cachedTrade.SenderUserId ?? string.Empty;
     }
 
     private Task<CachedTrade> GetCachedTradeAsync(string tradeId)
@@ -942,11 +773,13 @@ public class TradeService : ITradeService
             CacheKeys.Trade.GetTradeKey(tradeId),
             async (args) =>
             {
-                var trade = await GetTradeEntityAsync(tradeId);
-                var sentTrade = await GetSentTradeEntityAsync(tradeId); ;
-                var receivedTrade = await GetReceivedTradeEntityAsync(tradeId); ;
+                var tradeTask = GetTradeEntityAsync(tradeId);
+                var sentTradeTask = GetSentTradeEntityAsync(tradeId);
+                var receivedTradeTask = GetReceivedTradeEntityAsync(tradeId);
 
-                var tradeItemIds = await Task.Run(async () =>
+                var trade = await tradeTask;
+
+                var tradeItemIdsTask = Task.Run(async () =>
                 {
                     var tradeItems = await GetTradeItemsAsync(trade.TradeId, trade.Response.HasValue /* if trade.Response has value, then it means it is a responded trade */ );
 
@@ -956,12 +789,12 @@ public class TradeService : ITradeService
                 return new CachedTrade
                 {
                     TradeId = trade.TradeId,
-                    SenderUserId = sentTrade.SenderId,
-                    ReceiverUserId = receivedTrade.ReceiverId,
+                    SenderUserId = (await sentTradeTask).SenderId,
+                    ReceiverUserId = (await receivedTradeTask).ReceiverId,
                     SentDate = trade.SentDate,
                     Response = trade.Response,
                     ResponseDate = trade.ResponseDate,
-                    TradeItemsId = tradeItemIds
+                    TradeItemsId = await tradeItemIdsTask
                 };
             },
             true);
@@ -981,12 +814,13 @@ public class TradeService : ITradeService
     {
         var cachedTrade = await GetCachedTradeAsync(tradeId);
 
-        return cachedTrade?.ResponseDate;
+        return cachedTrade.ResponseDate;
     }
 
     private async Task<bool> UnlockTradeItemsAsync(string userId, string tradeId)
     {
         var tradeItems = await GetTradeItemsAsync(tradeId, false);
+        
         var tasks = new Task[tradeItems.Length]; 
 
         for (int i = 0; i < tradeItems.Length; i++)
@@ -995,7 +829,7 @@ public class TradeService : ITradeService
 
             if (item is null)
                 continue;
-
+            
             var request = _mapper.AdaptToType<Models.TradeItems.TradeItem, UnlockItemCommand>(item, ((string, object))(nameof(UnlockItemCommand.UserId), userId), (nameof(UnlockItemCommand.Notify), true));
 
             tasks[i] = _mediator.Send(request);

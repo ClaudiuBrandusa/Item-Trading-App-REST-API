@@ -2,8 +2,12 @@
 
 namespace Item_Trading_App_REST_API.Models.Trade;
 
-public record CachedTrade
+public record struct CachedTrade
 {
+    public CachedTrade()
+    {
+    }
+
     public string TradeId { get; set; }
 
     public string SenderUserId { get; set; }

@@ -9,15 +9,15 @@ using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Trade;
 
-public class RespondTradeHandler : HandlerBase, IRequestHandler<RespondTradeCommand, RespondedTradeOfferResult>
+public class RespondTradeHandler : HandlerBase, IRequestHandler<RespondTradeCommand, TradeOfferResult>
 {
     public RespondTradeHandler(IServiceProvider serviceProvider) : base(serviceProvider)
     {
     }
 
-    public Task<RespondedTradeOfferResult> Handle(RespondTradeCommand request, CancellationToken cancellationToken)
+    public Task<TradeOfferResult> Handle(RespondTradeCommand request, CancellationToken cancellationToken)
     {
-        return Execute<ITradeService, RespondedTradeOfferResult>(async tradeService =>
+        return Execute<ITradeService, TradeOfferResult>(async tradeService =>
         {
             if (request.Response)
                 return await tradeService.AcceptTradeOfferAsync(request);

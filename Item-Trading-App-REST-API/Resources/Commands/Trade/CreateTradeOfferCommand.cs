@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Item_Trading_App_REST_API.Resources.Commands.Trade;
 
-public record CreateTradeOfferCommand : IRequest<SentTradeOfferResult>
+public record CreateTradeOfferCommand : IRequest<TradeOfferResult>
 {
     public string SenderUserId { get; set; }
 

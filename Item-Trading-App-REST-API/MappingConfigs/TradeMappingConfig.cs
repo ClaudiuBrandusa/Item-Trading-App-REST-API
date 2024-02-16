@@ -14,52 +14,17 @@ public class TradeMappingConfig : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.ForType<string, RequestSentTradeOfferQuery>()
+        config.ForType<string, RequestTradeOfferQuery>()
             .MapWith(str =>
-                new RequestSentTradeOfferQuery { TradeOfferId = str, UserId = MapContext.Current!.Parameters[nameof(RequestTradeOfferQuery.UserId)].ToString() });
-
-        config.ForType<string, RequestRespondedSentTradeOfferQuery>()
-            .MapWith(str =>
-                new RequestRespondedSentTradeOfferQuery { TradeOfferId = str, UserId = MapContext.Current!.Parameters[nameof(RequestTradeOfferQuery.UserId)].ToString() });
-
-        config.ForType<string, RequestReceivedTradeOfferQuery>()
-            .MapWith(str =>
-                new RequestReceivedTradeOfferQuery { TradeOfferId = str, UserId = MapContext.Current!.Parameters[nameof(RequestTradeOfferQuery.UserId)].ToString() });
-
-        config.ForType<string, RequestRespondedReceivedTradeOfferQuery>()
-            .MapWith(str =>
-                new RequestRespondedReceivedTradeOfferQuery { TradeOfferId = str, UserId = MapContext.Current!.Parameters[nameof(RequestTradeOfferQuery.UserId)].ToString() });
+                new RequestTradeOfferQuery { TradeId = str });
 
         config.ForType<string, ListSentTradesQuery>()
-            .MapWith(str =>
-                new ListSentTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
-
-        config.ForType<string, ListRespondedSentTradesQuery>()
-            .MapWith(str =>
-                new ListRespondedSentTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
+            .MapWith(str => BuildListSentTradesQuery<ListSentTradesQuery>(str));
 
         config.ForType<string, ListReceivedTradesQuery>()
-            .MapWith(str =>
-                new ListReceivedTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
+            .MapWith(str => BuildListSentTradesQuery<ListReceivedTradesQuery>(str));
 
-        config.ForType<string, ListRespondedReceivedTradesQuery>()
-            .MapWith(str =>
-                new ListRespondedReceivedTradesQuery { UserId = str, TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[] });
-        
-        config.ForType<SentTradeOfferResult, GetSentTradeOfferSuccessResponse>()
-            .Map(dest => dest.TradeId, src => src.TradeOfferId)
-            .Map(dest => dest.Items, src => src.Items.Select(i => new ItemWithPrice { Id = i.ItemId, Name = i.Name, Price = i.Price, Quantity = i.Quantity }));
-
-        config.ForType<RespondedSentTradeOfferResult, GetSentRespondedTradeOfferSuccessResponse>()
-            .Map(dest => dest.TradeId, src => src.TradeOfferId)
-            .Map(dest => dest.Items, src => src.Items.Select(i => new ItemWithPrice { Id = i.ItemId, Name = i.Name, Price = i.Price, Quantity = i.Quantity }));
-
-        config.ForType<ReceivedTradeOfferResult, GetReceivedTradeOfferSuccessResponse>()
-            .Map(dest => dest.TradeId, src => src.TradeOfferId)
-            .Map(dest => dest.Items, src => src.Items.Select(i => new ItemWithPrice { Id = i.ItemId, Name = i.Name, Price = i.Price, Quantity = i.Quantity }));
-
-        config.ForType<RespondedReceivedTradeOfferResult, GetReceivedRespondedTradeOfferSuccessResponse>()
-            .Map(dest => dest.TradeId, src => src.TradeOfferId)
+        config.ForType<TradeOfferResult, GetSentTradeOfferSuccessResponse>()
             .Map(dest => dest.Items, src => src.Items.Select(i => new ItemWithPrice { Id = i.ItemId, Name = i.Name, Price = i.Price, Quantity = i.Quantity }));
 
         config.ForType<TradeOffersResult, ListTradeOffersSuccessResponse>()
@@ -77,10 +42,19 @@ public class TradeMappingConfig : IRegister
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTradeCommand.UserId)].ToString())
             .Map(dest => dest.Response, src => MapContext.Current!.Parameters[nameof(RespondTradeCommand.Response)]);
 
-        config.ForType<RejectTradeOfferResult, RejectTradeOfferSuccessResponse>()
-            .Map(dest => dest.Id, src => src.TradeOfferId);
-
         config.ForType<CancelTradeOfferRequest, CancelTradeCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTradeCommand.UserId)].ToString());
+    }
+
+    private static T BuildListSentTradesQuery<T>(string userId) where T : ListTradesQuery, new()
+    {
+        MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.Responded), out object responded);
+        
+        return new T
+        {
+            UserId = userId,
+            TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[],
+            Responded = responded is not null && bool.Parse(responded.ToString())
+        };
     }
 }

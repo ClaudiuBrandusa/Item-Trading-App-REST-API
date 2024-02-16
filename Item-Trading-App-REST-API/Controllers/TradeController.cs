@@ -27,41 +27,41 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.GetSent)]
     public async Task<IActionResult> GetSent(string tradeId)
     {
-        var model = AdaptToType<string, RequestSentTradeOfferQuery>(tradeId, (nameof(RequestTradeOfferQuery.UserId), UserId));
+        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
 
         var result = await _mediator.Send(model);
 
-        return MapResult<SentTradeOfferResult, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.GetSentResponded)]
     public async Task<IActionResult> GetSentResponded(string tradeId)
     {
-        var model = AdaptToType<string, RequestRespondedSentTradeOfferQuery>(tradeId, (nameof(RequestTradeOfferQuery.UserId), UserId));
+        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
 
         var result = await _mediator.Send(model);
 
-        return MapResult<RespondedSentTradeOfferResult, GetSentRespondedTradeOfferSuccessResponse, GetSentRespondedTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, GetSentRespondedTradeOfferSuccessResponse, GetSentRespondedTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.GetReceived)]
     public async Task<IActionResult> GetReceived(string tradeId)
     {
-        var model = AdaptToType<string, RequestReceivedTradeOfferQuery>(tradeId, (nameof(RequestTradeOfferQuery.UserId), UserId));
+        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
 
         var result = await _mediator.Send(model);
 
-        return MapResult<ReceivedTradeOfferResult, GetReceivedTradeOfferSuccessResponse, GetReceivedTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, GetReceivedTradeOfferSuccessResponse, GetReceivedTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.GetReceivedResponded)]
     public async Task<IActionResult> GetReceivedResponded(string tradeId)
     {
-        var model = AdaptToType<string, RequestRespondedReceivedTradeOfferQuery>(tradeId, (nameof(RequestTradeOfferQuery.UserId), UserId));
+        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
 
         var result = await _mediator.Send(model);
 
-        return MapResult<RespondedReceivedTradeOfferResult, GetReceivedRespondedTradeOfferSuccessResponse, GetReceivedRespondedTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, GetReceivedRespondedTradeOfferSuccessResponse, GetReceivedRespondedTradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.ListSent)]
@@ -77,7 +77,7 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.ListSentResponded)]
     public async Task<IActionResult> ListSentResponded([FromQuery] string[] tradeItemIds)
     {
-        var model = AdaptToType<string, ListRespondedSentTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
+        var model = AdaptToType<string, ListSentTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.Responded), true));
 
         var results = await _mediator.Send(model);
 
@@ -97,7 +97,7 @@ public class TradeController : BaseController
     [HttpGet(Endpoints.Trade.ListReceivedResponded)]
     public async Task<IActionResult> ListReceivedResponded([FromQuery] string[] tradeItemIds)
     {
-        var model = AdaptToType<string, ListRespondedReceivedTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
+        var model = AdaptToType<string, ListReceivedTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.Responded), true));
 
         var results = await _mediator.Send(model);
 
@@ -114,7 +114,7 @@ public class TradeController : BaseController
 
         var result = await _mediator.Send(model);
 
-        return MapResult<SentTradeOfferResult, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Accept)]
@@ -127,7 +127,7 @@ public class TradeController : BaseController
 
         var result = await _mediator.Send(model);
 
-        return MapResult<RespondedTradeOfferResult, AcceptTradeOfferSuccessResponse, AcceptTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, AcceptTradeOfferSuccessResponse, AcceptTradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Reject)]
@@ -140,7 +140,7 @@ public class TradeController : BaseController
 
         var result = await _mediator.Send(model);
 
-        return MapResult<RespondedTradeOfferResult, RejectTradeOfferSuccessResponse, RejectTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, RejectTradeOfferSuccessResponse, RejectTradeOfferFailedResponse>(result);
     }
 
     [HttpDelete(Endpoints.Trade.Cancel)]
@@ -153,6 +153,6 @@ public class TradeController : BaseController
 
         var result = await _mediator.Send(model);
 
-        return MapResult<CancelTradeOfferResult, CancelTradeOfferSuccessResponse, CancelTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, CancelTradeOfferSuccessResponse, CancelTradeOfferFailedResponse>(result);
     }
 }

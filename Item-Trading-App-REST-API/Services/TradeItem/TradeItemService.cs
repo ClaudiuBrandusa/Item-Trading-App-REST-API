@@ -40,12 +40,9 @@ public class TradeItemService : ITradeItemService
 
         var itemNameTask = GetItemNameAsync(model.ItemId);
 
-        await Task.WhenAll(
-            _context.AddAsync(tradeContent).AsTask(),
-            itemNameTask
-        );
+        await _context.AddAsync(tradeContent);
 
-        await TradeItemCreated(tradeContent, itemNameTask.Result, model.TradeId);
+        await TradeItemCreated(tradeContent, await itemNameTask, model.TradeId);
 
         return true;
     }
