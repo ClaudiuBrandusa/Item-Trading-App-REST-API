@@ -18,14 +18,9 @@ public interface ITradeService
     public Task<TradeOfferResult> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
 
     /// <summary>
-    /// Returns all of the sent trade offers
+    /// Returns the trade offers
     /// </summary>
-    public Task<TradeOffersResult> GetSentTradeOffersAsync(ListTradesQuery model);
-
-    /// <summary>
-    /// Returns all of the received trade offers
-    /// </summary>
-    public Task<TradeOffersResult> GetReceivedTradeOffersAsync(ListTradesQuery model);
+    public Task<TradeOffersResult> GetTradeOffersAsync(ListTradesQuery model);
 
     /// <summary>
     /// Accepts the trade offer

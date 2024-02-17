@@ -213,10 +213,10 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetSentTradeOffersAsync(new ListTradesQuery { UserId = senderUserId });
+        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent });
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(tradeOfferIds.All(x => result.TradeOffers.Contains(x)));
+        Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)));
     }
 
     [Theory(DisplayName = "Get responded sent trades")]
@@ -252,11 +252,11 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetSentTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, Responded = true });
+        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent, Responded = true });
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(result.TradeOffers.Count() == tradeOfferIds.Count);
-        Assert.True(tradeOfferIds.All(x => result.TradeOffers.Contains(x)));
+        Assert.True(result.SentTradeOfferIds.Count() == tradeOfferIds.Count);
+        Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)));
     }
 
     [Theory(DisplayName = "Get received trade")]
@@ -317,10 +317,10 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetReceivedTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId });
+        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received });
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(tradeOfferIds.All(x => result.TradeOffers.Contains(x)));
+        Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)));
     }
 
     [Theory(DisplayName = "Get responded received trades")]
@@ -356,10 +356,10 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetReceivedTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, Responded = true });
+        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received, Responded = true });
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(tradeOfferIds.All(x => result.TradeOffers.Contains(x)));
+        Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)));
     }
 
     [Theory(DisplayName = "Accept trade")]

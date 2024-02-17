@@ -18,17 +18,11 @@ public class TradeMappingConfig : IRegister
             .MapWith(str =>
                 new RequestTradeOfferQuery { TradeId = str });
 
-        config.ForType<string, ListSentTradesQuery>()
-            .MapWith(str => BuildListSentTradesQuery<ListSentTradesQuery>(str));
+        config.ForType<string, ListTradesQuery>()
+            .MapWith(str => BuildListTradesQuery(str));
 
-        config.ForType<string, ListReceivedTradesQuery>()
-            .MapWith(str => BuildListSentTradesQuery<ListReceivedTradesQuery>(str));
-
-        config.ForType<TradeOfferResult, GetSentTradeOfferSuccessResponse>()
+        config.ForType<TradeOfferResult, TradeOfferSuccessResponse>()
             .Map(dest => dest.Items, src => src.Items.Select(i => new ItemWithPrice { Id = i.ItemId, Name = i.Name, Price = i.Price, Quantity = i.Quantity }));
-
-        config.ForType<TradeOffersResult, ListTradeOffersSuccessResponse>()
-            .Map(dest => dest.TradeOffersIds, src => src.TradeOffers);
 
         config.ForType<TradeOfferRequest, CreateTradeOfferCommand>()
             .Map(dest => dest.SenderUserId, src => MapContext.Current!.Parameters[nameof(CreateTradeOfferCommand.SenderUserId)].ToString())
@@ -46,15 +40,17 @@ public class TradeMappingConfig : IRegister
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(RespondTradeCommand.UserId)].ToString());
     }
 
-    private static T BuildListSentTradesQuery<T>(string userId) where T : ListTradesQuery, new()
+    private static ListTradesQuery BuildListTradesQuery(string userId)
     {
         MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.Responded), out object responded);
-        
-        return new T
+        MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.TradeDirection), out object tradeDirection);
+
+        return new ListTradesQuery
         {
             UserId = userId,
             TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[],
-            Responded = responded is not null && bool.Parse(responded.ToString())
+            Responded = responded is not null && bool.Parse(responded.ToString()),
+            TradeDirection = tradeDirection is null ? TradeDirection.All : (TradeDirection) tradeDirection
         };
     }
 }

@@ -7,17 +7,17 @@ using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Trade;
 
-public class ListReceivedTradesHandler : IRequestHandler<ListReceivedTradesQuery, TradeOffersResult>
+public class ListTradesHandler : IRequestHandler<ListTradesQuery, TradeOffersResult>
 {
     private readonly ITradeService _tradeService;
 
-    public ListReceivedTradesHandler(ITradeService tradeService)
+    public ListTradesHandler(ITradeService tradeService)
     {
         _tradeService = tradeService;
     }
 
-    public Task<TradeOffersResult> Handle(ListReceivedTradesQuery request, CancellationToken cancellationToken)
+    public Task<TradeOffersResult> Handle(ListTradesQuery request, CancellationToken cancellationToken)
     {
-        return _tradeService.GetReceivedTradeOffersAsync(request);
+        return _tradeService.GetTradeOffersAsync(request);
     }
 }

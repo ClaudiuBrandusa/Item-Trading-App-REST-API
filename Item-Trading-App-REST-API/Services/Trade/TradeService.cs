@@ -470,14 +470,35 @@ public class TradeService : ITradeService, IDisposable
         };
     }
 
-    public Task<TradeOffersResult> GetReceivedTradeOffersAsync(ListTradesQuery model)
+    public async Task<TradeOffersResult> GetTradeOffersAsync(ListTradesQuery model)
     {
-        return ListTradesAsync(model with { TradeDirection = TradeDirection.Received });
-    }
+        if (string.IsNullOrEmpty(model.UserId))
+            return new TradeOffersResult
+            {
+                Errors = new[] { "Invalid input data" }
+            };
 
-    public Task<TradeOffersResult> GetSentTradeOffersAsync(ListTradesQuery model)
-    {
-        return ListTradesAsync(model with { TradeDirection = TradeDirection.Sent });
+        var sentTradeOfferIds = Array.Empty<string>();
+        var receivedTradeOfferIds = Array.Empty<string>();
+
+        if (model.TradeDirection == TradeDirection.All || model.TradeDirection == TradeDirection.Sent)
+            sentTradeOfferIds = await GetSentTradeOffersIdListAsync(model.UserId, model.TradeItemIds, model.Responded);
+
+        if (model.TradeDirection == TradeDirection.All || model.TradeDirection == TradeDirection.Received)
+            receivedTradeOfferIds = await GetReceivedTradeOffersIdListAsync(model.UserId, model.TradeItemIds, model.Responded);
+
+        if (sentTradeOfferIds is null || receivedTradeOfferIds is null)
+            return new TradeOffersResult
+            {
+                Errors = new[] { "Something went wrong" }
+            };
+
+        return new TradeOffersResult
+        {
+            SentTradeOfferIds = sentTradeOfferIds,
+            ReceivedTradeOfferIds = receivedTradeOfferIds,
+            Success = true
+        };
     }
 
     public async Task<TradeOfferResult> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
@@ -561,34 +582,6 @@ public class TradeService : ITradeService, IDisposable
             tasks[3 + i] = _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(tradeItemIds[i]), tradeId);
 
         return Task.WhenAll(tasks);
-    }
-
-    private async Task<TradeOffersResult> ListTradesAsync(ListTradesQuery model)
-    {
-        if (string.IsNullOrEmpty(model.UserId))
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
-
-        string[] idList;
-
-        if (model.TradeDirection == TradeDirection.Sent)
-            idList = await GetSentTradeOffersIdListAsync(model.UserId, model.TradeItemIds, model.Responded);
-        else
-            idList = await GetReceivedTradeOffersIdListAsync(model.UserId, model.TradeItemIds, model.Responded);
-
-        if (idList is null)
-            return new TradeOffersResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
-
-        return new TradeOffersResult
-        {
-            TradeOffers = idList,
-            Success = true
-        };
     }
 
     private async Task<string[]> GetSentTradeOffersIdListAsync(string userId, string[] tradeItems, bool responded = false)

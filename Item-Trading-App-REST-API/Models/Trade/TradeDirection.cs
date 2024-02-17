@@ -2,6 +2,7 @@
 
 public enum TradeDirection
 {
+    All,
     Sent,
     Received
 }

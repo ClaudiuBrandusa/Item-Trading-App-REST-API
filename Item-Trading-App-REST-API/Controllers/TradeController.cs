@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using MediatR;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using Item_Trading_App_REST_API.Resources.Commands.Trade;
+using System;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -24,84 +25,35 @@ public class TradeController : BaseController
         _mediator = mediator;
     }
 
-    [HttpGet(Endpoints.Trade.GetSent)]
-    public async Task<IActionResult> GetSent(string tradeId)
+    [HttpGet(Endpoints.Trade.Get)]
+    public async Task<IActionResult> Get(string tradeId)
     {
         var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
 
         var result = await _mediator.Send(model);
 
-        return MapResult<TradeOfferResult, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, TradeOfferSuccessResponse, TradeOfferFailedResponse>(result);
     }
 
-    [HttpGet(Endpoints.Trade.GetSentResponded)]
-    public async Task<IActionResult> GetSentResponded(string tradeId)
+    [HttpGet(Endpoints.Trade.List)]
+    public async Task<IActionResult> List([FromQuery] string[] tradeItemIds, [FromQuery] string direction, [FromQuery] bool responded = false)
     {
-        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
+        if (!Enum.TryParse<TradeDirection>(direction, out var tradeDirection))
+            return new ObjectResult(new FailedResponse { Errors = new string[] { "Invalid trade direction value" } });
 
-        var result = await _mediator.Send(model);
-
-        return MapResult<TradeOfferResult, GetSentRespondedTradeOfferSuccessResponse, GetSentRespondedTradeOfferFailedResponse>(result);
-    }
-
-    [HttpGet(Endpoints.Trade.GetReceived)]
-    public async Task<IActionResult> GetReceived(string tradeId)
-    {
-        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
-
-        var result = await _mediator.Send(model);
-
-        return MapResult<TradeOfferResult, GetReceivedTradeOfferSuccessResponse, GetReceivedTradeOfferFailedResponse>(result);
-    }
-
-    [HttpGet(Endpoints.Trade.GetReceivedResponded)]
-    public async Task<IActionResult> GetReceivedResponded(string tradeId)
-    {
-        var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
-
-        var result = await _mediator.Send(model);
-
-        return MapResult<TradeOfferResult, GetReceivedRespondedTradeOfferSuccessResponse, GetReceivedRespondedTradeOfferFailedResponse>(result);
-    }
-
-    [HttpGet(Endpoints.Trade.ListSent)]
-    public async Task<IActionResult> ListSent([FromQuery] string[] tradeItemIds)
-    {
-        var model = AdaptToType<string, ListSentTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
+        var model = AdaptToType<string, ListTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.TradeDirection), tradeDirection), (nameof(ListTradesQuery.Responded), responded));
 
         var results = await _mediator.Send(model);
 
         return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
     }
 
-    [HttpGet(Endpoints.Trade.ListSentResponded)]
-    public async Task<IActionResult> ListSentResponded([FromQuery] string[] tradeItemIds)
+    [HttpGet(Endpoints.Trade.Directions)]
+    public Task<IActionResult> GetTradeDirections()
     {
-        var model = AdaptToType<string, ListSentTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.Responded), true));
+        var tradeDirections = Enum.GetNames(typeof(TradeDirection));
 
-        var results = await _mediator.Send(model);
-
-        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
-    }
-
-    [HttpGet(Endpoints.Trade.ListReceived)]
-    public async Task<IActionResult> ListReceived([FromQuery] string[] tradeItemIds)
-    {
-        var model = AdaptToType<string, ListReceivedTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds));
-
-        var results = await _mediator.Send(model);
-
-        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
-    }
-
-    [HttpGet(Endpoints.Trade.ListReceivedResponded)]
-    public async Task<IActionResult> ListReceivedResponded([FromQuery] string[] tradeItemIds)
-    {
-        var model = AdaptToType<string, ListReceivedTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.Responded), true));
-
-        var results = await _mediator.Send(model);
-
-        return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
+        return Task.FromResult<IActionResult>(new OkObjectResult(tradeDirections));
     }
 
     [HttpPost(Endpoints.Trade.Offer)]
@@ -114,7 +66,7 @@ public class TradeController : BaseController
 
         var result = await _mediator.Send(model);
 
-        return MapResult<TradeOfferResult, GetSentTradeOfferSuccessResponse, GetSentTradeOfferFailedResponse>(result);
+        return MapResult<TradeOfferResult, TradeOfferSuccessResponse, TradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Accept)]
