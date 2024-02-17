@@ -7,24 +7,28 @@ using Item_Trading_App_REST_API.Resources.Events.TradeItem;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
+using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.TradeItem;
 
-public class TradeItemService : ITradeItemService
+public class TradeItemService : ITradeItemService, IDisposable
 {
+    private readonly IDatabaseContextWrapper _databaseContextWrapper;
     private readonly DatabaseContext _context;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public TradeItemService(DatabaseContext context, ICacheService cacheService, IMediator mediator, IMapper mapper)
+    public TradeItemService(IDatabaseContextWrapper databaseContextWrapper, ICacheService cacheService, IMediator mediator, IMapper mapper)
     {
-        _context = context;
+        _databaseContextWrapper = databaseContextWrapper;
+        _context = databaseContextWrapper.ProvideDatabaseContext();
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
@@ -40,12 +44,11 @@ public class TradeItemService : ITradeItemService
 
         var itemNameTask = GetItemNameAsync(model.ItemId);
 
-        await Task.WhenAll(
-            _context.AddAsync(tradeContent).AsTask(),
-            itemNameTask
-        );
+        await _context.AddAsync(tradeContent);
 
-        await TradeItemCreated(tradeContent, itemNameTask.Result, model.TradeId);
+        await _context.SaveChangesAsync();
+
+        await TradeItemCreated(tradeContent, await itemNameTask, model.TradeId);
 
         return true;
     }
@@ -92,6 +95,12 @@ public class TradeItemService : ITradeItemService
         await TradeItemRemoved(model.TradeId, model.KeepCache);
 
         return true;
+    }
+
+    public void Dispose()
+    {
+        _databaseContextWrapper.Dispose(_context);
+        GC.SuppressFinalize(this);
     }
 
     private Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(string tradeId)

@@ -1,24 +1,23 @@
-﻿using Item_Trading_App_REST_API.Handlers.Requests.Base;
-using Item_Trading_App_REST_API.Models.Item;
+﻿using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Services.Item;
 using MediatR;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Item;
 
-public class ListItemsHandler : HandlerBase, IRequestHandler<ListItemsQuery, ItemsResult>
+public class ListItemsHandler : IRequestHandler<ListItemsQuery, ItemsResult>
 {
-    public ListItemsHandler(IServiceProvider serviceProvider) : base(serviceProvider)
+    private readonly IItemService _itemService;
+
+    public ListItemsHandler(IItemService itemService)
     {
+        _itemService = itemService;
     }
 
     public Task<ItemsResult> Handle(ListItemsQuery request, CancellationToken cancellationToken)
     {
-        return Execute<IItemService, ItemsResult>(async (itemService) =>
-            await itemService.ListItemsAsync(request)
-        );
+        return _itemService.ListItemsAsync(request);
     }
 }

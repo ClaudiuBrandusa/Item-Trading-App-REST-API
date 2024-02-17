@@ -20,9 +20,9 @@ public class TradeItemHistoryService : ITradeItemHistoryService
     private readonly ICacheService _cacheService;
     private readonly IMapper _mapper;
 
-    public TradeItemHistoryService(DatabaseContext context, ICacheService cacheService, IMapper mapper)
+    public TradeItemHistoryService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMapper mapper)
     {
-        _context = context;
+        _context = dbContextFactory.CreateDbContext();
         _cacheService = cacheService;
         _mapper = mapper;
     }
@@ -54,6 +54,8 @@ public class TradeItemHistoryService : ITradeItemHistoryService
 
         if (!status)
             result.Errors = new string[] { "Unable to add trade items history" };
+
+        await _context.SaveChangesAsync();
 
         return result;
     }

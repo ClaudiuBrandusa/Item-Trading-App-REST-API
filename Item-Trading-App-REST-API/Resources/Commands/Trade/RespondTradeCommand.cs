@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Item_Trading_App_REST_API.Resources.Commands.Trade;
 
-public record RespondTradeCommand : IRequest<RespondedTradeOfferResult>
+public record RespondTradeCommand : IRequest<TradeOfferResult>
 {
     public string UserId { get; set; }
 

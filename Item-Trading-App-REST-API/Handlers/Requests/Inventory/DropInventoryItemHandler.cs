@@ -1,24 +1,23 @@
 ﻿using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Inventory;
 using MediatR;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Resources.Commands.Inventory;
-using Item_Trading_App_REST_API.Handlers.Requests.Base;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Inventory;
 
-public class DropInventoryItemHandler : HandlerBase, IRequestHandler<DropInventoryItemCommand, QuantifiedItemResult>
+public class DropInventoryItemHandler : IRequestHandler<DropInventoryItemCommand, QuantifiedItemResult>
 {
-    public DropInventoryItemHandler(IServiceProvider serviceProvider) : base(serviceProvider)
+    private readonly IInventoryService _inventoryService;
+
+    public DropInventoryItemHandler(IInventoryService inventoryService)
     {
+        _inventoryService = inventoryService;
     }
 
     public Task<QuantifiedItemResult> Handle(DropInventoryItemCommand request, CancellationToken cancellationToken)
     {
-        return Execute<IInventoryService, QuantifiedItemResult>(async (inventoryService) =>
-            await inventoryService.DropItemAsync(request)
-        );
+        return _inventoryService.DropItemAsync(request);
     }
 }

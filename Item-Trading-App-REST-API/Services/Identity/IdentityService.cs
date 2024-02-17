@@ -4,6 +4,7 @@ using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Options;
 using Item_Trading_App_REST_API.Resources.Commands.Identity;
 using Item_Trading_App_REST_API.Resources.Queries.Identity;
+using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,19 +18,21 @@ using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.Identity;
 
-public class IdentityService : IIdentityService
+public class IdentityService : IIdentityService, IDisposable
 {
+    private readonly IDatabaseContextWrapper _databaseContextWrapper;
+    private readonly DatabaseContext _context;
     private readonly UserManager<User> _userManager;
     private readonly JwtSettings _jwtSettings;
-    private readonly DatabaseContext _context;
     private readonly TokenValidationParameters _tokenValidationParameters;
     private readonly IRefreshTokenService _refreshTokenService;
 
-    public IdentityService(UserManager<User> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters, IRefreshTokenService refreshTokenService)
+    public IdentityService(IDatabaseContextWrapper databaseContextWrapper, UserManager<User> userManager, JwtSettings jwtSettings, TokenValidationParameters tokenValidationParameters, IRefreshTokenService refreshTokenService)
     {
+        _databaseContextWrapper = databaseContextWrapper;
+        _context = databaseContextWrapper.ProvideDatabaseContext();
         _userManager = userManager;
         _jwtSettings = jwtSettings;
-        _context = context;
         _tokenValidationParameters = tokenValidationParameters;
         _refreshTokenService = refreshTokenService;
     }
@@ -128,10 +131,14 @@ public class IdentityService : IIdentityService
         if (string.IsNullOrEmpty(model.UserId))
             return "";
 
-        var user = await _userManager.FindByIdAsync(model.UserId);
+        var dbContext = await _databaseContextWrapper.ProvideDatabaseContextAsync();
+
+        var user = await dbContext.Users.FindAsync(model.UserId);
 
         if (user is null)
             return "";
+
+        _databaseContextWrapper.Dispose(dbContext);
 
         return user.UserName;
     }
@@ -164,6 +171,12 @@ public class IdentityService : IIdentityService
             UsersId = list,
             Success = true
         };
+    }
+
+    public void Dispose()
+    {
+        _databaseContextWrapper.Dispose(_context);
+        GC.SuppressFinalize(this);
     }
 
     private ClaimsPrincipal GetPrincipalFromToken(string token)

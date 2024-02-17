@@ -1,24 +1,23 @@
-﻿using Item_Trading_App_REST_API.Handlers.Requests.Base;
-using Item_Trading_App_REST_API.Models.Identity;
+﻿using Item_Trading_App_REST_API.Models.Identity;
 using Item_Trading_App_REST_API.Resources.Commands.Identity;
 using Item_Trading_App_REST_API.Services.Identity;
 using MediatR;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Identity;
 
-public class RefreshTokenHandler : HandlerBase, IRequestHandler<RefreshTokenCommand, AuthenticationResult>
+public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, AuthenticationResult>
 {
-    public RefreshTokenHandler(IServiceProvider serviceProvider) : base(serviceProvider)
+    private readonly IIdentityService _identityService;
+
+    public RefreshTokenHandler(IIdentityService identityService)
     {
+        _identityService = identityService;
     }
 
     public Task<AuthenticationResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        return Execute<IIdentityService, AuthenticationResult>(async (identityService) =>
-            await identityService.RefreshTokenAsync(request)
-        );
+        return _identityService.RefreshTokenAsync(request);
     }
 }

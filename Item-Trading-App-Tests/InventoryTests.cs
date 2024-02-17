@@ -5,6 +5,7 @@ using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.Inventory;
 using Item_Trading_App_REST_API.Services.Notification;
 using MediatR;
+using Item_Trading_App_REST_API.Services.UnitOfWork;
 
 namespace Item_Trading_App_Tests;
 
@@ -32,11 +33,12 @@ public class InventoryTests
             {
                 return "Item";
             });
-        
+
         var cacheServiceMock = new Mock<ICacheService>();
         var clientNotificationServiceMock = new Mock<IClientNotificationService>();
+        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
 
-        _sut = new InventoryService(TestingUtils.GetDatabaseContext(), clientNotificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
+        _sut = new InventoryService(TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString()), clientNotificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper(), unitOfWorkMock.Object);
     }
 
     [Theory(DisplayName = "Add item to inventory")]

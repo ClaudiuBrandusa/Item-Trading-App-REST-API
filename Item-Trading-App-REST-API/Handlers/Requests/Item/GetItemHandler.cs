@@ -1,24 +1,23 @@
 ﻿using Item_Trading_App_REST_API.Models.Item;
 using Item_Trading_App_REST_API.Services.Item;
 using MediatR;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
-using Item_Trading_App_REST_API.Handlers.Requests.Base;
 
 namespace Item_Trading_App_REST_API.Handlers.Requests.Item;
 
-public class GetItemHandler : HandlerBase, IRequestHandler<GetItemQuery, FullItemResult>
+public class GetItemHandler : IRequestHandler<GetItemQuery, FullItemResult>
 {
-    public GetItemHandler(IServiceProvider serviceProvider) : base(serviceProvider)
+    private readonly IItemService _itemService;
+
+    public GetItemHandler(IItemService itemService)
     {
+        _itemService = itemService;
     }
 
     public Task<FullItemResult> Handle(GetItemQuery request, CancellationToken cancellationToken)
     {
-        return Execute<IItemService, FullItemResult>(async (itemService) =>
-            await itemService.GetItemAsync(request)
-        );
+        return _itemService.GetItemAsync(request);
     }
 }

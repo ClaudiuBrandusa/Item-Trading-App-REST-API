@@ -107,6 +107,10 @@ You could do this by using PMC (Package Manager Console).
 Or you could try the following command in Powershell.  
 `dotnet ef database update`
 
+### Redis Cache
+Here is the docker command that I used in order to setup the Redis cache container:  
+`docker run --name Redis-Cache -p 6379:6379 -e ALLOW_EMPTY_PASSWORD=yes bitnami/redis:latest`
+
 # Tools used
 - Visual Studio 2022
 - Microsoft SQL Server Management Studio 18

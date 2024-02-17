@@ -2,7 +2,9 @@
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.Trade;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,12 +13,12 @@ namespace Item_Trading_App_REST_API.HostedServices.Cache;
 
 public class CacheInitHostedService : IHostedService
 {
-    private readonly IMediator _mediator;
+    private readonly IServiceProvider _serviceProvider;
     private readonly CacheSettings _settings;
 
-    public CacheInitHostedService(IMediator mediator, CacheSettings settings)
+    public CacheInitHostedService(IServiceProvider serviceProvider, CacheSettings settings)
     {
-        _mediator = mediator;
+        _serviceProvider = serviceProvider;
         _settings = settings;
     }
 
@@ -24,13 +26,17 @@ public class CacheInitHostedService : IHostedService
     {
         if (!_settings.InitAtStartup) return;
 
+        using var scope = _serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+        var mediator = scope.ServiceProvider.GetService<IMediator>();
+
         // using listItems from the item service will set the cache if it is a miss
-        var itemsId = (await _mediator.Send(new ListItemsQuery(), cancellationToken)).ItemsId.ToArray();
+        var itemsId = (await mediator.Send(new ListItemsQuery(), cancellationToken)).ItemsId.ToArray();
 
         // init used items
         for (int i = 0; i < itemsId.Length; i++)
         {
-            await _mediator.Send(new ItemUsedInTradeQuery { ItemId = itemsId[i] }, cancellationToken);
+            await mediator.Send(new ItemUsedInTradeQuery { ItemId = itemsId[i] }, cancellationToken);
         }
     }
 

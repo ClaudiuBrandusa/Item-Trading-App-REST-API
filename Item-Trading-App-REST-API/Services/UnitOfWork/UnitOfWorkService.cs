@@ -1,37 +1,42 @@
-﻿using Item_Trading_App_REST_API.Data;
-using Microsoft.EntityFrameworkCore.Storage;
-using System;
+﻿using System;
+using System.Transactions;
 
 namespace Item_Trading_App_REST_API.Services.UnitOfWork;
 
 public class UnitOfWorkService : IUnitOfWorkService, IDisposable
 {
-    private readonly DatabaseContext _context;
-    private IDbContextTransaction _transaction;
-
-    public UnitOfWorkService(DatabaseContext context)
-    {
-        _context = context;
-    }
+    private TransactionScope _transaction;
 
     public void BeginTransaction()
     {
-        _transaction = _context.Database.BeginTransaction();
+        if (OperatingSystem.IsWindows())
+            TransactionManager.ImplicitDistributedTransactions = true;
+        _transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+        TransactionInterop.GetTransmitterPropagationToken(Transaction.Current);
     }
 
     public void CommitTransaction()
     {
-        _transaction?.Commit();
+        if (_transaction is not null)
+            ClearTransaction();
     }
 
     public void RollbackTransaction()
     {
-        _transaction?.Rollback();
+        if (_transaction is not null)
+            ClearTransaction();
     }
 
     public void Dispose()
     {
         _transaction?.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    private void ClearTransaction()
+    {
+        _transaction.Complete();
+        _transaction.Dispose();
+        _transaction = null;
     }
 }
