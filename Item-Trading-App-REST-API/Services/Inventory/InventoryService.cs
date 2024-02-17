@@ -18,7 +18,6 @@ using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Resources.Events.Inventory;
 using Item_Trading_App_REST_API.Services.UnitOfWork;
-using Microsoft.EntityFrameworkCore.Storage;
 using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 
 namespace Item_Trading_App_REST_API.Services.Inventory;
@@ -31,6 +30,7 @@ public class InventoryService : IInventoryService, IDisposable
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
+    private readonly IUnitOfWorkService _unitOfWorkService;
 
     public InventoryService(IDatabaseContextWrapper databaseContextWrapper, IClientNotificationService clientNotificationService, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
@@ -40,9 +40,7 @@ public class InventoryService : IInventoryService, IDisposable
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
-
-        if (unitOfWork.Transaction is not null)
-            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
+        _unitOfWorkService = unitOfWork;
     }
 
     public async Task<bool> HasItemAsync(HasItemQuantityQuery model)
@@ -346,19 +344,33 @@ public class InventoryService : IInventoryService, IDisposable
             };
 
         amount -= model.Quantity;
-        bool modified;
+        bool modified = false;
         var lockedItem = new LockedItem { UserId = model.UserId, ItemId = model.ItemId, Quantity = amount };
 
-        if (amount == 0)
+        var context = await _databaseContextWrapper.ProvideDatabaseContextAsync();
+
+        try
         {
-            modified = await _context.RemoveEntityAsync(lockedItem);
-            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId));
+            if (amount == 0)
+            {
+                modified = await context.RemoveEntityAsync(lockedItem);
+                await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId));
+            }
+            else
+            {
+                lockedItem.Quantity = amount;
+                modified = await context.UpdateEntityAsync(lockedItem);
+                await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedItem.Quantity);
+            }
         }
-        else
+        catch (Exception)
         {
-            lockedItem.Quantity = amount;
-            modified = await _context.UpdateEntityAsync(lockedItem);
-            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedItem.Quantity);
+            _unitOfWorkService.RollbackTransaction();
+            modified = false;
+        }
+        finally
+        {
+            _databaseContextWrapper.Dispose(context);
         }
 
         if(!modified)
@@ -461,11 +473,27 @@ public class InventoryService : IInventoryService, IDisposable
         return modified;
     }
 
-    private Task<OwnedItem> GetInventoryItemEntityAsync(string userId, string itemId) =>
-        GetInventoryItemQuery(_context, userId, itemId);
+    private async Task<OwnedItem> GetInventoryItemEntityAsync(string userId, string itemId)
+    {
+        var dbContext = await _databaseContextWrapper.ProvideDatabaseContextAsync();
 
-    private Task<LockedItem> GetLockedInventoryItemEntityAsync(string userId, string itemId) => 
-        GetLockedInventoryItemQuery(_context, userId, itemId);
+        var inventoryItemEntity = await GetInventoryItemQuery(_context, userId, itemId);
+
+        _databaseContextWrapper.Dispose(dbContext);
+
+        return inventoryItemEntity;
+    }
+
+    private async Task<LockedItem> GetLockedInventoryItemEntityAsync(string userId, string itemId)
+    {
+        var dbContext = await _databaseContextWrapper.ProvideDatabaseContextAsync();
+
+        var lockedInventoryItemEntity = await GetLockedInventoryItemQuery(_context, userId, itemId);
+
+        _databaseContextWrapper.Dispose(dbContext);
+
+        return lockedInventoryItemEntity;
+    }
 
     private async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
     {

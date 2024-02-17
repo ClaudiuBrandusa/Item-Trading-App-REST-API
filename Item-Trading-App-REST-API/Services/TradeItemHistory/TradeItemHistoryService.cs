@@ -6,10 +6,8 @@ using Item_Trading_App_REST_API.Models.TradeItemHistory;
 using Item_Trading_App_REST_API.Resources.Commands.TradeItemHistory;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItemHistory;
 using Item_Trading_App_REST_API.Services.Cache;
-using Item_Trading_App_REST_API.Services.UnitOfWork;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,14 +20,11 @@ public class TradeItemHistoryService : ITradeItemHistoryService
     private readonly ICacheService _cacheService;
     private readonly IMapper _mapper;
 
-    public TradeItemHistoryService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeItemHistoryService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMapper mapper)
     {
         _context = dbContextFactory.CreateDbContext();
         _cacheService = cacheService;
         _mapper = mapper;
-
-        if (unitOfWork.Transaction is not null)
-            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
     }
 
     public async Task<TradeItemHistoryBaseResult> AddTradeItemsAsync(AddTradeItemsHistoryCommand model)
@@ -59,6 +54,8 @@ public class TradeItemHistoryService : ITradeItemHistoryService
 
         if (!status)
             result.Errors = new string[] { "Unable to add trade items history" };
+
+        await _context.SaveChangesAsync();
 
         return result;
     }

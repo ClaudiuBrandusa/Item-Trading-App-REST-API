@@ -32,7 +32,7 @@ public class TradeItemTests
 
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();
 
-        _sut = new TradeItemService(databaseContextWrapper, cacheServiceMock.Object, mediatorMock.Object, _mapper, unitOfWorkMock.Object);
+        _sut = new TradeItemService(databaseContextWrapper, cacheServiceMock.Object, mediatorMock.Object, _mapper);
     }
 
     [Theory(DisplayName = "Add new trade item")]

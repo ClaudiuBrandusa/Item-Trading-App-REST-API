@@ -8,11 +8,9 @@ using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
-using Item_Trading_App_REST_API.Services.UnitOfWork;
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,16 +25,13 @@ public class TradeItemService : ITradeItemService, IDisposable
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public TradeItemService(IDatabaseContextWrapper databaseContextWrapper, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeItemService(IDatabaseContextWrapper databaseContextWrapper, ICacheService cacheService, IMediator mediator, IMapper mapper)
     {
         _databaseContextWrapper = databaseContextWrapper;
         _context = databaseContextWrapper.ProvideDatabaseContext();
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
-
-        if (unitOfWork.Transaction is not null)
-            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
     }
 
     public async Task<bool> AddTradeItemAsync(AddTradeItemCommand model)
@@ -50,6 +45,8 @@ public class TradeItemService : ITradeItemService, IDisposable
         var itemNameTask = GetItemNameAsync(model.ItemId);
 
         await _context.AddAsync(tradeContent);
+
+        await _context.SaveChangesAsync();
 
         await TradeItemCreated(tradeContent, await itemNameTask, model.TradeId);
 

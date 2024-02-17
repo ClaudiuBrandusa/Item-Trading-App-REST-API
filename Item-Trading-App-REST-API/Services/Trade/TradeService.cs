@@ -27,7 +27,6 @@ using Item_Trading_App_REST_API.Resources.Queries.TradeItemHistory;
 using Item_Trading_App_REST_API.Resources.Events.Trades;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
-using Microsoft.EntityFrameworkCore.Storage;
 using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 
 namespace Item_Trading_App_REST_API.Services.Trade;
@@ -49,9 +48,6 @@ public class TradeService : ITradeService, IDisposable
         _mediator = mediator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
-
-        if (unitOfWork.Transaction is not null)
-            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
     }
 
     public async Task<TradeOfferResult> CreateTradeOfferAsync(CreateTradeOfferCommand model)
@@ -434,6 +430,8 @@ public class TradeService : ITradeService, IDisposable
                     Errors = new[] { "Something went wrong" }
                 };
             }
+
+            await _context.SaveChangesAsync();
 
             _unitOfWork.CommitTransaction();
         }
