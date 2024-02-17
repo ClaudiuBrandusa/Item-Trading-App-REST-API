@@ -11,7 +11,7 @@ public class DbInstaller : IInstaller
 {
     public void InstallServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<DatabaseContext>(options =>
+        services.AddDbContextFactory<DatabaseContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddIdentityCore<User>()

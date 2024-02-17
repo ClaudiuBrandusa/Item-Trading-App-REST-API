@@ -19,17 +19,19 @@ namespace Item_Trading_App_REST_API.Services.Identity;
 
 public class IdentityService : IIdentityService
 {
+    private readonly IDbContextFactory<DatabaseContext> _dbContextFactory;
     private readonly UserManager<User> _userManager;
     private readonly JwtSettings _jwtSettings;
     private readonly DatabaseContext _context;
     private readonly TokenValidationParameters _tokenValidationParameters;
     private readonly IRefreshTokenService _refreshTokenService;
 
-    public IdentityService(UserManager<User> userManager, JwtSettings jwtSettings, DatabaseContext context, TokenValidationParameters tokenValidationParameters, IRefreshTokenService refreshTokenService)
+    public IdentityService(IDbContextFactory<DatabaseContext> dbContextFactory, UserManager<User> userManager, JwtSettings jwtSettings, TokenValidationParameters tokenValidationParameters, IRefreshTokenService refreshTokenService)
     {
+        _dbContextFactory = dbContextFactory;
         _userManager = userManager;
         _jwtSettings = jwtSettings;
-        _context = context;
+        _context = dbContextFactory.CreateDbContext();
         _tokenValidationParameters = tokenValidationParameters;
         _refreshTokenService = refreshTokenService;
     }
@@ -128,7 +130,9 @@ public class IdentityService : IIdentityService
         if (string.IsNullOrEmpty(model.UserId))
             return "";
 
-        var user = await _userManager.FindByIdAsync(model.UserId);
+        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        var user = await dbContext.Users.FindAsync(model.UserId);
 
         if (user is null)
             return "";

@@ -17,6 +17,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Resources.Events.Inventory;
+using Item_Trading_App_REST_API.Services.UnitOfWork;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Item_Trading_App_REST_API.Services.Inventory;
 
@@ -28,13 +30,16 @@ public class InventoryService : IInventoryService
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public InventoryService(DatabaseContext context, IClientNotificationService clientNotificationService, ICacheService cacheService, IMediator mediator, IMapper mapper)
+    public InventoryService(IDbContextFactory<DatabaseContext> dbContextFactory, IClientNotificationService clientNotificationService, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
-        _context = context;
+        _context = dbContextFactory.CreateDbContext();
         _clientNotificationService = clientNotificationService;
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
+
+        if (unitOfWork.Transaction is not null)
+            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
     }
 
     public async Task<bool> HasItemAsync(HasItemQuantityQuery model)

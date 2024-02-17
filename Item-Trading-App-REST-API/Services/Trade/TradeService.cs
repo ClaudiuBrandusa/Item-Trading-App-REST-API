@@ -27,24 +27,30 @@ using Item_Trading_App_REST_API.Resources.Queries.TradeItemHistory;
 using Item_Trading_App_REST_API.Resources.Events.Trades;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Item_Trading_App_REST_API.Services.Trade;
 
 public class TradeService : ITradeService
 {
     private readonly DatabaseContext _context;
+    private readonly IDbContextFactory<DatabaseContext> _dbContextFactory;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWorkService _unitOfWork;
 
-    public TradeService(DatabaseContext context, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
-        _context = context;
+        _context = dbContextFactory.CreateDbContext();
+        _dbContextFactory = dbContextFactory;
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
+
+        if (unitOfWork.Transaction is not null)
+            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
     }
 
     public async Task<TradeOfferResult> CreateTradeOfferAsync(CreateTradeOfferCommand model)
@@ -488,15 +494,11 @@ public class TradeService : ITradeService
         var senderNameTask = GetUsernameAsync(trade.SenderUserId);
         var receiverNameTask = GetUsernameAsync(trade.ReceiverUserId);
         var tradeItemsTask = GetTradeItemsAsync(requestTradeOffer.TradeId, false);
-        var responseTask = GetTradeResponseAsync(trade.TradeId);
-        var tradeResponseDateTask = GetTradeResponseDateAsync(trade.TradeId);
 
         await Task.WhenAll(
             senderNameTask,
             receiverNameTask,
-            tradeItemsTask,
-            responseTask,
-            tradeResponseDateTask
+            tradeItemsTask
         );
 
         return new TradeOfferResult
@@ -507,8 +509,8 @@ public class TradeService : ITradeService
             ReceiverId = trade.ReceiverUserId,
             ReceiverName = await receiverNameTask,
             CreationDate = trade.SentDate,
-            Response = await responseTask,
-            ResponseDate = await tradeResponseDateTask,
+            Response = trade.Response,
+            ResponseDate = trade.ResponseDate,
             Items = await tradeItemsTask,
             Success = true
         };
@@ -781,12 +783,9 @@ public class TradeService : ITradeService
 
                 var trade = await tradeTask;
 
-                var tradeItemIdsTask = Task.Run(async () =>
-                {
-                    var tradeItems = await GetTradeItemsAsync(trade.TradeId, trade.Response.HasValue /* if trade.Response has value, then it means it is a responded trade */ );
+                var tradeItems = await GetTradeItemsAsync(trade.TradeId, trade.Response.HasValue /* if trade.Response has value, then it means it is a responded trade */ );
 
-                    return tradeItems.Select(tradeItem => tradeItem.ItemId).ToArray();
-                });
+                var tradeItemIds = tradeItems.Select(tradeItem => tradeItem.ItemId).ToArray();
 
                 return new CachedTrade
                 {
@@ -796,7 +795,7 @@ public class TradeService : ITradeService
                     SentDate = trade.SentDate,
                     Response = trade.Response,
                     ResponseDate = trade.ResponseDate,
-                    TradeItemsId = await tradeItemIdsTask
+                    TradeItemsId = tradeItemIds
                 };
             },
             true);
@@ -810,13 +809,6 @@ public class TradeService : ITradeService
         var cachedTrade = await GetCachedTradeAsync(tradeId);
 
         return cachedTrade.Response;
-    }
-
-    private async Task<DateTime?> GetTradeResponseDateAsync(string tradeId)
-    {
-        var cachedTrade = await GetCachedTradeAsync(tradeId);
-
-        return cachedTrade.ResponseDate;
     }
 
     private async Task<bool> UnlockTradeItemsAsync(string userId, string tradeId)
@@ -887,14 +879,32 @@ public class TradeService : ITradeService
         return tradeItems.Length != 0;
     }
 
-    private Task<Entities.Trade> GetTradeEntityAsync(string tradeId) =>
-        GetTradeQuery(_context, tradeId);
+    private async Task<Entities.Trade> GetTradeEntityAsync(string tradeId)
+    {
+        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-    private Task<Entities.SentTrade> GetSentTradeEntityAsync(string tradeId) =>
-        GetSentTradeQuery(_context, tradeId);
+        var tradeEntity = await GetTradeQuery(dbContext, tradeId);
 
-    private Task<Entities.ReceivedTrade> GetReceivedTradeEntityAsync(string tradeId) =>
-        GetReceivedTradeQuery(_context, tradeId);
+        return tradeEntity;
+    }
+
+    private async Task<Entities.SentTrade> GetSentTradeEntityAsync(string tradeId)
+    {
+        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        var sentTradeEntity = await GetSentTradeQuery(dbContext, tradeId);
+
+        return sentTradeEntity;
+    }
+
+    private async Task<Entities.ReceivedTrade> GetReceivedTradeEntityAsync(string tradeId)
+    {
+        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        var receivedTradeEntity = await GetReceivedTradeQuery(dbContext, tradeId);
+
+        return receivedTradeEntity;
+    }
     
     private async Task<int> GetTotalPriceAsync(string tradeOfferId)
     {

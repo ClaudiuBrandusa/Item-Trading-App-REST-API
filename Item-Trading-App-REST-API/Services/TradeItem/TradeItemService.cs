@@ -7,9 +7,11 @@ using Item_Trading_App_REST_API.Resources.Events.TradeItem;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
+using Item_Trading_App_REST_API.Services.UnitOfWork;
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,12 +24,15 @@ public class TradeItemService : ITradeItemService
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public TradeItemService(DatabaseContext context, ICacheService cacheService, IMediator mediator, IMapper mapper)
+    public TradeItemService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
-        _context = context;
+        _context = dbContextFactory.CreateDbContext();
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
+
+        if (unitOfWork.Transaction is not null)
+            _context.Database.UseTransaction(unitOfWork.Transaction.GetDbTransaction());
     }
 
     public async Task<bool> AddTradeItemAsync(AddTradeItemCommand model)
