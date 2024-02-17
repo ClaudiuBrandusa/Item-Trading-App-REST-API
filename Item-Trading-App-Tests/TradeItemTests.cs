@@ -5,6 +5,7 @@ using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.TradeItem;
 using MediatR;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
+using Item_Trading_App_REST_API.Services.UnitOfWork;
 
 namespace Item_Trading_App_Tests;
 public class TradeItemTests
@@ -15,7 +16,8 @@ public class TradeItemTests
 
     public TradeItemTests()
     {
-        _context = TestingUtils.GetDatabaseContext();
+        var databaseContextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _context = databaseContextWrapper.ProvideDatabaseContext();
         var _mapper = TestingUtils.GetMapper();
 
         var cacheServiceMock = new Mock<ICacheService>();
@@ -28,7 +30,9 @@ public class TradeItemTests
                 return "name";
             });
 
-        _sut = new TradeItemService(_context, cacheServiceMock.Object, mediatorMock.Object, _mapper);
+        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
+
+        _sut = new TradeItemService(databaseContextWrapper, cacheServiceMock.Object, mediatorMock.Object, _mapper, unitOfWorkMock.Object);
     }
 
     [Theory(DisplayName = "Add new trade item")]

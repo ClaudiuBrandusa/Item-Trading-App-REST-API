@@ -125,7 +125,7 @@ public class TradeTests
 
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();
 
-        _sut = new TradeService(_context, cacheServiceMock.Object, mediatorMock.Object, _mapper, unitOfWorkMock.Object);
+        _sut = new TradeService(TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString()), cacheServiceMock.Object, mediatorMock.Object, _mapper, unitOfWorkMock.Object);
     }
 
     [Theory(DisplayName = "Create trade offer")]

@@ -19,20 +19,23 @@ using Item_Trading_App_REST_API.Resources.Commands.Inventory;
 using Item_Trading_App_REST_API.Resources.Events.Inventory;
 using Item_Trading_App_REST_API.Services.UnitOfWork;
 using Microsoft.EntityFrameworkCore.Storage;
+using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 
 namespace Item_Trading_App_REST_API.Services.Inventory;
 
-public class InventoryService : IInventoryService
+public class InventoryService : IInventoryService, IDisposable
 {
+    private readonly IDatabaseContextWrapper _databaseContextWrapper;
     private readonly DatabaseContext _context;
     private readonly IClientNotificationService _clientNotificationService;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public InventoryService(IDbContextFactory<DatabaseContext> dbContextFactory, IClientNotificationService clientNotificationService, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public InventoryService(IDatabaseContextWrapper databaseContextWrapper, IClientNotificationService clientNotificationService, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
-        _context = dbContextFactory.CreateDbContext();
+        _databaseContextWrapper = databaseContextWrapper;
+        _context = databaseContextWrapper.ProvideDatabaseContext();
         _clientNotificationService = clientNotificationService;
         _cacheService = cacheService;
         _mediator = mediator;
@@ -427,6 +430,12 @@ public class InventoryService : IInventoryService
 
         await Task.WhenAll(tasks);
         await _clientNotificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
+    }
+
+    public void Dispose()
+    {
+        _databaseContextWrapper.Dispose(_context);
+        GC.SuppressFinalize(this);
     }
 
     private async Task<bool> LockItem(string userId, string itemId, int quantity)

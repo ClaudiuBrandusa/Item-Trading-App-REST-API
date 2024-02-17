@@ -17,7 +17,8 @@ public class IdentityTests
 
     public IdentityTests()
     {
-        _dbContext = TestingUtils.GetDatabaseContext();
+        var databaseContextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _dbContext = databaseContextWrapper.ProvideDatabaseContext();
 
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -74,7 +75,7 @@ public class IdentityTests
                 };
             });
 
-        _sut = new IdentityService(TestingUtils.GetUserManager(new UserStore<User>(_dbContext)), jwtSettings, _dbContext, tokenValidationParameters, refreshTokenServiceMock.Object);
+        _sut = new IdentityService(databaseContextWrapper, TestingUtils.GetUserManager(new UserStore<User>(_dbContext)), jwtSettings, tokenValidationParameters, refreshTokenServiceMock.Object);
     }
 
     [Theory(DisplayName = "Register user")]

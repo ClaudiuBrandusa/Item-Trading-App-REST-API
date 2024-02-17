@@ -4,7 +4,6 @@ using Item_Trading_App_REST_API.Resources.Queries.Inventory;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.Item;
-using Item_Trading_App_REST_API.Services.Notification;
 using MediatR;
 
 namespace Item_Trading_App_Tests;

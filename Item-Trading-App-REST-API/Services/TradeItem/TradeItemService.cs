@@ -7,26 +7,30 @@ using Item_Trading_App_REST_API.Resources.Events.TradeItem;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
+using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 using Item_Trading_App_REST_API.Services.UnitOfWork;
 using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Services.TradeItem;
 
-public class TradeItemService : ITradeItemService
+public class TradeItemService : ITradeItemService, IDisposable
 {
+    private readonly IDatabaseContextWrapper _databaseContextWrapper;
     private readonly DatabaseContext _context;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
-    public TradeItemService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeItemService(IDatabaseContextWrapper databaseContextWrapper, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
-        _context = dbContextFactory.CreateDbContext();
+        _databaseContextWrapper = databaseContextWrapper;
+        _context = databaseContextWrapper.ProvideDatabaseContext();
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
@@ -94,6 +98,12 @@ public class TradeItemService : ITradeItemService
         await TradeItemRemoved(model.TradeId, model.KeepCache);
 
         return true;
+    }
+
+    public void Dispose()
+    {
+        _databaseContextWrapper.Dispose(_context);
+        GC.SuppressFinalize(this);
     }
 
     private Task<Models.TradeItems.TradeItem[]> GetTradeItemsAsync(string tradeId)

@@ -1,5 +1,6 @@
 ﻿using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Installers;
+using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
@@ -22,11 +23,28 @@ public static class TestingUtils
         .Build();
     }
 
-    public static DatabaseContext GetDatabaseContext()
+    public static IDatabaseContextWrapper GetDatabaseContextWrapper(string id)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
-        optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
-        optionsBuilder.EnableSensitiveDataLogging(true);
+        var databaseContextWrapperMock = new Mock<IDatabaseContextWrapper>();
+
+        databaseContextWrapperMock.Setup(x => x.ProvideDatabaseContext())
+            .Returns(GetDatabaseContext(id));
+
+        databaseContextWrapperMock.Setup(x => x.ProvideDatabaseContextAsync())
+            .ReturnsAsync(GetDatabaseContext(id));
+
+        databaseContextWrapperMock.Setup(x => x.Dispose(It.IsAny<DatabaseContext>()))
+            .Callback(DoNothing);
+
+        return databaseContextWrapperMock.Object;
+    }
+
+    public static DatabaseContext GetDatabaseContext(string id = "")
+    {
+        if (string.IsNullOrEmpty(id))
+            id = Guid.NewGuid().ToString();
+
+        var optionsBuilder = GetDatabaseContextOptions(id);
 
         return new DatabaseContext(optionsBuilder.Options);
     }
@@ -74,5 +92,18 @@ public static class TestingUtils
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+    }
+
+    private static DbContextOptionsBuilder<DatabaseContext> GetDatabaseContextOptions(string id)
+    {
+        var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
+        optionsBuilder.UseInMemoryDatabase(id);
+        optionsBuilder.EnableSensitiveDataLogging(true);
+
+        return optionsBuilder;
+    }
+
+    private static void DoNothing()
+    {
     }
 }

@@ -28,22 +28,23 @@ using Item_Trading_App_REST_API.Resources.Events.Trades;
 using Item_Trading_App_REST_API.Models.Inventory;
 using Item_Trading_App_REST_API.Models.Item;
 using Microsoft.EntityFrameworkCore.Storage;
+using Item_Trading_App_REST_API.Services.DatabaseContextWrapper;
 
 namespace Item_Trading_App_REST_API.Services.Trade;
 
-public class TradeService : ITradeService
+public class TradeService : ITradeService, IDisposable
 {
+    private readonly IDatabaseContextWrapper _databaseContextWrapper;
     private readonly DatabaseContext _context;
-    private readonly IDbContextFactory<DatabaseContext> _dbContextFactory;
     private readonly ICacheService _cacheService;
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWorkService _unitOfWork;
 
-    public TradeService(IDbContextFactory<DatabaseContext> dbContextFactory, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeService(IDatabaseContextWrapper databaseContextWrapper, ICacheService cacheService, IMediator mediator, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
-        _context = dbContextFactory.CreateDbContext();
-        _dbContextFactory = dbContextFactory;
+        _databaseContextWrapper = databaseContextWrapper;
+        _context = databaseContextWrapper.ProvideDatabaseContext();
         _cacheService = cacheService;
         _mediator = mediator;
         _mapper = mapper;
@@ -516,6 +517,12 @@ public class TradeService : ITradeService
         };
     }
 
+    public void Dispose()
+    {
+        _databaseContextWrapper.Dispose(_context);
+        GC.SuppressFinalize(this);
+    }
+
     private async Task<BaseResult> RespondTradeAsync(RespondTradeCommand model)
     {
         // get trade items
@@ -881,27 +888,33 @@ public class TradeService : ITradeService
 
     private async Task<Entities.Trade> GetTradeEntityAsync(string tradeId)
     {
-        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var dbContext = await _databaseContextWrapper.ProvideDatabaseContextAsync();
 
         var tradeEntity = await GetTradeQuery(dbContext, tradeId);
+
+        _databaseContextWrapper.Dispose(dbContext);
 
         return tradeEntity;
     }
 
     private async Task<Entities.SentTrade> GetSentTradeEntityAsync(string tradeId)
     {
-        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var dbContext = await _databaseContextWrapper.ProvideDatabaseContextAsync();
 
         var sentTradeEntity = await GetSentTradeQuery(dbContext, tradeId);
+
+        _databaseContextWrapper.Dispose(dbContext);
 
         return sentTradeEntity;
     }
 
     private async Task<Entities.ReceivedTrade> GetReceivedTradeEntityAsync(string tradeId)
     {
-        using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var dbContext = await _databaseContextWrapper.ProvideDatabaseContextAsync();
 
         var receivedTradeEntity = await GetReceivedTradeQuery(dbContext, tradeId);
+
+        _databaseContextWrapper.Dispose(dbContext);
 
         return receivedTradeEntity;
     }
