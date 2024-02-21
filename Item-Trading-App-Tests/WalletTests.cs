@@ -28,6 +28,8 @@ public class WalletTests
     [InlineData(false)]
     public async void GetWallet(bool createUser)
     {
+        // Arrange
+
         if (createUser)
         {
             await _userManager.CreateAsync(new User
@@ -38,7 +40,13 @@ public class WalletTests
             });
         }
 
-        var result = await _sut.GetWalletAsync(new GetUserWalletQuery { UserId = userId });
+        var queryStub = new GetUserWalletQuery { UserId = userId };
+
+        // Act
+
+        var result = await _sut.GetWalletAsync(queryStub);
+
+        // Assert
 
         if (createUser)
         {
@@ -57,6 +65,8 @@ public class WalletTests
     [InlineData(false)]
     public async void UpdateWallet(bool createUser)
     {
+        // Arrange
+
         if (createUser)
         {
             await _userManager.CreateAsync(new User
@@ -69,11 +79,17 @@ public class WalletTests
 
         int newCashAmount = defaultCashValue + 100;
 
-        var result = await _sut.UpdateWalletAsync(new UpdateWalletCommand
+        var commandStub = new UpdateWalletCommand
         {
             UserId = userId,
             Quantity = newCashAmount,
-        });
+        };
+
+        // Act
+
+        var result = await _sut.UpdateWalletAsync(commandStub);
+
+        // Assert
 
         if (createUser)
         {
@@ -92,6 +108,8 @@ public class WalletTests
     [InlineData(false)]
     public async void GetUserCashAmount(bool createUser)
     {
+        // Arrange
+
         if (createUser)
         {
             await _userManager.CreateAsync(new User
@@ -102,7 +120,13 @@ public class WalletTests
             });
         }
 
-        var userCashAmount = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = userId });
+        var queryStub = new GetUserCashQuery { UserId = userId };
+
+        // Act
+
+        var userCashAmount = await _sut.GetUserCashAsync(queryStub);
+
+        // Assert
 
         if (createUser)
             Assert.True(userCashAmount == defaultCashValue);
@@ -117,6 +141,8 @@ public class WalletTests
     [InlineData(false, 50)]
     public async void TakeCashFromUser(bool createUser, int takenAmount)
     {
+        // Arrange
+
         if (createUser)
         {
             await _userManager.CreateAsync(new User
@@ -127,11 +153,17 @@ public class WalletTests
             });
         }
 
-        var result = await _sut.TakeCashAsync(new TakeCashCommand
+        var commandStub = new TakeCashCommand
         {
             UserId = userId,
             Amount = takenAmount
-        });
+        };
+
+        // Act
+
+        var result = await _sut.TakeCashAsync(commandStub);
+
+        // Assert
 
         if (createUser && takenAmount <= defaultCashValue)
             Assert.True(result);
@@ -146,6 +178,8 @@ public class WalletTests
     [InlineData(false, 50)]
     public async void GiveCashToUser(bool createUser, int givenAmount)
     {
+        // Arrange
+
         if (createUser)
         {
             await _userManager.CreateAsync(new User
@@ -156,11 +190,17 @@ public class WalletTests
             });
         }
 
-        var giveCashResult = await _sut.GiveCashAsync(new GiveCashCommand
+        var commandStub = new GiveCashCommand
         {
             UserId = userId,
             Amount = givenAmount
-        });
+        };
+
+        // Act
+
+        var giveCashResult = await _sut.GiveCashAsync(commandStub);
+
+        // Assert
 
         if (createUser)
         {

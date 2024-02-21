@@ -47,12 +47,20 @@ public class InventoryTests
     [InlineData(-1)]
     public async void AddItemToInventory(int quantity)
     {
-        var result = await _sut.AddItemAsync(new AddInventoryItemCommand
+        // Arrange
+
+        var commandStub = new AddInventoryItemCommand
         {
             ItemId = itemId,
             Quantity = quantity,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.AddItemAsync(commandStub);
+
+        // Assert
 
         if (quantity > 0)
         {
@@ -73,37 +81,43 @@ public class InventoryTests
     [InlineData(1, 5, 0)]
     public async void RemoveItemFromInventory(int quantityToAdd, int quantityToDrop, int quantityToBeLocked)
     {
-        var result = await _sut.AddItemAsync(new AddInventoryItemCommand
+        // Arrange
+
+        var addInventoryItemCommandStub = new AddInventoryItemCommand
         {
             ItemId = itemId,
             Quantity = quantityToAdd,
             UserId = userId
-        });
+        };
 
-        Assert.True(result.Success);
-        Assert.Equal(quantityToAdd, result.Quantity);
+        await _sut.AddItemAsync(addInventoryItemCommandStub);
 
         if (quantityToBeLocked > 0)
         {
-            var lockResult = await _sut.LockItemAsync(new LockItemCommand
+            var lockItemCommandStub = new LockItemCommand
             {
                 ItemId = itemId,
                 Quantity = quantityToBeLocked,
                 UserId = userId
-            });
+            };
 
-            Assert.True(lockResult.Success);
-            Assert.Equal(lockResult.Quantity, quantityToBeLocked);
+            await _sut.LockItemAsync(lockItemCommandStub);
         }
 
-        result = await _sut.DropItemAsync(new DropInventoryItemCommand
+        var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
             ItemId = itemId,
             Quantity = quantityToDrop,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
 
         int freeQuantity = quantityToAdd - quantityToBeLocked;
+
+        // Assert
 
         Assert.True(result.Success == freeQuantity >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
         if (freeQuantity >= quantityToDrop)
@@ -118,6 +132,8 @@ public class InventoryTests
     [InlineData(false, 1, 1)]
     public async void HasItemInInventory(bool addItem, int quantityToBeAdded, int quantityToBeChecked)
     {
+        // Arrange
+
         string item_id = "";
 
         if (addItem)
@@ -132,12 +148,18 @@ public class InventoryTests
             item_id = tmp.ItemId;
         }
 
-        var result = await _sut.HasItemAsync(new HasItemQuantityQuery
+        var queryStub = new HasItemQuantityQuery
         {
             ItemId = item_id,
             Quantity = quantityToBeChecked,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.HasItemAsync(queryStub);
+
+        // Assert
 
         if (addItem && quantityToBeAdded >= quantityToBeChecked && quantityToBeChecked > 0)
         {
@@ -156,6 +178,8 @@ public class InventoryTests
     [InlineData(false, 1)]
     public async void GetItemFromInventory(bool addItem, int quantityToBeAdded)
     {
+        // Arrange
+
         string item_id = "";
 
         if (addItem)
@@ -170,11 +194,17 @@ public class InventoryTests
             item_id = tmp.ItemId;
         }
 
-        var result = await _sut.GetItemAsync(new GetInventoryItemQuery
+        var queryStub = new GetInventoryItemQuery
         {
             UserId = userId,
             ItemId = item_id
-        });
+        };
+
+        // Act
+
+        var result = await _sut.GetItemAsync(queryStub);
+
+        // Assert
 
         if (addItem && quantityToBeAdded > 0)
         {
@@ -193,6 +223,8 @@ public class InventoryTests
     [InlineData(false)]
     public async void ListInventoryItems(bool addItems, params string[] itemIds)
     {
+        // Arrange
+
         if (addItems)
             foreach (string item_id in itemIds)
                 await _sut.AddItemAsync(new AddInventoryItemCommand
@@ -202,11 +234,17 @@ public class InventoryTests
                     UserId = userId
                 });
 
-        var result = await _sut.ListItemsAsync(new ListInventoryItemsQuery
+        var queryStub = new ListInventoryItemsQuery
         {
             SearchString = "",
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.ListItemsAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.True(result.ItemsId.All(x => itemIds.Contains(x)), "The result should contain all of the inserted itemIds");
@@ -219,6 +257,8 @@ public class InventoryTests
     [InlineData(false, 1, 1)]
     public async void LockItem(bool addItem, int quantityAdded, int quantityLocked)
     {
+        // Arrange
+
         if (addItem)
         {
             await _sut.AddItemAsync(new AddInventoryItemCommand
@@ -229,12 +269,18 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.LockItemAsync(new LockItemCommand
+        var commandStub = new LockItemCommand
         {
             ItemId = itemId,
             Quantity = quantityLocked,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.LockItemAsync(commandStub);
+
+        // Assert
 
         if (addItem && quantityLocked > 0 && quantityAdded >= quantityLocked)
         {
@@ -257,6 +303,8 @@ public class InventoryTests
     [InlineData(false, 1, 1, 1)]
     public async void UnlockItem(bool addItem, int quantityAdded, int quantityLocked, int quantityUnlocked)
     {
+        // Arrange
+
         if (addItem)
         {
             await _sut.AddItemAsync(new AddInventoryItemCommand
@@ -274,12 +322,18 @@ public class InventoryTests
             UserId = userId
         });
 
-        var result = await _sut.UnlockItemAsync(new UnlockItemCommand
+        var commandStub = new UnlockItemCommand
         {
             ItemId = itemId,
             Quantity = quantityUnlocked,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.UnlockItemAsync(commandStub);
+
+        // Assert
 
         if (addItem && quantityLocked > 0 && quantityUnlocked > 0 && quantityAdded >= quantityLocked && quantityUnlocked >= quantityLocked)
         {
@@ -302,6 +356,8 @@ public class InventoryTests
     [InlineData(false, 4, 2)]
     public async void GetLockedAmount(bool addItem, int quantityAdded, int quantityLocked)
     {
+        // Arrange
+
         if (addItem)
         {
             await _sut.AddItemAsync(new AddInventoryItemCommand
@@ -319,11 +375,17 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.GetLockedAmountAsync(new GetInventoryItemLockedAmountQuery
+        var queryStub = new GetInventoryItemLockedAmountQuery
         {
             UserId = userId,
             ItemId = itemId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.GetLockedAmountAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
 
@@ -346,6 +408,8 @@ public class InventoryTests
     [InlineData("1", "2")]
     public async void ListUsersThatOwnTheItem(params string[] userIds)
     {
+        // Arrange
+
         foreach(string userId in userIds)
         {
             await _sut.AddItemAsync(new AddInventoryItemCommand
@@ -356,7 +420,13 @@ public class InventoryTests
             });
         }
 
-        var result = await _sut.GetUsersOwningThisItemAsync(new GetUserIdsOwningItemQuery { ItemId = itemId });
+        var queryStub = new GetUserIdsOwningItemQuery { ItemId = itemId };
+
+        // Act
+
+        var result = await _sut.GetUsersOwningThisItemAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.UserIds.All(x => userIds.Contains(x)));
     }

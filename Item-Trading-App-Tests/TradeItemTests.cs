@@ -43,14 +43,22 @@ public class TradeItemTests
     [InlineData(-1, 1)]
     public async void AddNewTradeItem(int price, int quantity)
     {
-        var result = await _sut.AddTradeItemAsync(new AddTradeItemCommand
+        // Arrange
+
+        var commandStub = new AddTradeItemCommand
         {
             ItemId = defaultItemId,
             Name = "Item",
             Price = price,
             Quantity = quantity,
             TradeId = TestingData.DefaultTradeId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.AddTradeItemAsync(commandStub);
+
+        // Assert
 
         if (price > 0 && quantity > 0)
         {
@@ -64,18 +72,28 @@ public class TradeItemTests
     [Fact(DisplayName = "Has trade item")]
     public async void HasTradeItem()
     {
-        await _sut.AddTradeItemAsync(new AddTradeItemCommand
+        // Arrange
+
+        var addTradeItemCommandStub = new AddTradeItemCommand
         {
             ItemId = defaultItemId,
             Name = "Item",
             Price = 1,
             Quantity = 1,
             TradeId = TestingData.DefaultTradeId
-        });
+        };
+
+        await _sut.AddTradeItemAsync(addTradeItemCommandStub);
 
         await _context.SaveChangesAsync();
 
-        var result = await _sut.HasTradeItemAsync(new HasTradeItemQuery { TradeId = TestingData.DefaultTradeId, ItemId = defaultItemId });
+        var hasTradeItemQueryStub = new HasTradeItemQuery { TradeId = TestingData.DefaultTradeId, ItemId = defaultItemId };
+
+        // Act
+
+        var result = await _sut.HasTradeItemAsync(hasTradeItemQueryStub);
+
+        // Assert
 
         Assert.True(result, "The result value should be true");
     }
@@ -86,6 +104,8 @@ public class TradeItemTests
     [InlineData("1", "2", "3", "4", "5")]
     public async void GetTradeItems(params string[] tradeItemIds)
     {
+        // Arrange
+
         var tradeItemRequests = TestingData.GetTradeItemRequests(tradeItemIds);
 
         int length = tradeItemIds.Length;
@@ -95,7 +115,13 @@ public class TradeItemTests
 
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetTradeItemsAsync(new GetTradeItemsQuery { TradeId = TestingData.DefaultTradeId });
+        var queryStub = new GetTradeItemsQuery { TradeId = TestingData.DefaultTradeId };
+
+        // Act
+
+        var result = await _sut.GetTradeItemsAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Length == length, "The result should be successful");
     }
@@ -106,6 +132,8 @@ public class TradeItemTests
     [InlineData("1", "2", "3", "4", "5")]
     public async void GetItemTradeIdsAsync(params string[] tradeItemIds)
     {
+        // Arrange
+
         var tradeItemRequests = TestingData.GetTradeItemRequests(tradeItemIds);
 
         for (int i = 0; i < tradeItemIds.Length; i++)
@@ -113,7 +141,13 @@ public class TradeItemTests
 
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetItemTradeIdsAsync(new GetTradesUsingTheItemQuery { ItemId = tradeItemRequests[0].ItemId });
+        var queryStub = new GetTradesUsingTheItemQuery { ItemId = tradeItemRequests[0].ItemId };
+
+        // Act
+
+        var result = await _sut.GetItemTradeIdsAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Length == 1, "The result should be successful");
     }

@@ -38,14 +38,21 @@ public class ItemTests
     [Fact(DisplayName = "Create a new Item")]
     public async void CreateItem()
     {
+        // Arrange
+
+        var commandStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
+        // Act
+
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(
-            new CreateItemCommand
-            {
-                SenderUserId = userId,
-                ItemName = itemName,
-                ItemDescription = itemDescription
-            });
+        var addItemResult = await _sut.CreateItemAsync(commandStub);
+
+        // Assert
 
         Assert.NotNull(addItemResult);
         Assert.True(addItemResult.Success, "The item creation should be successful");
@@ -56,6 +63,8 @@ public class ItemTests
     [InlineData(false)]
     public async void UpdateItem(bool shouldCreateTheItemFirst)
     {
+        // Arrange
+
         string item_id = "";
 
         if (shouldCreateTheItemFirst)
@@ -74,14 +83,19 @@ public class ItemTests
         string newItemName = itemName + "_Updated";
         string newDescription = itemDescription + "_Updated";
 
-        var updateItemResult = await _sut.UpdateItemAsync(
-            new UpdateItemCommand
-            {
-                ItemId = item_id,
-                ItemName = newItemName,
-                ItemDescription = newDescription,
-                SenderUserId = userId
-            });
+        var commandStub = new UpdateItemCommand
+        {
+            ItemId = item_id,
+            ItemName = newItemName,
+            ItemDescription = newDescription,
+            SenderUserId = userId
+        };
+
+        // Act
+
+        var updateItemResult = await _sut.UpdateItemAsync(commandStub);
+
+        // Assert
 
         Assert.NotNull(updateItemResult);
         if (shouldCreateTheItemFirst)
@@ -101,6 +115,8 @@ public class ItemTests
     [InlineData(false)]
     public async void DeleteItem(bool shouldCreateTheItemFirst)
     {
+        // Arrange
+
         string item_id = "";
 
         if (shouldCreateTheItemFirst)
@@ -116,7 +132,13 @@ public class ItemTests
             item_id = addItemResult.ItemId;
         }
 
-        var deleteItemResult = await _sut.DeleteItemAsync(new DeleteItemCommand { ItemId = item_id, UserId = userId });
+        var commandStub = new DeleteItemCommand { ItemId = item_id, UserId = userId };
+
+        // Act
+
+        var deleteItemResult = await _sut.DeleteItemAsync(commandStub);
+
+        // Assert
 
         Assert.NotNull(deleteItemResult);
         if (shouldCreateTheItemFirst)
@@ -128,6 +150,8 @@ public class ItemTests
     [Fact(DisplayName = "List items")]
     public async void ListItems()
     {
+        // Arrange
+
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
             new CreateItemCommand
@@ -137,7 +161,13 @@ public class ItemTests
                 ItemDescription = itemDescription
             });
 
-        var result = await _sut.ListItemsAsync(new());
+        var queryStub = new ListItemsQuery();
+
+        // Act
+
+        var result = await _sut.ListItemsAsync(queryStub);
+
+        // Assert
 
         Assert.NotNull(result);
         Assert.True(result.Success, "The response should be a success");
@@ -150,6 +180,8 @@ public class ItemTests
     [InlineData(false)]
     public async void GetItem(bool shouldCreateTheItemFirst)
     {
+        // Arrange
+
         string item_id = "";
 
         if (shouldCreateTheItemFirst)
@@ -165,8 +197,13 @@ public class ItemTests
             item_id = addItemResult.ItemId;
         }
 
+        var queryStub = new GetItemQuery { ItemId = item_id };
 
-        var getItemResult = await _sut.GetItemAsync(new GetItemQuery { ItemId = item_id });
+        // Act
+
+        var getItemResult = await _sut.GetItemAsync(queryStub);
+
+        // Assert
 
         if (shouldCreateTheItemFirst)
         {
@@ -182,6 +219,8 @@ public class ItemTests
     [Fact(DisplayName = "Get item name")]
     public async void GetItemName()
     {
+        // Arrange
+
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
             new CreateItemCommand
@@ -190,8 +229,15 @@ public class ItemTests
                 ItemName = itemName,
                 ItemDescription = itemDescription
             });
-            
-        var getItemNameResult = await _sut.GetItemNameAsync(new GetItemNameQuery { ItemId = addItemResult.ItemId });
+
+        var queryStub = new GetItemNameQuery { ItemId = addItemResult.ItemId };
+
+        // Act
+
+        var getItemNameResult = await _sut.GetItemNameAsync(queryStub);
+        
+        // Assert
+
         Assert.NotNull(getItemNameResult);
         Assert.Equal(getItemNameResult, itemName);
     }
@@ -199,6 +245,8 @@ public class ItemTests
     [Fact(DisplayName = "Get item description")]
     public async void GetItemDescription()
     {
+        // Arrange
+
         // add one item
         var addItemResult = await _sut.CreateItemAsync(
             new CreateItemCommand
@@ -208,7 +256,14 @@ public class ItemTests
                 ItemDescription = itemDescription
             });
 
-        var getItemDescriptionResult = await _sut.GetItemDescriptionAsync(new GetItemDescriptionQuery { ItemId = addItemResult.ItemId });
+        var queryStub = new GetItemDescriptionQuery { ItemId = addItemResult.ItemId };
+
+        // Act
+
+        var getItemDescriptionResult = await _sut.GetItemDescriptionAsync(queryStub);
+
+        // Assert
+
         Assert.NotNull(getItemDescriptionResult);
         Assert.Equal(getItemDescriptionResult, itemDescription);
     }

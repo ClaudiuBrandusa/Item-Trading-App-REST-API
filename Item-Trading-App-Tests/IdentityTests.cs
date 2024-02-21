@@ -85,12 +85,20 @@ public class IdentityTests
     [InlineData("", "", "")]
     public async void RegisterUser(string userName, string email, string password)
     {
-        var result = await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var commandStub = new RegisterCommand
         {
             Username = userName,
             Email = email,
             Password = password
-        });
+        };
+
+        // Act
+
+        var result = await _sut.RegisterAsync(commandStub);
+
+        // Assert
 
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
@@ -110,18 +118,26 @@ public class IdentityTests
     [InlineData("", "")]
     public async void LoginUser(string userName, string password)
     {
-        await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var commandStub = new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
-        });
+        };
+
+        // Act
+
+        await _sut.RegisterAsync(commandStub);
 
         var result = await _sut.LoginAsync(new LoginCommand
         {
             Username = userName,
             Password = password
         });
+
+        // Assert
 
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
@@ -141,18 +157,28 @@ public class IdentityTests
     [InlineData("", "")]
     public async void RefreshToken(string userName, string password)
     {
-        var registerResult = await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var registerCommandStub = new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
-        });
+        };
 
-        var result = await _sut.RefreshTokenAsync(new RefreshTokenCommand
+        var registerResult = await _sut.RegisterAsync(registerCommandStub);
+
+        var refreshTokenCommandStub = new RefreshTokenCommand
         {
             Token = registerResult.Token,
             RefreshToken = registerResult.RefreshToken
-        });
+        };
+
+        // Act
+
+        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub);
+
+        // Assert
 
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
@@ -172,18 +198,28 @@ public class IdentityTests
     [InlineData("", "")]
     public async void GetUsername(string userName, string password)
     {
-        var registerResult = await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var registerCommandStub = new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
-        });
+        };
+
+        var registerResult = await _sut.RegisterAsync(registerCommandStub);
 
         await _dbContext.SaveChangesAsync();
 
         var userId = registerResult.Success ? (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())!.Id : "";
 
-        var result = await _sut.GetUsername(new GetUsernameQuery { UserId = userId });
+        var usernameQueryStub = new GetUsernameQuery { UserId = userId };
+
+        // Act
+
+        var result = await _sut.GetUsername(usernameQueryStub);
+
+        // Assert
 
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
@@ -202,6 +238,8 @@ public class IdentityTests
     [InlineData("", "", 1)]
     public async void ListUsers(string userName, string password, int count)
     {
+        // Arrange
+
         for (int i = 0; i < count; i++)
             await _sut.RegisterAsync(new RegisterCommand
             {
@@ -212,11 +250,17 @@ public class IdentityTests
 
         string userId = _dbContext.Users.FirstOrDefault()?.Id ?? "";
 
-        var result = await _sut.ListUsers(new ListUsersQuery
+        var listUsersQueryStub = new ListUsersQuery
         {
             SearchString = userName,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.ListUsers(listUsersQueryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         if (!string.IsNullOrEmpty(userId))

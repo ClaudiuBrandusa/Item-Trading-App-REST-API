@@ -134,20 +134,28 @@ public class TradeTests
     [InlineData("1", "2", "3", "4", "5")]
     public async void CreateTrade(params string[] tradeItemIds)
     {
+        // Arrange
+
         var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
-        for(int i = 0; i < tradeItemIds.Length; i++)
+        for (int i = 0; i < tradeItemIds.Length; i++)
         {
             itemPrices[i].Price += i;
             itemPrices[i].Quantity += i * 2;
         }
 
-        var result = await InitTrade(new CreateTradeOfferCommand
+        var commandStub = new CreateTradeOfferCommand
         {
             SenderUserId = senderUserId,
             TargetUserId = receiverUserId,
             Items = itemPrices
-        });
+        };
+
+        // Act
+
+        var result = await InitTrade(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.False(string.IsNullOrEmpty(result.TradeId), "The trade offer id must not be empty or null");
@@ -160,6 +168,8 @@ public class TradeTests
     [InlineData("1", "2", "3")]
     public async void GetSentTrade(params string[] tradeItemIds)
     {
+        // Arrange
+
         var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
         for (int i = 0; i < tradeItemIds.Length; i++)
@@ -175,10 +185,16 @@ public class TradeTests
             Items = itemPrices
         });
 
-        var result = await _sut.GetTradeOfferAsync(new RequestTradeOfferQuery
+        var queryStub = new RequestTradeOfferQuery
         {
             TradeId = tradeOfferResult.TradeId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.GetTradeOfferAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.Equal(tradeItemIds.Length, result.Items.Count());
@@ -191,6 +207,8 @@ public class TradeTests
     [InlineData(5, "1", "2", "3")]
     public async void GetSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
+        // Arrange
+
         List<string> tradeOfferIds = new();
 
         for(int i = 0; i < numberOfTradeOffers; i++)
@@ -213,7 +231,13 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent });
+        var queryStub = new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent };
+
+        // Act
+
+        var result = await _sut.GetTradeOffersAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)));
@@ -224,6 +248,8 @@ public class TradeTests
     [InlineData(5, "1", "2", "3")]
     public async void GetRespondedSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
+        // Arrange
+
         List<string> tradeOfferIds = new();
 
         for (int i = 0; i < numberOfTradeOffers; i++)
@@ -252,7 +278,13 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent, Responded = true });
+        var stub = new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent, Responded = true };
+
+        // Act
+
+        var result = await _sut.GetTradeOffersAsync(stub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.True(result.SentTradeOfferIds.Count() == tradeOfferIds.Count);
@@ -264,6 +296,8 @@ public class TradeTests
     [InlineData("1", "2", "3")]
     public async void GetReceivedTrade(params string[] tradeItemIds)
     {
+        // Arrange
+
         var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
         for (int i = 0; i < tradeItemIds.Length; i++)
@@ -279,10 +313,16 @@ public class TradeTests
             Items = itemPrices
         });
 
-        var result = await _sut.GetTradeOfferAsync(new RequestTradeOfferQuery
+        var queryStub = new RequestTradeOfferQuery
         {
             TradeId = tradeOfferResult.TradeId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.GetTradeOfferAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.Equal(tradeItemIds.Length, result.Items.Count());
@@ -295,6 +335,8 @@ public class TradeTests
     [InlineData(5, "1", "2", "3")]
     public async void GetReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
+        // Arrange
+
         List<string> tradeOfferIds = new();
 
         for (int i = 0; i < numberOfTradeOffers; i++)
@@ -317,7 +359,13 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received });
+        var queryStub = new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received };
+
+        // Act
+
+        var result = await _sut.GetTradeOffersAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)));
@@ -328,6 +376,8 @@ public class TradeTests
     [InlineData(5, "1", "2", "3")]
     public async void GetRespondedReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
     {
+        // Arrange
+
         List<string> tradeOfferIds = new();
 
         for (int i = 0; i < numberOfTradeOffers; i++)
@@ -356,7 +406,13 @@ public class TradeTests
             tradeOfferIds.Add(tradeOfferResult.TradeId);
         }
 
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received, Responded = true });
+        var queryStub = new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received, Responded = true };
+
+        // Act
+
+        var result = await _sut.GetTradeOffersAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)));
@@ -368,6 +424,8 @@ public class TradeTests
     [InlineData("1", "2", "3", "4", "5")]
     public async void AcceptTradeOffer(params string[] tradeItemIds)
     {
+        // Arrange
+
         var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
         for (int i = 0; i < tradeItemIds.Length; i++)
@@ -383,11 +441,17 @@ public class TradeTests
             Items = itemPrices
         });
 
-        var result = await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
+        var commandStub = new RespondTradeCommand
         {
             TradeId = tradeOfferResult.TradeId,
             UserId = receiverUserId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.AcceptTradeOfferAsync(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "Result should be successful");
         Assert.Equal(tradeOfferResult.TradeId, result.TradeId);
@@ -400,6 +464,8 @@ public class TradeTests
     [InlineData("1", "2", "3", "4", "5")]
     public async void RejectTradeOffer(params string[] tradeItemIds)
     {
+        // Arrange
+
         var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
         for (int i = 0; i < tradeItemIds.Length; i++)
@@ -415,11 +481,17 @@ public class TradeTests
             Items = itemPrices
         });
 
-        var result = await _sut.RejectTradeOfferAsync(new RespondTradeCommand
+        var commandStub = new RespondTradeCommand
         {
             TradeId = tradeOfferResult.TradeId,
             UserId = receiverUserId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.RejectTradeOfferAsync(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "Result should be successful");
         Assert.Equal(tradeOfferResult.TradeId, result.TradeId);
@@ -432,6 +504,8 @@ public class TradeTests
     [InlineData("1", "2", "3", "4", "5")]
     public async void CancelTradeOffer(params string[] tradeItemIds)
     {
+        // Arrange
+
         var itemPrices = TestingData.GetTradeItems(tradeItemIds);
 
         for (int i = 0; i < tradeItemIds.Length; i++)
@@ -447,11 +521,17 @@ public class TradeTests
             Items = itemPrices
         });
 
-        var result = await _sut.CancelTradeOfferAsync(new CancelTradeCommand
+        var commandStub = new CancelTradeCommand
         {
             TradeId = tradeOfferResult.TradeId,
             UserId = senderUserId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.CancelTradeOfferAsync(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "Result should be successful");
         Assert.Equal(tradeOfferResult.TradeId, result.TradeId);
