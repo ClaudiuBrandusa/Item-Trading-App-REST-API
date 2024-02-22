@@ -18,6 +18,10 @@ public class ItemTests
     public ItemTests()
     {
         var mediatorMock = new Mock<IMediator>();
+        var cacheServiceMock = new Mock<ICacheService>();
+
+        #region MediatorMocks
+
         mediatorMock.Setup(x => x.Send(It.IsAny<IRequest>(), It.IsAny<CancellationToken>()))
             .Returns((IRequest request, CancellationToken ct) =>
             {
@@ -30,13 +34,13 @@ public class ItemTests
                 return new UsersOwningItem { ItemId = ((GetUserIdsOwningItemQuery)request).ItemId};
             });
 
-        var cacheServiceMock = new Mock<ICacheService>();
+        #endregion MediatorMocks
 
         _sut = new ItemService(TestingUtils.GetDatabaseContext(), cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
     }
 
     [Fact(DisplayName = "Create a new Item")]
-    public async void CreateItem()
+    public async Task CreateItem()
     {
         // Arrange
 
@@ -54,31 +58,24 @@ public class ItemTests
 
         // Assert
 
-        Assert.NotNull(addItemResult);
         Assert.True(addItemResult.Success, "The item creation should be successful");
     }
 
-    [Theory(DisplayName = "Update Item")]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void UpdateItem(bool shouldCreateTheItemFirst)
+    [Fact(DisplayName = "Update Item")]
+    public async Task UpdateItem()
     {
         // Arrange
 
-        string item_id = "";
+        // add one item
+        var addItemResult = await _sut.CreateItemAsync(
+            new CreateItemCommand
+            {
+                SenderUserId = userId,
+                ItemName = itemName,
+                ItemDescription = itemDescription
+            });
 
-        if (shouldCreateTheItemFirst)
-        {
-            // add one item
-            var addItemResult = await _sut.CreateItemAsync(
-                new CreateItemCommand
-                {
-                    SenderUserId = userId,
-                    ItemName = itemName,
-                    ItemDescription = itemDescription
-                });
-            item_id = addItemResult.ItemId;
-        }
+        string item_id = addItemResult.ItemId;
 
         string newItemName = itemName + "_Updated";
         string newDescription = itemDescription + "_Updated";
@@ -97,40 +94,52 @@ public class ItemTests
 
         // Assert
 
-        Assert.NotNull(updateItemResult);
-        if (shouldCreateTheItemFirst)
-        {
-            Assert.True(updateItemResult.Success, "The item update should be successful");
-            Assert.Equal(newItemName, updateItemResult.ItemName);
-            Assert.Equal(newDescription, updateItemResult.ItemDescription);
-        }
-        else
-        {
-            Assert.False(updateItemResult.Success, "The item update should be unsuccessful");
-        }
+        Assert.True(updateItemResult.Success, "The item update should be successful");
+        Assert.Equal(newItemName, updateItemResult.ItemName);
+        Assert.Equal(newDescription, updateItemResult.ItemDescription);
     }
 
-    [Theory(DisplayName = "Delete Item")]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void DeleteItem(bool shouldCreateTheItemFirst)
+    [Fact(DisplayName = "Update item without creating the item first")]
+    public async Task UpdateItemWithoutCreatingTheItemFirst()
+    {
+        // Arrange
+        
+        string newItemName = itemName + "_Updated";
+        string newDescription = itemDescription + "_Updated";
+
+        var commandStub = new UpdateItemCommand
+        {
+            ItemId = "", // no id because there was no item created before
+            ItemName = newItemName,
+            ItemDescription = newDescription,
+            SenderUserId = userId
+        };
+
+        // Act
+
+        var updateItemResult = await _sut.UpdateItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(updateItemResult.Success, "The item update should be unsuccessful because no item was created first");
+    }
+
+    [Fact(DisplayName = "Delete Item")]
+    public async Task DeleteItem()
     {
         // Arrange
 
-        string item_id = "";
-
-        if (shouldCreateTheItemFirst)
+        var createItemStub = new CreateItemCommand
         {
-            // add one item
-            var addItemResult = await _sut.CreateItemAsync(
-                new CreateItemCommand
-                {
-                    SenderUserId = userId,
-                    ItemName = itemName,
-                    ItemDescription = itemDescription
-                });
-            item_id = addItemResult.ItemId;
-        }
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
+        // add one item
+        var addItemResult = await _sut.CreateItemAsync(createItemStub);
+
+        string item_id = addItemResult.ItemId;
 
         var commandStub = new DeleteItemCommand { ItemId = item_id, UserId = userId };
 
@@ -140,26 +149,45 @@ public class ItemTests
 
         // Assert
 
-        Assert.NotNull(deleteItemResult);
-        if (shouldCreateTheItemFirst)
-            Assert.True(deleteItemResult.Success, "The item should had been deleted");
-        else
-            Assert.False(deleteItemResult.Success, "The item should not have been deleted because it should not exist");
+        Assert.True(deleteItemResult.Success, "The item should had been deleted");
     }
 
-    [Fact(DisplayName = "List items")]
-    public async void ListItems()
+    [Fact(DisplayName = "Delete Item without creating the item")]
+    public async Task DeleteItemWithoutCreatingTheItem()
     {
         // Arrange
 
+        string item_id = "";
+
+        var commandStub = new DeleteItemCommand
+        {
+            ItemId = item_id,
+            UserId = userId
+        };
+
+        // Act
+
+        var deleteItemResult = await _sut.DeleteItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(deleteItemResult.Success, "The item should not have been deleted because it should not exist");
+    }
+
+    [Fact(DisplayName = "List items")]
+    public async Task ListItems()
+    {
+        // Arrange
+
+        var createItemStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(
-            new CreateItemCommand
-            {
-                SenderUserId = userId,
-                ItemName = itemName,
-                ItemDescription = itemDescription
-            });
+        var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
         var queryStub = new ListItemsQuery();
 
@@ -169,33 +197,26 @@ public class ItemTests
 
         // Assert
 
-        Assert.NotNull(result);
         Assert.True(result.Success, "The response should be a success");
         Assert.True(result.ItemsId.ToList().Count > 0, "There should be at least one item");
         Assert.True(result.ItemsId.Contains(addItemResult.ItemId), "The list should contain the itemId that was received while inserting the item");
     }
 
-    [Theory(DisplayName = "Get item")]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void GetItem(bool shouldCreateTheItemFirst)
+    [Fact(DisplayName = "Get item")]
+    public async Task GetItem()
     {
         // Arrange
 
-        string item_id = "";
+        // add one item
+            var addItemResult = await _sut.CreateItemAsync(
+            new CreateItemCommand
+            {
+                SenderUserId = userId,
+                ItemName = itemName,
+                ItemDescription = itemDescription
+            });
 
-        if (shouldCreateTheItemFirst)
-        {
-            // add one item
-                var addItemResult = await _sut.CreateItemAsync(
-                new CreateItemCommand
-                {
-                    SenderUserId = userId,
-                    ItemName = itemName,
-                    ItemDescription = itemDescription
-                });
-            item_id = addItemResult.ItemId;
-        }
+        string item_id = addItemResult.ItemId;
 
         var queryStub = new GetItemQuery { ItemId = item_id };
 
@@ -205,30 +226,42 @@ public class ItemTests
 
         // Assert
 
-        if (shouldCreateTheItemFirst)
-        {
-            Assert.True(getItemResult.Success, "The result should be successful");
-            Assert.Equal(getItemResult.ItemId, item_id);
-        }
-        else
-        {
-            Assert.False(getItemResult.Success, "The result should be unsuccessful");
-        }
+        Assert.True(getItemResult.Success, "The result should be successful");
+        Assert.Equal(getItemResult.ItemId, item_id);
     }
 
-    [Fact(DisplayName = "Get item name")]
-    public async void GetItemName()
+    [Fact(DisplayName = "Get item without creating it first")]
+    public async Task GetItemWithoutCreatingItFirst()
     {
         // Arrange
 
+        string item_id = "";
+
+        var queryStub = new GetItemQuery { ItemId = item_id };
+
+        // Act
+
+        var getItemResult = await _sut.GetItemAsync(queryStub);
+
+        // Assert
+
+        Assert.False(getItemResult.Success, "The result should be unsuccessful because no item was created");
+    }
+
+    [Fact(DisplayName = "Get item name")]
+    public async Task GetItemName()
+    {
+        // Arrange
+
+        var createItemStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(
-            new CreateItemCommand
-            {
-                SenderUserId = userId,
-                ItemName = itemName,
-                ItemDescription = itemDescription
-            });
+        var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
         var queryStub = new GetItemNameQuery { ItemId = addItemResult.ItemId };
 
@@ -243,18 +276,19 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Get item description")]
-    public async void GetItemDescription()
+    public async Task GetItemDescription()
     {
         // Arrange
 
+        var createItemStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(
-            new CreateItemCommand
-            {
-                SenderUserId = userId,
-                ItemName = itemName,
-                ItemDescription = itemDescription
-            });
+        var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
         var queryStub = new GetItemDescriptionQuery { ItemId = addItemResult.ItemId };
 

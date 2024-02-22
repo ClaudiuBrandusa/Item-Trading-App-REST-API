@@ -18,6 +18,9 @@ public class InventoryTests
     public InventoryTests()
     {
         var mediatorMock = new Mock<IMediator>();
+
+        #region MediatorMocks
+
         mediatorMock.Setup(x => x.Send(It.IsAny<IRequest>(), It.IsAny<CancellationToken>()))
             .Returns((IRequest request, CancellationToken ct) =>
             {
@@ -34,6 +37,8 @@ public class InventoryTests
                 return "Item";
             });
 
+        #endregion MediatorMocks
+
         var cacheServiceMock = new Mock<ICacheService>();
         var clientNotificationServiceMock = new Mock<IClientNotificationService>();
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();
@@ -41,11 +46,34 @@ public class InventoryTests
         _sut = new InventoryService(TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString()), clientNotificationServiceMock.Object, cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper(), unitOfWorkMock.Object);
     }
 
-    [Theory(DisplayName = "Add item to inventory")]
-    [InlineData(1)]
+    [Fact(DisplayName = "Add item to inventory")]
+    public async Task AddItemToInventory()
+    {
+        // Arrange
+
+        int quantity = 1;
+
+        var commandStub = new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantity,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.AddItemAsync(commandStub);
+
+        // Assert
+
+        Assert.True(result.Success, "The result should be successful");
+        Assert.Equal(quantity, result.Quantity);
+    }
+
+    [Theory(DisplayName = "Add item to inventory with invalid quantity")]
     [InlineData(0)]
     [InlineData(-1)]
-    public async void AddItemToInventory(int quantity)
+    public async Task AddItemToInventoryWithInvalidQuantity(int quantity)
     {
         // Arrange
 
@@ -62,24 +90,14 @@ public class InventoryTests
 
         // Assert
 
-        if (quantity > 0)
-        {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.Equal(quantity, result.Quantity);
-        }
-        else
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-            Assert.Equal(0, result.Quantity);
-        }
+        Assert.False(result.Success, "The result should be unsuccessful");
+        Assert.Equal(0, result.Quantity);
     }
 
-    [Theory(DisplayName = "Remove item from inventory")]
-    [InlineData(1, 1, 0)]
-    [InlineData(5, 1, 1)]
-    [InlineData(5, 1, 5)]
-    [InlineData(1, 5, 0)]
-    public async void RemoveItemFromInventory(int quantityToAdd, int quantityToDrop, int quantityToBeLocked)
+    [Theory(DisplayName = "Drop item from inventory")]
+    [InlineData(1, 1)]
+    [InlineData(5, 1)]
+    public async Task DropItemFromInventory(int quantityToAdd, int quantityToDrop)
     {
         // Arrange
 
@@ -92,17 +110,79 @@ public class InventoryTests
 
         await _sut.AddItemAsync(addInventoryItemCommandStub);
 
-        if (quantityToBeLocked > 0)
+        var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
-            var lockItemCommandStub = new LockItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityToBeLocked,
-                UserId = userId
-            };
+            ItemId = itemId,
+            Quantity = quantityToDrop,
+            UserId = userId
+        };
 
-            await _sut.LockItemAsync(lockItemCommandStub);
-        }
+        // Act
+
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+
+        // Assert
+
+        Assert.True(result.Success == quantityToAdd >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
+        Assert.Equal(quantityToAdd - quantityToDrop, result.Quantity);
+    }
+
+    [Theory(DisplayName = "Drop item from inventory with invalid data")]
+    [InlineData(3, 4)]
+    [InlineData(5, -1)]
+    [InlineData(1, 5)]
+    public async Task DropItemFromInventoryWithInvalidData(int quantityToAdd, int quantityToDrop)
+    {
+        // Arrange
+
+        var addInventoryItemCommandStub = new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToAdd,
+            UserId = userId
+        };
+
+        await _sut.AddItemAsync(addInventoryItemCommandStub);
+
+        var dropInventoryItemCommandStub = new DropInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToDrop,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "You should not be able to drop more than you have");
+    }
+
+    [Theory(DisplayName = "Drop item from inventory with locked quantity")]
+    [InlineData(5, 1, 1)]
+    public async Task DropItemFromInventoryWithLockedQuantity(int quantityToAdd, int quantityToDrop, int quantityToBeLocked)
+    {
+        // Arrange
+
+        var addInventoryItemCommandStub = new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToAdd,
+            UserId = userId
+        };
+
+        await _sut.AddItemAsync(addInventoryItemCommandStub);
+
+        var lockItemCommandStub = new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToBeLocked,
+            UserId = userId
+        };
+
+        await _sut.LockItemAsync(lockItemCommandStub);
 
         var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
@@ -120,33 +200,68 @@ public class InventoryTests
         // Assert
 
         Assert.True(result.Success == freeQuantity >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
-        if (freeQuantity >= quantityToDrop)
-            Assert.Equal(freeQuantity - quantityToDrop, result.Quantity);
+        Assert.Equal(freeQuantity - quantityToDrop, result.Quantity);
     }
 
-    [Theory(DisplayName = "Has item inventory")]
-    [InlineData(true, 1, 1)]
-    [InlineData(true, 1, -1)]
-    [InlineData(true, 2, 1)]
-    [InlineData(true, 1, 2)]
-    [InlineData(false, 1, 1)]
-    public async void HasItemInInventory(bool addItem, int quantityToBeAdded, int quantityToBeChecked)
+    [Fact(DisplayName = "Drop item from inventory with bigger locked quantity than the held quantity")]
+    public async Task DropItemFromInventoryWithBiggerLockedQuantity()
     {
         // Arrange
 
-        string item_id = "";
+        int quantityToAdd = 5;
+        int quantityToDrop = 1;
+        int quantityToBeLocked = 5;
 
-        if (addItem)
+        var addInventoryItemCommandStub = new AddInventoryItemCommand
         {
-            var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityToBeAdded,
-                UserId = userId
-            });
+            ItemId = itemId,
+            Quantity = quantityToAdd,
+            UserId = userId
+        };
 
-            item_id = tmp.ItemId;
-        }
+        await _sut.AddItemAsync(addInventoryItemCommandStub);
+
+        var lockItemCommandStub = new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToBeLocked,
+            UserId = userId
+        };
+
+        await _sut.LockItemAsync(lockItemCommandStub);
+
+        var dropInventoryItemCommandStub = new DropInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToDrop,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "You should only drop the amount that is less than or equal to the amount you have");
+        Assert.Equal(0, result.Quantity);
+    }
+
+    [Theory(DisplayName = "Has item inventory")]
+    [InlineData(1, 1)]
+    [InlineData(2, 1)]
+    public async Task HasItemInInventory(int quantityToBeAdded, int quantityToBeChecked)
+    {
+        // Arrange
+
+        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToBeAdded,
+            UserId = userId
+        });
+
+        string item_id = tmp.ItemId;
 
         var queryStub = new HasItemQuantityQuery
         {
@@ -161,38 +276,110 @@ public class InventoryTests
 
         // Assert
 
-        if (addItem && quantityToBeAdded >= quantityToBeChecked && quantityToBeChecked > 0)
-        {
-            Assert.True(result, "The result should be true because the item should be in the inventory");
-        }
-        else
-        {
-            Assert.False(result, "The result should be false because there is no item in the inventory");
-        }
+        Assert.True(result, "The result should be true because the item should be in the inventory");
     }
 
-    [Theory(DisplayName = "Get item from inventory")]
-    [InlineData(true, 1)]
-    [InlineData(true, 0)]
-    [InlineData(true, -1)]
-    [InlineData(false, 1)]
-    public async void GetItemFromInventory(bool addItem, int quantityToBeAdded)
+    [Fact(DisplayName = "Has item inventory with bigger quantity to be checked")]
+    public async Task HasItemInInventoryWithBiggerQuantityToBeChecked()
     {
         // Arrange
 
-        string item_id = "";
+        int quantityToBeAdded = 1;
+        int quantityToBeChecked = 2;
 
-        if (addItem)
+        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
-            var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityToBeAdded,
-                UserId = userId
-            });
+            ItemId = itemId,
+            Quantity = quantityToBeAdded,
+            UserId = userId
+        });
 
-            item_id = tmp.ItemId;
-        }
+        string item_id = tmp.ItemId;
+
+        var queryStub = new HasItemQuantityQuery
+        {
+            ItemId = item_id,
+            Quantity = quantityToBeChecked,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.HasItemAsync(queryStub);
+
+        // Assert
+
+        Assert.False(result, "The result should be false because the inventory does not have this quantity of this item");
+    }
+
+    [Theory(DisplayName = "Has item inventory with invalid quantity to be checked")]
+    [InlineData(1, 0)]
+    [InlineData(1, -1)]
+    public async Task HasItemInInventoryWithInvalidQuantityToBeChecked(int quantityToBeAdded, int quantityToBeChecked)
+    {
+        // Arrange
+
+        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToBeAdded,
+            UserId = userId
+        });
+
+        string item_id = tmp.ItemId;
+
+        var queryStub = new HasItemQuantityQuery
+        {
+            ItemId = item_id,
+            Quantity = quantityToBeChecked,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.HasItemAsync(queryStub);
+
+        // Assert
+        
+        Assert.False(result, "The result should be false because the quantity checked is invalid");
+    }
+
+    [Fact(DisplayName = "Has item inventory without adding the item in the inventory")]
+    public async Task HasItemInInventoryWithoutAddingTheItem()
+    {
+        // Arrange
+
+        var queryStub = new HasItemQuantityQuery
+        {
+            ItemId = itemId,
+            Quantity = 1,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.HasItemAsync(queryStub);
+
+        // Assert
+
+        Assert.False(result, "No item was added in the inventory, so the result should be false");
+    }
+
+    [Theory(DisplayName = "Get item from inventory")]
+    [InlineData(1)]
+    [InlineData(50)]
+    public async Task GetItemFromInventory(int quantityToBeAdded)
+    {
+        // Arrange
+
+        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityToBeAdded,
+            UserId = userId
+        });
+
+        string item_id = tmp.ItemId;
 
         var queryStub = new GetInventoryItemQuery
         {
@@ -206,33 +393,44 @@ public class InventoryTests
 
         // Assert
 
-        if (addItem && quantityToBeAdded > 0)
+        Assert.True(result.Success, "The result should be successful");
+        Assert.Equal(result.ItemId, itemId);
+    }
+
+    [Fact(DisplayName = "Get item from inventory without adding the item in the inventory")]
+    public async Task GetItemFromInventoryWithoutAddingTheItemInTheInventory()
+    {
+        // Arrange
+        
+        var queryStub = new GetInventoryItemQuery
         {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.Equal(result.ItemId, itemId);
-        }
-        else
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-        }
+            UserId = userId,
+            ItemId = itemId
+        };
+
+        // Act
+
+        var result = await _sut.GetItemAsync(queryStub);
+
+        // Assert
+        
+        Assert.False(result.Success, "The result should be unsuccessful because the item has not been added to the inventory");
     }
 
     [Theory(DisplayName = "List inventory items")]
-    [InlineData(true, "1")]
-    [InlineData(true, "1", "2", "3")]
-    [InlineData(false)]
-    public async void ListInventoryItems(bool addItems, params string[] itemIds)
+    [InlineData("1")]
+    [InlineData("1", "2", "3")]
+    public async Task ListInventoryItems(params string[] itemIds)
     {
         // Arrange
 
-        if (addItems)
-            foreach (string item_id in itemIds)
-                await _sut.AddItemAsync(new AddInventoryItemCommand
-                {
-                    ItemId = item_id,
-                    Quantity = 1,
-                    UserId = userId
-                });
+        foreach (string item_id in itemIds)
+            await _sut.AddItemAsync(new AddInventoryItemCommand
+            {
+                ItemId = item_id,
+                Quantity = 1,
+                UserId = userId
+            });
 
         var queryStub = new ListInventoryItemsQuery
         {
@@ -250,24 +448,42 @@ public class InventoryTests
         Assert.True(result.ItemsId.All(x => itemIds.Contains(x)), "The result should contain all of the inserted itemIds");
     }
 
-    [Theory(DisplayName = "Lock item")]
-    [InlineData(true, 1, 1)]
-    [InlineData(true, 1, 2)]
-    [InlineData(true, 1, -1)]
-    [InlineData(false, 1, 1)]
-    public async void LockItem(bool addItem, int quantityAdded, int quantityLocked)
+    [Fact(DisplayName = "List inventory items without adding items")]
+    public async Task ListInventoryItemsWithoutAddingItems()
     {
         // Arrange
 
-        if (addItem)
+        var queryStub = new ListInventoryItemsQuery
         {
-            await _sut.AddItemAsync(new AddInventoryItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityAdded,
-                UserId = userId
-            });
-        }
+            SearchString = "",
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.ListItemsAsync(queryStub);
+
+        // Assert
+
+        Assert.True(result.Success, "The result should be successful");
+        Assert.Empty(result.ItemsId);
+    }
+
+    [Fact(DisplayName = "Lock item")]
+    public async Task LockItem()
+    {
+        // Arrange
+
+        int quantityAdded = 1;
+
+        await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded,
+            UserId = userId
+        });
+
+        int quantityLocked = quantityAdded;
 
         var commandStub = new LockItemCommand
         {
@@ -282,39 +498,107 @@ public class InventoryTests
 
         // Assert
 
-        if (addItem && quantityLocked > 0 && quantityAdded >= quantityLocked)
-        {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.Equal(quantityLocked, result.Quantity);
-            Assert.Equal(userId, result.UserId);
-            Assert.Equal(itemId, result.ItemId);
-        }
-        else
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-        }
+        Assert.True(result.Success, "The result should be successful");
+        Assert.Equal(quantityLocked, result.Quantity);
+        Assert.Equal(userId, result.UserId);
+        Assert.Equal(itemId, result.ItemId);
     }
 
-    [Theory(DisplayName = "Lock and unlock item")]
-    [InlineData(true, 1, 1, 1)]
-    [InlineData(true, 1, 4, 2)]
-    [InlineData(true, 1, 2, 1)]
-    [InlineData(true, 1, -1, 1)]
-    [InlineData(false, 1, 1, 1)]
-    public async void UnlockItem(bool addItem, int quantityAdded, int quantityLocked, int quantityUnlocked)
+    [Fact(DisplayName = "Lock bigger quantity of item")]
+    public async Task LockBiggerQuantityOfItem()
     {
         // Arrange
 
-        if (addItem)
-        {
-            await _sut.AddItemAsync(new AddInventoryItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityAdded,
-                UserId = userId
-            });
-        }
+        int quantityAdded = 1;
 
+        await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded,
+            UserId = userId
+        });
+
+        var commandStub = new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded + 1,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.LockItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful because it cannot lock more items than it has added");
+    }
+
+    [Theory(DisplayName = "Lock invalid quantity of item")]
+    [InlineData(1, -1)]
+    [InlineData(1, 0)]
+    public async Task LockInvalidQuantityOfItem(int quantityAdded, int quantityLocked)
+    {
+        // Arrange
+
+        await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded,
+            UserId = userId
+        });
+
+        var commandStub = new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityLocked,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.LockItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful because the quantity to be locked is invalid");
+    }
+
+    [Fact(DisplayName = "Lock item without adding the item")]
+    public async Task LockItemWithoutAddingTheItem()
+    {
+        // Arrange
+
+        var commandStub = new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = 1,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.LockItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful because no item has been added to the inventory");
+    }
+
+    [Theory(DisplayName = "Lock and unlock item")]
+    [InlineData(1, 1, 1)]
+    [InlineData(5, 4, 2)]
+    public async Task UnlockItem(int quantityAdded, int quantityLocked, int quantityUnlocked)
+    {
+        // Arrange
+
+        await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded,
+            UserId = userId
+        });
+        
         await _sut.LockItemAsync(new LockItemCommand
         {
             ItemId = itemId,
@@ -335,45 +619,105 @@ public class InventoryTests
 
         // Assert
 
-        if (addItem && quantityLocked > 0 && quantityUnlocked > 0 && quantityAdded >= quantityLocked && quantityUnlocked >= quantityLocked)
-        {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.Equal(quantityLocked - quantityUnlocked, result.Quantity);
-            Assert.Equal(userId, result.UserId);
-            Assert.Equal(itemId, result.ItemId);
-        }
-        else
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-        }
+        Assert.True(result.Success, "The result should be successful");
+        Assert.Equal(quantityLocked - quantityUnlocked, result.Quantity);
+        Assert.Equal(userId, result.UserId);
+        Assert.Equal(itemId, result.ItemId);
     }
 
-    [Theory(DisplayName = "Get locked amount")]
-    [InlineData(true, 6, 2)]
-    [InlineData(true, 4, 4)]
-    [InlineData(true, 3, 6)]
-    [InlineData(false, 2, 1)]
-    [InlineData(false, 4, 2)]
-    public async void GetLockedAmount(bool addItem, int quantityAdded, int quantityLocked)
+    [Fact(DisplayName = "Lock and unlock more than it was locked")]
+    public async Task UnlockMoreThanItWasLocked()
     {
         // Arrange
 
-        if (addItem)
-        {
-            await _sut.AddItemAsync(new AddInventoryItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityAdded,
-                UserId = userId
-            });
+        int quantityAdded = 1;
 
-            await _sut.LockItemAsync(new LockItemCommand
-            {
-                ItemId = itemId,
-                Quantity = quantityLocked,
-                UserId = userId
-            });
-        }
+        await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded,
+            UserId = userId
+        });
+
+        int quantityLocked = 1;
+
+        await _sut.LockItemAsync(new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityLocked,
+            UserId = userId
+        });
+
+        int quantityUnlocked = quantityLocked + 1;
+
+        var commandStub = new UnlockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityUnlocked,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.UnlockItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful because you cannot unlock more than it was locked");
+    }
+
+    [Fact(DisplayName = "Lock and unlock item without adding the item")]
+    public async Task UnlockItemWithoutAddingTheItem()
+    {
+        // Arrange
+
+        int quantityLocked = 1;
+
+        await _sut.LockItemAsync(new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityLocked,
+            UserId = userId
+        });
+
+        int quantityUnlocked = quantityLocked;
+
+        var commandStub = new UnlockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityUnlocked,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.UnlockItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful");
+    }
+
+    [Theory(DisplayName = "Get locked amount")]
+    [InlineData(6, 2)]
+    [InlineData(4, 4)]
+    public async Task GetLockedAmount(int quantityAdded, int quantityLocked)
+    {
+        // Arrange
+
+        await _sut.AddItemAsync(new AddInventoryItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityAdded,
+            UserId = userId
+        });
+
+        await _sut.LockItemAsync(new LockItemCommand
+        {
+            ItemId = itemId,
+            Quantity = quantityLocked,
+            UserId = userId
+        });
 
         var queryStub = new GetInventoryItemLockedAmountQuery
         {
@@ -388,25 +732,34 @@ public class InventoryTests
         // Assert
 
         Assert.True(result.Success, "The result should be successful");
+        Assert.Equal(quantityLocked, result.Amount);
+        Assert.Equal(itemId, result.ItemId);
+    }
 
-        if (addItem && quantityAdded >= quantityLocked)
+    [Fact(DisplayName = "Get locked amount without adding the item to the inventory")]
+    public async Task GetLockedAmountWithoutAddingTheItemToTheInventory()
+    {
+        // Arrange
+
+        var queryStub = new GetInventoryItemLockedAmountQuery
         {
-            Assert.Equal(quantityLocked, result.Amount);
-        }
-        else
-        {
-            Assert.Equal(0, result.Amount);
-        }
-        if (addItem)
-        {
-            Assert.Equal(itemId, result.ItemId);
-        }
+            UserId = userId,
+            ItemId = itemId
+        };
+
+        // Act
+
+        var result = await _sut.GetLockedAmountAsync(queryStub);
+
+        // Assert
+
+        Assert.Equal(0, result.Amount);
     }
 
     [Theory(DisplayName = "List users that own the item")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2")]
-    public async void ListUsersThatOwnTheItem(params string[] userIds)
+    public async Task ListUsersThatOwnTheItem(params string[] userIds)
     {
         // Arrange
 
@@ -428,6 +781,6 @@ public class InventoryTests
 
         // Assert
 
-        Assert.True(result.UserIds.All(x => userIds.Contains(x)));
+        Assert.True(result.UserIds.All(x => userIds.Contains(x)), "The result must contain all the user ids of every user created");
     }
 }

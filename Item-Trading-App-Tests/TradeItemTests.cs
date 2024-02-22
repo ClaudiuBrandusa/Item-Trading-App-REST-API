@@ -19,10 +19,11 @@ public class TradeItemTests
         var databaseContextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         _context = databaseContextWrapper.ProvideDatabaseContext();
         var _mapper = TestingUtils.GetMapper();
-
         var cacheServiceMock = new Mock<ICacheService>();
-
         var mediatorMock = new Mock<IMediator>();
+        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
+
+        #region MediatorMocks
 
         mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IRequest<string> request, CancellationToken ct) =>
@@ -30,18 +31,43 @@ public class TradeItemTests
                 return "name";
             });
 
-        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
+        #endregion MediatorMocks
 
         _sut = new TradeItemService(databaseContextWrapper, cacheServiceMock.Object, mediatorMock.Object, _mapper);
     }
 
-    [Theory(DisplayName = "Add new trade item")]
-    [InlineData(1, 1)]
+    [Fact(DisplayName = "Add new trade item")]
+    public async Task AddNewTradeItem()
+    {
+        // Arrange
+
+        int price = 1;
+        int quantity = 1;
+
+        var commandStub = new AddTradeItemCommand
+        {
+            ItemId = defaultItemId,
+            Name = "Item",
+            Price = price,
+            Quantity = quantity,
+            TradeId = TestingData.DefaultTradeId
+        };
+
+        // Act
+
+        var result = await _sut.AddTradeItemAsync(commandStub);
+
+        // Assert
+
+        Assert.True(result, "The result should be successful");
+    }
+
+    [Theory(DisplayName = "Add new trade item with invalid data")]
     [InlineData(1, 0)]
     [InlineData(0, 0)]
     [InlineData(1, -2)]
     [InlineData(-1, 1)]
-    public async void AddNewTradeItem(int price, int quantity)
+    public async Task AddNewTradeItemWithInvalidData(int price, int quantity)
     {
         // Arrange
 
@@ -60,17 +86,11 @@ public class TradeItemTests
 
         // Assert
 
-        if (price > 0 && quantity > 0)
-        {
-            Assert.True(result, "The result should be successful");
-        } else
-        {
-            Assert.False(result, "The result should be unsuccessful");
-        }
+        Assert.False(result, "The result should be unsuccessful because the input data was invalid");
     }
 
     [Fact(DisplayName = "Has trade item")]
-    public async void HasTradeItem()
+    public async Task HasTradeItem()
     {
         // Arrange
 
@@ -98,11 +118,27 @@ public class TradeItemTests
         Assert.True(result, "The result value should be true");
     }
 
-    [Theory(DisplayName = "Get item prices")]
+    [Fact(DisplayName = "Has trade item without adding the item first")]
+    public async Task HasTradeItemWithoutAddingTheItemFirst()
+    {
+        // Arrange
+
+        var hasTradeItemQueryStub = new HasTradeItemQuery { TradeId = TestingData.DefaultTradeId, ItemId = defaultItemId };
+
+        // Act
+
+        var result = await _sut.HasTradeItemAsync(hasTradeItemQueryStub);
+
+        // Assert
+
+        Assert.False(result, "The result value should be false because no trade item was added first");
+    }
+
+    [Theory(DisplayName = "Get trade items")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void GetTradeItems(params string[] tradeItemIds)
+    public async Task GetTradeItems(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -122,15 +158,15 @@ public class TradeItemTests
         var result = await _sut.GetTradeItemsAsync(queryStub);
 
         // Assert
-
+        
         Assert.True(result.Length == length, "The result should be successful");
     }
 
-    [Theory(DisplayName = "Get item prices")]
+    [Theory(DisplayName = "Get trade item ids")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void GetItemTradeIdsAsync(params string[] tradeItemIds)
+    public async Task GetItemTradeIdsAsync(params string[] tradeItemIds)
     {
         // Arrange
 
