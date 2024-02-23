@@ -33,7 +33,7 @@ public class ItemService : IItemService
 
     public async Task<FullItemResult> CreateItemAsync(CreateItemCommand model)
     {
-        if(model is null)
+        if(model is null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.ItemName))
             return new FullItemResult
             {
                 Errors = new[] { "Something went wrong" }

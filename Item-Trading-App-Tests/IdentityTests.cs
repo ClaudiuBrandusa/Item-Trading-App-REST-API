@@ -19,6 +19,7 @@ public class IdentityTests
     {
         var databaseContextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         _dbContext = databaseContextWrapper.ProvideDatabaseContext();
+        var refreshTokenServiceMock = new Mock<IRefreshTokenService>();
 
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -29,7 +30,8 @@ public class IdentityTests
 
         var tokenValidationParameters = TestingUtils.GetTokenValidationParameters(jwtSettings.Secret);
 
-        var refreshTokenServiceMock = new Mock<IRefreshTokenService>();
+        #region MediatorMocks
+
         refreshTokenServiceMock.Setup(x => x.GenerateRefreshToken(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((string userId, string jti) =>
             {
@@ -75,47 +77,81 @@ public class IdentityTests
                 };
             });
 
+        #endregion MediatorMocks
+
         _sut = new IdentityService(databaseContextWrapper, TestingUtils.GetUserManager(new UserStore<User>(_dbContext)), jwtSettings, tokenValidationParameters, refreshTokenServiceMock.Object);
     }
 
-    [Theory(DisplayName = "Register user")]
-    [InlineData("Test_Register_0", "Test@a.com", "Password123!")]
-    [InlineData("Test_Register_1", "Test@a.com", "")]
-    [InlineData("Test_Register_2", "", "Password123!")]
-    [InlineData("", "", "")]
-    public async void RegisterUser(string userName, string email, string password)
+    [Fact(DisplayName = "Register user")]
+    public async Task Register_RegisterUserWithValidData_ReturnsSuccessfulAuthenticationResult()
     {
-        var result = await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        string userName = "Test_Register_0";
+        string email = "Test@a.com";
+        string password = "Password123!";
+
+        var commandStub = new RegisterCommand
         {
             Username = userName,
             Email = email,
             Password = password
-        });
+        };
 
-        if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-        }
-        else
-        {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.False(string.IsNullOrEmpty(result.Token));
-            Assert.False(string.IsNullOrEmpty(result.RefreshToken));
-        }
+        // Act
+
+        var result = await _sut.RegisterAsync(commandStub);
+
+        // Assert
+
+        Assert.True(result.Success, "The result should be successful");
+        Assert.False(string.IsNullOrEmpty(result.Token), "The token must not be empty");
+        Assert.False(string.IsNullOrEmpty(result.RefreshToken), "The refresh token must not be empty");
     }
 
-    [Theory(DisplayName = "Login user")]
-    [InlineData("Test_Login", "Password123!")]
-    [InlineData("Test", "")]
-    [InlineData("", "")]
-    public async void LoginUser(string userName, string password)
+    [Theory(DisplayName = "Register user with invalid data")]
+    [InlineData("Test_Register_1", "Test@a.com", "")]
+    [InlineData("Test_Register_2", "", "Password123!")]
+    [InlineData("", "", "")]
+    public async Task Register_RegisterUserWithInvalidData_ShouldFail(string userName, string email, string password)
     {
-        await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var commandStub = new RegisterCommand
         {
             Username = userName,
-            Email = "Test@a.com",
+            Email = email,
             Password = password
-        });
+        };
+
+        // Act
+
+        var result = await _sut.RegisterAsync(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful");
+    }
+
+    [Fact(DisplayName = "Login user")]
+    public async Task Login_LoginUserWithValidData_ReturnsSuccessfulAuthenticationResult()
+    {
+        // Arrange
+
+        string userName = "Test_Login";
+        string email = "Test@a.com";
+        string password = "Password123!";
+
+        var commandStub = new RegisterCommand
+        {
+            Username = userName,
+            Email = email,
+            Password = password
+        };
+
+        // Act
+
+        await _sut.RegisterAsync(commandStub);
 
         var result = await _sut.LoginAsync(new LoginCommand
         {
@@ -123,85 +159,166 @@ public class IdentityTests
             Password = password
         });
 
-        if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-        }
-        else
-        {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.False(string.IsNullOrEmpty(result.Token));
-            Assert.False(string.IsNullOrEmpty(result.RefreshToken));
-        }
+        // Assert
+
+        Assert.True(result.Success, "The result should be successful");
+        Assert.False(string.IsNullOrEmpty(result.Token), "The token must not be empty");
+        Assert.False(string.IsNullOrEmpty(result.RefreshToken), "The refresh token must not be empty");
     }
 
-    [Theory(DisplayName = "Refresh token")]
-    [InlineData("Test_Refresh", "Password123!")]
+
+    [Theory(DisplayName = "Login user with invalid data")]
     [InlineData("Test", "")]
     [InlineData("", "")]
-    public async void RefreshToken(string userName, string password)
+    public async Task Login_LoginUserWithInvalidData_ShouldFail(string userName, string password)
     {
-        var registerResult = await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var commandStub = new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
+        };
+
+        // Act
+
+        await _sut.RegisterAsync(commandStub);
+
+        var result = await _sut.LoginAsync(new LoginCommand
+        {
+            Username = userName,
+            Password = password
         });
 
-        var result = await _sut.RefreshTokenAsync(new RefreshTokenCommand
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful");
+    }
+
+    [Fact(DisplayName = "Refresh token")]
+    public async Task RefreshToken_RefreshTokenWithValidData_ReturnsSuccessfulAuthenticationResult()
+    {
+        // Arrange
+
+        string userName = "Test_Refresh";
+        string password = "Password123!";
+
+        var registerCommandStub = new RegisterCommand
+        {
+            Username = userName,
+            Email = "Test@a.com",
+            Password = password
+        };
+
+        var registerResult = await _sut.RegisterAsync(registerCommandStub);
+
+        var refreshTokenCommandStub = new RefreshTokenCommand
         {
             Token = registerResult.Token,
             RefreshToken = registerResult.RefreshToken
-        });
+        };
 
-        if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
-        {
-            Assert.False(result.Success, "The result should be unsuccessful");
-        }
-        else
-        {
-            Assert.True(result.Success, "The result should be successful");
-            Assert.False(string.IsNullOrEmpty(result.Token));
-            Assert.False(string.IsNullOrEmpty(result.RefreshToken));
-        }
+        // Act
+
+        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub);
+
+        // Assert
+
+        Assert.True(result.Success, "The result should be successful");
+        Assert.False(string.IsNullOrEmpty(result.Token), "The token must not be empty");
+        Assert.False(string.IsNullOrEmpty(result.RefreshToken), "The refresh token must not be empty");
     }
 
-    [Theory(DisplayName = "Login user")]
-    [InlineData("Test_Login", "Password123!")]
+
+    [Theory(DisplayName = "Refresh token with invalid data")]
     [InlineData("Test", "")]
     [InlineData("", "")]
-    public async void GetUsername(string userName, string password)
+    public async Task RefreshToken_RefreshTokenWithInvalidData_ShouldFail(string userName, string password)
     {
-        var registerResult = await _sut.RegisterAsync(new RegisterCommand
+        // Arrange
+
+        var registerCommandStub = new RegisterCommand
         {
             Username = userName,
             Email = "Test@a.com",
             Password = password
-        });
+        };
+
+        var registerResult = await _sut.RegisterAsync(registerCommandStub);
+
+        var refreshTokenCommandStub = new RefreshTokenCommand
+        {
+            Token = registerResult.Token,
+            RefreshToken = registerResult.RefreshToken
+        };
+
+        // Act
+
+        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful");
+    }
+
+    [Fact(DisplayName = "Get username")]
+    public async Task GetUsername_RegisterUserThenGetUsername_ReturnsRegisteredUsersName()
+    {
+        // Arrange
+
+        string userName = "Test_Login";
+        string password = "Password123!";
+
+        var registerCommandStub = new RegisterCommand
+        {
+            Username = userName,
+            Email = "Test@a.com",
+            Password = password
+        };
+
+        var registerResult = await _sut.RegisterAsync(registerCommandStub);
 
         await _dbContext.SaveChangesAsync();
 
-        var userId = registerResult.Success ? (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())!.Id : "";
+        var userId = (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())?.Id ?? "";
 
-        var result = await _sut.GetUsername(new GetUsernameQuery { UserId = userId });
+        var usernameQueryStub = new GetUsernameQuery { UserId = userId };
 
-        if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
-        {
-            Assert.True(string.IsNullOrEmpty(result), "The username should be empty");
-        }
-        else
-        {
-            Assert.Equal(userName, userName);
-        }
+        // Act
+
+        var result = await _sut.GetUsername(usernameQueryStub);
+
+        // Assert
+        
+        Assert.Equal(userName, result);
+    }
+
+    [Fact(DisplayName = "Get username without registering the user")]
+    public async Task GetUsername_GetUsernameWithoutRegisteringAnUser_ShouldFail()
+    {
+        // Arrange
+
+        var userId = (await _dbContext.Users.FirstOrDefaultAsync())?.Id ?? "";
+
+        var usernameQueryStub = new GetUsernameQuery { UserId = userId };
+
+        // Act
+
+        var result = await _sut.GetUsername(usernameQueryStub);
+
+        // Assert
+
+        Assert.True(string.IsNullOrEmpty(result), "The username should be empty");
     }
 
     [Theory(DisplayName = "List users")]
     [InlineData("Test_Login", "Password123!", 4)]
     [InlineData("Test_Login_1", "Password123!", 1)]
-    [InlineData("Test", "", 2)]
-    [InlineData("", "", 1)]
-    public async void ListUsers(string userName, string password, int count)
+    public async Task ListUsers_RegisterSeveralUsersThenListTheUserIds_ReturnsRegisteredUserIdsList(string userName, string password, int count)
     {
+        // Arrange
+
         for (int i = 0; i < count; i++)
             await _sut.RegisterAsync(new RegisterCommand
             {
@@ -212,14 +329,52 @@ public class IdentityTests
 
         string userId = _dbContext.Users.FirstOrDefault()?.Id ?? "";
 
-        var result = await _sut.ListUsers(new ListUsersQuery
+        var listUsersQueryStub = new ListUsersQuery
         {
             SearchString = userName,
             UserId = userId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.ListUsers(listUsersQueryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        if (!string.IsNullOrEmpty(userId))
-            Assert.Equal(count - 1, result.UsersId.Count());
+        Assert.Equal(count - 1, result.UsersId.Count());
+    }
+
+    [Theory(DisplayName = "List users with invalid data")]
+    [InlineData("Test", "", 2)]
+    [InlineData("", "", 1)]
+    public async Task ListUsers_RegisterSeveralUsersWithInvalidData_ShouldFail(string userName, string password, int count)
+    {
+        // Arrange
+
+        for (int i = 0; i < count; i++)
+            await _sut.RegisterAsync(new RegisterCommand
+            {
+                Username = userName + $"+{i}",
+                Email = "Test@a.com",
+                Password = password
+            });
+
+        string userId = _dbContext.Users.FirstOrDefault()?.Id ?? "";
+
+        var listUsersQueryStub = new ListUsersQuery
+        {
+            SearchString = userName,
+            UserId = userId
+        };
+
+        // Act
+
+        var result = await _sut.ListUsers(listUsersQueryStub);
+
+        // Assert
+
+        Assert.True(result.Success, "The result should be successful");
+        Assert.Empty(result.UsersId);
     }
 }

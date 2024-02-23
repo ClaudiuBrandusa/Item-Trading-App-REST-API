@@ -33,8 +33,12 @@ public class TradeTests
     {
         var _context = TestingUtils.GetDatabaseContext();
         var _mapper = TestingUtils.GetMapper();
-
         var mediatorMock = new Mock<IMediator>();
+        var cacheServiceMock = new Mock<ICacheService>();
+        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
+
+        #region MediatorMocks
+
         mediatorMock.Setup(x => x.Send(It.IsAny<IRequest<bool>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IRequest<bool> request, CancellationToken ct) =>
             {
@@ -111,7 +115,6 @@ public class TradeTests
                 };
             });
         
-        var cacheServiceMock = new Mock<ICacheService>();
         cacheServiceMock.Setup(x => x.ListWithPrefix<TradeItem>(It.IsAny<string>(), It.IsAny<bool>()))
             .ReturnsAsync((string prefix, bool removePrefix) =>
             {
@@ -123,7 +126,7 @@ public class TradeTests
                 return new Dictionary<string, string>();
             });
 
-        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
+        #endregion MediatorMocks
 
         _sut = new TradeService(TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString()), cacheServiceMock.Object, mediatorMock.Object, _mapper, unitOfWorkMock.Object);
     }
@@ -132,22 +135,24 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void CreateTrade(params string[] tradeItemIds)
+    public async Task CreateTradeOffer_CreateTradeOfferWithTradeItems_ReturnsCreatedTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+        // Arrange
 
-        for(int i = 0; i < tradeItemIds.Length; i++)
-        {
-            itemPrices[i].Price += i;
-            itemPrices[i].Quantity += i * 2;
-        }
+        var tradeItems = InitTradeItems(tradeItemIds);
 
-        var result = await InitTrade(new CreateTradeOfferCommand
+        var commandStub = new CreateTradeOfferCommand
         {
             SenderUserId = senderUserId,
             TargetUserId = receiverUserId,
-            Items = itemPrices
-        });
+            Items = tradeItems
+        };
+
+        // Act
+
+        var result = await InitTrade(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.False(string.IsNullOrEmpty(result.TradeId), "The trade offer id must not be empty or null");
@@ -155,239 +160,203 @@ public class TradeTests
         Assert.Equal(defaultUserName, result.ReceiverName);
     }
 
+    [Fact(DisplayName = "Create trade offer without trade items")]
+    public async Task CreateTradeOffer_CreateTradeOfferWithoutTradeItems_ShouldFail()
+    {
+        // Arrange
+
+        var commandStub = new CreateTradeOfferCommand
+        {
+            SenderUserId = senderUserId,
+            TargetUserId = receiverUserId
+        };
+
+        // Act
+
+        var result = await InitTrade(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful because no trade items were given");
+    }
+
     [Theory(DisplayName = "Get sent trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async void GetSentTrade(params string[] tradeItemIds)
+    public async Task GetTradeOffer_CreateTradeOfferThenGetSentTrade_ReturnsCreatedTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+        // Arrange
 
-        for (int i = 0; i < tradeItemIds.Length; i++)
-        {
-            itemPrices[i].Price += i;
-            itemPrices[i].Quantity += i * 2;
-        }
+        var tradeOfferResult = await InitTradeWithTradeItems(tradeItemIds);
 
-        var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-        {
-            SenderUserId = senderUserId,
-            TargetUserId = receiverUserId,
-            Items = itemPrices
-        });
-
-        var result = await _sut.GetTradeOfferAsync(new RequestTradeOfferQuery
+        var queryStub = new RequestTradeOfferQuery
         {
             TradeId = tradeOfferResult.TradeId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.GetTradeOfferAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.Equal(tradeItemIds.Length, result.Items.Count());
-        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)));
+        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)), "The result should contain all items that was inserted in the created trade");
         Assert.Equal(receiverUserId, result.ReceiverId);
     }
 
     [Theory(DisplayName = "Get sent trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenGetSentTrades_ReturnsCreatedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
-        List<string> tradeOfferIds = new();
+        // Arrange
 
-        for(int i = 0; i < numberOfTradeOffers; i++)
+        List<string> tradeOfferIds = await InitTradeOffersAndReturnIds(numberOfTradeOffers, tradeItemIds);
+
+        var queryStub = new ListTradesQuery
         {
-            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+            UserId = senderUserId,
+            TradeDirection = TradeDirection.Sent
+        };
 
-            for (int j = 0; j < tradeItemIds.Length; j++)
-            {
-                itemPrices[j].Price += j;
-                itemPrices[j].Quantity += j * 2;
-            }
+        // Act
 
-            var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-            {
-                SenderUserId = senderUserId,
-                TargetUserId = receiverUserId,
-                Items = itemPrices
-            });
+        var result = await _sut.GetTradeOffersAsync(queryStub);
 
-            tradeOfferIds.Add(tradeOfferResult.TradeId);
-        }
-
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent });
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)));
+        Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)), "The result should contain all the trade ids of the trades that were created");
     }
 
     [Theory(DisplayName = "Get responded sent trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetRespondedSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenRespondToThemAndThenGetRespondedSentTrades_ReturnsCreatedAndRespondedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
-        List<string> tradeOfferIds = new();
+        // Arrange
 
-        for (int i = 0; i < numberOfTradeOffers; i++)
+        List<string> tradeOfferIds = await InitTradeOffersAndReturnIds(numberOfTradeOffers, tradeItemIds, true);
+
+        var stub = new ListTradesQuery
         {
-            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+            UserId = senderUserId,
+            TradeDirection = TradeDirection.Sent,
+            Responded = true
+        };
 
-            for (int j = 0; j < tradeItemIds.Length; j++)
-            {
-                itemPrices[j].Price += j;
-                itemPrices[j].Quantity += j * 2;
-            }
+        // Act
 
-            var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-            {
-                SenderUserId = senderUserId,
-                TargetUserId = receiverUserId,
-                Items = itemPrices
-            });
+        var result = await _sut.GetTradeOffersAsync(stub);
 
-            await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
-            {
-                TradeId = tradeOfferResult.TradeId,
-                UserId = receiverUserId
-            });
-
-            tradeOfferIds.Add(tradeOfferResult.TradeId);
-        }
-
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = senderUserId, TradeDirection = TradeDirection.Sent, Responded = true });
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(result.SentTradeOfferIds.Count() == tradeOfferIds.Count);
-        Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)));
+        Assert.True(result.SentTradeOfferIds.Count() == tradeOfferIds.Count, "The result's ids count should be equal to the count of trades that were created");
+        Assert.True(tradeOfferIds.All(x => result.SentTradeOfferIds.Contains(x)), "The result should contain all the trade ids of the trades that were created");
     }
 
     [Theory(DisplayName = "Get received trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async void GetReceivedTrade(params string[] tradeItemIds)
+    public async Task GetTradeOffer_CreateTradeOfferThenGetReceivedTrade_ReturnsCreatedTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+        // Arrange
 
-        for (int i = 0; i < tradeItemIds.Length; i++)
-        {
-            itemPrices[i].Price += i;
-            itemPrices[i].Quantity += i * 2;
-        }
+        var tradeOfferResult = await InitTradeWithTradeItems(tradeItemIds);
 
-        var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-        {
-            SenderUserId = senderUserId,
-            TargetUserId = receiverUserId,
-            Items = itemPrices
-        });
-
-        var result = await _sut.GetTradeOfferAsync(new RequestTradeOfferQuery
+        var queryStub = new RequestTradeOfferQuery
         {
             TradeId = tradeOfferResult.TradeId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.GetTradeOfferAsync(queryStub);
+
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
         Assert.Equal(tradeItemIds.Length, result.Items.Count());
-        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)));
+        Assert.True(result.Items.All(x => tradeItemIds.Contains(x.ItemId)), "The trade offer's items should contain all of the inserted items");
         Assert.Equal(senderUserId, result.SenderId);
     }
 
     [Theory(DisplayName = "Get received trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenGetReceivedTrades_ReturnsCreatedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
-        List<string> tradeOfferIds = new();
+        // Arrange
 
-        for (int i = 0; i < numberOfTradeOffers; i++)
+        List<string> tradeOfferIds = await InitTradeOffersAndReturnIds(numberOfTradeOffers, tradeItemIds);
+
+        var queryStub = new ListTradesQuery
         {
-            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+            UserId = receiverUserId,
+            TradeDirection = TradeDirection.Received
+        };
 
-            for (int j = 0; j < tradeItemIds.Length; j++)
-            {
-                itemPrices[j].Price += j;
-                itemPrices[j].Quantity += j * 2;
-            }
+        // Act
 
-            var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-            {
-                SenderUserId = senderUserId,
-                TargetUserId = receiverUserId,
-                Items = itemPrices
-            });
+        var result = await _sut.GetTradeOffersAsync(queryStub);
 
-            tradeOfferIds.Add(tradeOfferResult.TradeId);
-        }
-
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received });
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)));
+        Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)), "The result should contain all the trade ids of the trades that were created");
     }
 
     [Theory(DisplayName = "Get responded received trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async void GetRespondedReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenRespondToThemAndThenGetRespondedReceivedTrades_ReturnsCreatedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
-        List<string> tradeOfferIds = new();
+        // Arrange
 
-        for (int i = 0; i < numberOfTradeOffers; i++)
+        List<string> tradeOfferIds = await InitTradeOffersAndReturnIds(numberOfTradeOffers, tradeItemIds, true);
+
+        var queryStub = new ListTradesQuery
         {
-            var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+            UserId = receiverUserId,
+            TradeDirection = TradeDirection.Received,
+            Responded = true
+        };
 
-            for (int j = 0; j < tradeItemIds.Length; j++)
-            {
-                itemPrices[j].Price += j;
-                itemPrices[j].Quantity += j * 2;
-            }
+        // Act
 
-            var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-            {
-                SenderUserId = senderUserId,
-                TargetUserId = receiverUserId,
-                Items = itemPrices
-            });
+        var result = await _sut.GetTradeOffersAsync(queryStub);
 
-            await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
-            {
-                TradeId = tradeOfferResult.TradeId,
-                UserId = receiverUserId
-            });
-
-            tradeOfferIds.Add(tradeOfferResult.TradeId);
-        }
-
-        var result = await _sut.GetTradeOffersAsync(new ListTradesQuery { UserId = receiverUserId, TradeDirection = TradeDirection.Received, Responded = true });
+        // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)));
+        Assert.True(result.ReceivedTradeOfferIds.Count() == tradeOfferIds.Count, "The result's ids count should be equal to the count of trades that were created");
+        Assert.True(tradeOfferIds.All(x => result.ReceivedTradeOfferIds.Contains(x)), "The result should contain all the trade ids of the trades that were created");
     }
 
     [Theory(DisplayName = "Accept trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void AcceptTradeOffer(params string[] tradeItemIds)
+    public async Task AcceptTradeOffer_CreateTradeThenAcceptTradeOffer_ReturnsAcceptedTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+        // Arrange
+        
+        var tradeOfferResult = await InitTradeWithTradeItems(tradeItemIds);
 
-        for (int i = 0; i < tradeItemIds.Length; i++)
-        {
-            itemPrices[i].Price += i;
-            itemPrices[i].Quantity += i * 2;
-        }
-
-        var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-        {
-            SenderUserId = senderUserId,
-            TargetUserId = receiverUserId,
-            Items = itemPrices
-        });
-
-        var result = await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
+        var commandStub = new RespondTradeCommand
         {
             TradeId = tradeOfferResult.TradeId,
             UserId = receiverUserId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.AcceptTradeOfferAsync(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "Result should be successful");
         Assert.Equal(tradeOfferResult.TradeId, result.TradeId);
@@ -398,28 +367,23 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void RejectTradeOffer(params string[] tradeItemIds)
+    public async Task RejectTradeOffer_CreateTradeOfferThenRejectTradeOffer_ReturnsRejectedTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+        // Arrange
 
-        for (int i = 0; i < tradeItemIds.Length; i++)
-        {
-            itemPrices[i].Price += i;
-            itemPrices[i].Quantity += i * 2;
-        }
+        var tradeOfferResult = await InitTradeWithTradeItems(tradeItemIds);
 
-        var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-        {
-            SenderUserId = senderUserId,
-            TargetUserId = receiverUserId,
-            Items = itemPrices
-        });
-
-        var result = await _sut.RejectTradeOfferAsync(new RespondTradeCommand
+        var commandStub = new RespondTradeCommand
         {
             TradeId = tradeOfferResult.TradeId,
             UserId = receiverUserId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.RejectTradeOfferAsync(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "Result should be successful");
         Assert.Equal(tradeOfferResult.TradeId, result.TradeId);
@@ -430,28 +394,23 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async void CancelTradeOffer(params string[] tradeItemIds)
+    public async Task CancelTradeOffer_CreateTradeOfferThenCancelTradeOffer_ReturnsCancelledTradeOffer(params string[] tradeItemIds)
     {
-        var itemPrices = TestingData.GetTradeItems(tradeItemIds);
+        // Arrange
 
-        for (int i = 0; i < tradeItemIds.Length; i++)
-        {
-            itemPrices[i].Price += i;
-            itemPrices[i].Quantity += i * 2;
-        }
+        var tradeOfferResult = await InitTradeWithTradeItems(tradeItemIds);
 
-        var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
-        {
-            SenderUserId = senderUserId,
-            TargetUserId = receiverUserId,
-            Items = itemPrices
-        });
-
-        var result = await _sut.CancelTradeOfferAsync(new CancelTradeCommand
+        var commandStub = new CancelTradeCommand
         {
             TradeId = tradeOfferResult.TradeId,
             UserId = senderUserId
-        });
+        };
+
+        // Act
+
+        var result = await _sut.CancelTradeOfferAsync(commandStub);
+
+        // Assert
 
         Assert.True(result.Success, "Result should be successful");
         Assert.Equal(tradeOfferResult.TradeId, result.TradeId);
@@ -462,8 +421,64 @@ public class TradeTests
     {
         var trade = await _sut.CreateTradeOfferAsync(model);
 
-        currentTradeItems.Add(trade.TradeId, model.Items.Select(x => new TradeItem { ItemId = x.ItemId, Quantity = x.Quantity }).ToList());
+        if (model.Items is not null && model.Items.Any())
+            currentTradeItems.Add(trade.TradeId, model.Items.Select(x => new TradeItem { ItemId = x.ItemId, Quantity = x.Quantity }).ToList());
 
         return trade;
+    }
+
+    private static TradeItem[] InitTradeItems(string[] tradeItemIds)
+    {
+        var tradeItems = TestingData.GetTradeItems(tradeItemIds);
+
+        for (int i = 0; i < tradeItemIds.Length; i++)
+        {
+            tradeItems[i].Price += i;
+            tradeItems[i].Quantity += i * 2;
+        }
+
+        return tradeItems;
+    }
+
+    private async Task<List<string>> InitTradeOffersAndReturnIds(int numberOfTradeOffers, string[] tradeItemIds, bool responded = false)
+    {
+        List<string> tradeOfferIds = new();
+
+        for (int i = 0; i < numberOfTradeOffers; i++)
+        {
+            var tradeItems = InitTradeItems(tradeItemIds);
+
+            var tradeOfferResult = await InitTrade(new CreateTradeOfferCommand
+            {
+                SenderUserId = senderUserId,
+                TargetUserId = receiverUserId,
+                Items = tradeItems
+            });
+
+            if (responded)
+                await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
+                {
+                    TradeId = tradeOfferResult.TradeId,
+                    UserId = receiverUserId
+                });
+
+            tradeOfferIds.Add(tradeOfferResult.TradeId);
+        }
+
+        return tradeOfferIds;
+    }
+
+    private async Task<TradeOfferResult> InitTradeWithTradeItems(string[] tradeItemIds)
+    {
+        var tradeItems = InitTradeItems(tradeItemIds);
+
+        var createTradeStub = new CreateTradeOfferCommand
+        {
+            SenderUserId = senderUserId,
+            TargetUserId = receiverUserId,
+            Items = tradeItems
+        };
+
+        return await InitTrade(createTradeStub);
     }
 }
