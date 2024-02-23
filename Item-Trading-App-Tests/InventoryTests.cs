@@ -47,7 +47,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Add item to inventory")]
-    public async Task AddItemToInventory()
+    public async Task AddItem_AddItemToInventory_ReturnsAddedItem()
     {
         // Arrange
 
@@ -73,7 +73,7 @@ public class InventoryTests
     [Theory(DisplayName = "Add item to inventory with invalid quantity")]
     [InlineData(0)]
     [InlineData(-1)]
-    public async Task AddItemToInventoryWithInvalidQuantity(int quantity)
+    public async Task AddItem_AddItemToInventoryWithInvalidQuantity_ShouldFail(int quantity)
     {
         // Arrange
 
@@ -97,7 +97,7 @@ public class InventoryTests
     [Theory(DisplayName = "Drop item from inventory")]
     [InlineData(1, 1)]
     [InlineData(5, 1)]
-    public async Task DropItemFromInventory(int quantityToAdd, int quantityToDrop)
+    public async Task DropItem_DropItemFromInventory_ReturnsRemainedItem(int quantityToAdd, int quantityToDrop)
     {
         // Arrange
 
@@ -131,7 +131,7 @@ public class InventoryTests
     [InlineData(3, 4)]
     [InlineData(5, -1)]
     [InlineData(1, 5)]
-    public async Task DropItemFromInventoryWithInvalidData(int quantityToAdd, int quantityToDrop)
+    public async Task DropItem_DropItemFromInventoryWithInvalidData_ShouldFail(int quantityToAdd, int quantityToDrop)
     {
         // Arrange
 
@@ -162,7 +162,7 @@ public class InventoryTests
 
     [Theory(DisplayName = "Drop item from inventory with locked quantity")]
     [InlineData(5, 1, 1)]
-    public async Task DropItemFromInventoryWithLockedQuantity(int quantityToAdd, int quantityToDrop, int quantityToBeLocked)
+    public async Task DropItem_DropItemFromInventoryWithLockedQuantity_ReturnsRemainedItem(int quantityToAdd, int quantityToDrop, int quantityToBeLocked)
     {
         // Arrange
 
@@ -204,7 +204,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Drop item from inventory with bigger locked quantity than the held quantity")]
-    public async Task DropItemFromInventoryWithBiggerLockedQuantity()
+    public async Task DropItem_DropItemFromInventoryWithBiggerLockedQuantity_ShouldFail()
     {
         // Arrange
 
@@ -250,7 +250,7 @@ public class InventoryTests
     [Theory(DisplayName = "Has item inventory")]
     [InlineData(1, 1)]
     [InlineData(2, 1)]
-    public async Task HasItemInInventory(int quantityToBeAdded, int quantityToBeChecked)
+    public async Task HasItem_HasItemInInventory_ReturnsTrue(int quantityToBeAdded, int quantityToBeChecked)
     {
         // Arrange
 
@@ -280,7 +280,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Has item inventory with bigger quantity to be checked")]
-    public async Task HasItemInInventoryWithBiggerQuantityToBeChecked()
+    public async Task HasItem_HasItemInInventoryWithBiggerQuantityToBeChecked_ReturnsFalse()
     {
         // Arrange
 
@@ -315,7 +315,7 @@ public class InventoryTests
     [Theory(DisplayName = "Has item inventory with invalid quantity to be checked")]
     [InlineData(1, 0)]
     [InlineData(1, -1)]
-    public async Task HasItemInInventoryWithInvalidQuantityToBeChecked(int quantityToBeAdded, int quantityToBeChecked)
+    public async Task HasItem_HasItemInInventoryWithInvalidQuantityToBeChecked_ReturnsFalse(int quantityToBeAdded, int quantityToBeChecked)
     {
         // Arrange
 
@@ -345,7 +345,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Has item inventory without adding the item in the inventory")]
-    public async Task HasItemInInventoryWithoutAddingTheItem()
+    public async Task HasItem_HasItemInInventoryWithoutAddingTheItem_ReturnsFalse()
     {
         // Arrange
 
@@ -368,7 +368,7 @@ public class InventoryTests
     [Theory(DisplayName = "Get item from inventory")]
     [InlineData(1)]
     [InlineData(50)]
-    public async Task GetItemFromInventory(int quantityToBeAdded)
+    public async Task GetItem_GetItemFromInventory_ReturnsInventoryItem(int quantityToBeAdded)
     {
         // Arrange
 
@@ -398,7 +398,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Get item from inventory without adding the item in the inventory")]
-    public async Task GetItemFromInventoryWithoutAddingTheItemInTheInventory()
+    public async Task GetItem_GetItemFromInventoryWithoutAddingTheItemInTheInventory_ShouldFail()
     {
         // Arrange
         
@@ -420,7 +420,7 @@ public class InventoryTests
     [Theory(DisplayName = "List inventory items")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async Task ListInventoryItems(params string[] itemIds)
+    public async Task ListItems_ListInventoryItems_ReturnsInventoryItemIdsList(params string[] itemIds)
     {
         // Arrange
 
@@ -449,7 +449,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "List inventory items without adding items")]
-    public async Task ListInventoryItemsWithoutAddingItems()
+    public async Task ListItems_ListInventoryItemsWithoutAddingItems_ReturnsEmptyList()
     {
         // Arrange
 
@@ -470,7 +470,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Lock item")]
-    public async Task LockItem()
+    public async Task LockItem_LockItem_ReturnsLockedItem()
     {
         // Arrange
 
@@ -505,7 +505,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Lock bigger quantity of item")]
-    public async Task LockBiggerQuantityOfItem()
+    public async Task LockItem_LockBiggerQuantityOfItem_ShouldFail()
     {
         // Arrange
 
@@ -537,7 +537,7 @@ public class InventoryTests
     [Theory(DisplayName = "Lock invalid quantity of item")]
     [InlineData(1, -1)]
     [InlineData(1, 0)]
-    public async Task LockInvalidQuantityOfItem(int quantityAdded, int quantityLocked)
+    public async Task LockItem_LockInvalidQuantityOfItem_ShouldFail(int quantityAdded, int quantityLocked)
     {
         // Arrange
 
@@ -565,7 +565,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Lock item without adding the item")]
-    public async Task LockItemWithoutAddingTheItem()
+    public async Task LockItem_LockWithoutAddingTheItem_ShouldFail()
     {
         // Arrange
 
@@ -588,7 +588,7 @@ public class InventoryTests
     [Theory(DisplayName = "Lock and unlock item")]
     [InlineData(1, 1, 1)]
     [InlineData(5, 4, 2)]
-    public async Task UnlockItem(int quantityAdded, int quantityLocked, int quantityUnlocked)
+    public async Task UnlockItem_CreateAnItemLockAndUnlock_ReturnsTheFreeAmountOfItem(int quantityAdded, int quantityLocked, int quantityUnlocked)
     {
         // Arrange
 
@@ -626,7 +626,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Lock and unlock more than it was locked")]
-    public async Task UnlockMoreThanItWasLocked()
+    public async Task UnlockItem_UnlockMoreThanItWasLocked_ShouldFail()
     {
         // Arrange
 
@@ -667,7 +667,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Lock and unlock item without adding the item")]
-    public async Task UnlockItemWithoutAddingTheItem()
+    public async Task UnlockItem_UnlockItemWithoutAddingTheItem_ShouldFail()
     {
         // Arrange
 
@@ -701,7 +701,7 @@ public class InventoryTests
     [Theory(DisplayName = "Get locked amount")]
     [InlineData(6, 2)]
     [InlineData(4, 4)]
-    public async Task GetLockedAmount(int quantityAdded, int quantityLocked)
+    public async Task GetLockedAmount_AddAndLockItemThenGetTheLockedAmount_ReturnsTheItemsLockedAmount(int quantityAdded, int quantityLocked)
     {
         // Arrange
 
@@ -737,7 +737,7 @@ public class InventoryTests
     }
 
     [Fact(DisplayName = "Get locked amount without adding the item to the inventory")]
-    public async Task GetLockedAmountWithoutAddingTheItemToTheInventory()
+    public async Task GetLockedAmount_GetLockedAmountWithoutAddingTheItemToTheInventory_Returns0Amount()
     {
         // Arrange
 
@@ -759,7 +759,7 @@ public class InventoryTests
     [Theory(DisplayName = "List users that own the item")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2")]
-    public async Task ListUsersThatOwnTheItem(params string[] userIds)
+    public async Task GetUsersOwningThisItemAsync_ListUsersThatOwnTheItem_ReturnsUserIdsListOfUsersThatOwnTheItem(params string[] userIds)
     {
         // Arrange
 

@@ -39,8 +39,8 @@ public class ItemTests
         _sut = new ItemService(TestingUtils.GetDatabaseContext(), cacheServiceMock.Object, mediatorMock.Object, TestingUtils.GetMapper());
     }
 
-    [Fact(DisplayName = "Create a new Item")]
-    public async Task CreateItem()
+    [Fact(DisplayName = "Create a new item")]
+    public async Task CreateItem_CreateNewItem_ReturnsCreatedItem()
     {
         // Arrange
 
@@ -61,19 +61,87 @@ public class ItemTests
         Assert.True(addItemResult.Success, "The item creation should be successful");
     }
 
-    [Fact(DisplayName = "Update Item")]
-    public async Task UpdateItem()
+    [Fact(DisplayName = "Create a new item without sender user id")]
+    public async Task CreateItem_CreateNewItemWithoutSenderUserId_ShouldFail()
     {
         // Arrange
 
+        var commandStub = new CreateItemCommand
+        {
+            SenderUserId = "",
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
+        // Act
+
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(
-            new CreateItemCommand
-            {
-                SenderUserId = userId,
-                ItemName = itemName,
-                ItemDescription = itemDescription
-            });
+        var addItemResult = await _sut.CreateItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(addItemResult.Success, "It should not be allowed to create an item without a sender user id");
+    }
+
+    [Fact(DisplayName = "Create a new item without a name")]
+    public async Task CreateItem_CreateNewItemWithoutName_ShouldFail()
+    {
+        // Arrange
+
+        var commandStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = "",
+            ItemDescription = itemDescription
+        };
+
+        // Act
+
+        // add one item
+        var addItemResult = await _sut.CreateItemAsync(commandStub);
+
+        // Assert
+
+        Assert.False(addItemResult.Success, "It should not be allowed to create an item without a name");
+    }
+
+    [Fact(DisplayName = "Create a new item without description")]
+    public async Task CreateItem_CreateNewItemWithoutDescription_ReturnsCreatedItemWithoutDescription()
+    {
+        // Arrange
+
+        var commandStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = ""
+        };
+
+        // Act
+
+        // add one item
+        var addItemResult = await _sut.CreateItemAsync(commandStub);
+
+        // Assert
+
+        Assert.True(addItemResult.Success, "The item creation should be successful");
+        Assert.Equal("", addItemResult.ItemDescription);
+    }
+
+    [Fact(DisplayName = "Update item")]
+    public async Task UpdateItem_CreateItemAndUpdateNameAndDescription_ReturnsUpdatedItem()
+    {
+        // Arrange
+
+        var createItemStub = new CreateItemCommand
+        {
+            SenderUserId = userId,
+            ItemName = itemName,
+            ItemDescription = itemDescription
+        };
+
+        // add one item
+        var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
         string item_id = addItemResult.ItemId;
 
@@ -100,7 +168,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Update item without creating the item first")]
-    public async Task UpdateItemWithoutCreatingTheItemFirst()
+    public async Task UpdateItem_UpdateItemWithoutCreatingTheItemFirst_ShouldFail()
     {
         // Arrange
         
@@ -125,7 +193,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Delete Item")]
-    public async Task DeleteItem()
+    public async Task DeleteItem_CreateItemThenDeleteIt_ReturnsDeleteItemResult()
     {
         // Arrange
 
@@ -153,7 +221,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Delete Item without creating the item")]
-    public async Task DeleteItemWithoutCreatingTheItem()
+    public async Task DeleteItem_DeleteItemWithoutCreatingTheItem_ShouldFail()
     {
         // Arrange
 
@@ -175,7 +243,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "List items")]
-    public async Task ListItems()
+    public async Task ListItems_CreateItemThenListItems_ReturnsItemIdsList()
     {
         // Arrange
 
@@ -203,7 +271,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Get item")]
-    public async Task GetItem()
+    public async Task GetItem_CreateItemThenGetTheItem_ReturnsItem()
     {
         // Arrange
 
@@ -231,7 +299,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Get item without creating it first")]
-    public async Task GetItemWithoutCreatingItFirst()
+    public async Task GetItem_GetItemWithoutCreatingItFirst_ShouldFail()
     {
         // Arrange
 
@@ -249,7 +317,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Get item name")]
-    public async Task GetItemName()
+    public async Task GetItemName_CreateItemThenGetItemName_ReturnsItemName()
     {
         // Arrange
 
@@ -276,7 +344,7 @@ public class ItemTests
     }
 
     [Fact(DisplayName = "Get item description")]
-    public async Task GetItemDescription()
+    public async Task GetItemDescription_CreateItemThenGetItemDescription_ReturnsItemDescription()
     {
         // Arrange
 

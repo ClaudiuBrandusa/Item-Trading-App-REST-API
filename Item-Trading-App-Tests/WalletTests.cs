@@ -24,7 +24,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Get wallet")]
-    public async Task GetWallet()
+    public async Task GetWallet_CreateUserThenGetWallet_ReturnsUsersWallet()
     {
         // Arrange
 
@@ -51,7 +51,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Get wallet without creating an user first")]
-    public async Task GetWalletWithoutCreatingAnUserFirst()
+    public async Task GetWallet_GetWalletWithoutCreatingAnUserFirst_ShouldFail()
     {
         // Arrange
 
@@ -67,7 +67,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Update wallet")]
-    public async Task UpdateWallet()
+    public async Task UpdateWallet_CreateUserThenUpdateWallet_ReturnsUpdatedWallet()
     {
         // Arrange
 
@@ -100,7 +100,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Update wallet without creating an user first")]
-    public async Task UpdateWalletWithoutCreatingAnUserFirst()
+    public async Task UpdateWallet_UpdateWalletWithoutCreatingAnUserFirst_ShouldFail()
     {
         // Arrange
 
@@ -122,7 +122,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Get user cash amount")]
-    public async Task GetUserCashAmount()
+    public async Task GetUserCash_CreateUserThenGetUserCashAmount_ReturnsUsersCashAmount()
     {
         // Arrange
 
@@ -147,7 +147,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Get user cash amount without creating an user first")]
-    public async Task GetUserCashAmountWithoutCreatingAnUserFirst()
+    public async Task GetUserCash_GetUserCashAmountWithoutCreatingAnUserFirst_Returns0()
     {
         // Arrange
 
@@ -163,7 +163,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Take cash amount from user")]
-    public async Task TakeCashFromUser()
+    public async Task TakeCash_CreateUserThenTakeCashFromUser_ReturnsTrue()
     {
         // Arrange
 
@@ -194,7 +194,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Take more cash than the user has")]
-    public async Task TakeMoreCashThanTheUserHas()
+    public async Task TakeCash_CreateUserThenTakeMoreCashThanTheUserHas_ReturnsFalse()
     {
         // Arrange
 
@@ -225,7 +225,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Take cash amount from user without creating an user first")]
-    public async Task TakeCashFromUserWithoutCreatingAnUserFirst()
+    public async Task TakeCash_TakeCashFromUserWithoutCreatingAnUserFirst_ReturnsFalse()
     {
         // Arrange
 
@@ -250,7 +250,7 @@ public class WalletTests
     [InlineData(100)]
     [InlineData(200)]
     [InlineData(10)]
-    public async Task GiveCashToUser(int givenAmount)
+    public async Task GiveCash_CreateUserThenGiveCash_ReturnsTrue(int givenAmount)
     {
         // Arrange
 
@@ -284,7 +284,7 @@ public class WalletTests
     [Theory(DisplayName = "Give invalid cash amount to user")]
     [InlineData(0)]
     [InlineData(-10)]
-    public async Task GiveInvalidCashToUser(int givenAmount)
+    public async Task GiveCash_CreateUserThenGiveInvalidCashToUser_ReturnsFalse(int givenAmount)
     {
         // Arrange
 
@@ -316,7 +316,7 @@ public class WalletTests
     }
 
     [Fact(DisplayName = "Give cash amount to user without creating the user before")]
-    public async Task GiveCashToUserWithoutCreatingTheUserBefore()
+    public async Task GiveCash_GiveCashToUserWithoutCreatingTheUserBefore_ReturnsFalse()
     {
         // Arrange
 

@@ -135,7 +135,7 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async Task CreateTrade(params string[] tradeItemIds)
+    public async Task CreateTradeOffer_CreateTradeOfferWithTradeItems_ReturnsCreatedTradeOffer(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -160,10 +160,30 @@ public class TradeTests
         Assert.Equal(defaultUserName, result.ReceiverName);
     }
 
+    [Fact(DisplayName = "Create trade offer without trade items")]
+    public async Task CreateTradeOffer_CreateTradeOfferWithoutTradeItems_ShouldFail()
+    {
+        // Arrange
+
+        var commandStub = new CreateTradeOfferCommand
+        {
+            SenderUserId = senderUserId,
+            TargetUserId = receiverUserId
+        };
+
+        // Act
+
+        var result = await InitTrade(commandStub);
+
+        // Assert
+
+        Assert.False(result.Success, "The result should be unsuccessful because no trade items were given");
+    }
+
     [Theory(DisplayName = "Get sent trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async Task GetSentTrade(params string[] tradeItemIds)
+    public async Task GetTradeOffer_CreateTradeOfferThenGetSentTrade_ReturnsCreatedTradeOffer(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -189,7 +209,7 @@ public class TradeTests
     [Theory(DisplayName = "Get sent trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async Task GetSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenGetSentTrades_ReturnsCreatedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         // Arrange
 
@@ -214,7 +234,7 @@ public class TradeTests
     [Theory(DisplayName = "Get responded sent trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async Task GetRespondedSentTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenRespondToThemAndThenGetRespondedSentTrades_ReturnsCreatedAndRespondedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         // Arrange
 
@@ -241,7 +261,7 @@ public class TradeTests
     [Theory(DisplayName = "Get received trade")]
     [InlineData("1")]
     [InlineData("1", "2", "3")]
-    public async Task GetReceivedTrade(params string[] tradeItemIds)
+    public async Task GetTradeOffer_CreateTradeOfferThenGetReceivedTrade_ReturnsCreatedTradeOffer(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -267,7 +287,7 @@ public class TradeTests
     [Theory(DisplayName = "Get received trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async Task GetReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenGetReceivedTrades_ReturnsCreatedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         // Arrange
 
@@ -292,7 +312,7 @@ public class TradeTests
     [Theory(DisplayName = "Get responded received trades")]
     [InlineData(1, "1")]
     [InlineData(5, "1", "2", "3")]
-    public async Task GetRespondedReceivedTrades(int numberOfTradeOffers, params string[] tradeItemIds)
+    public async Task GetTradeOffers_CreateSeveralTradeOffersThenRespondToThemAndThenGetRespondedReceivedTrades_ReturnsCreatedTradeOfferIds(int numberOfTradeOffers, params string[] tradeItemIds)
     {
         // Arrange
 
@@ -320,7 +340,7 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async Task AcceptTradeOffer(params string[] tradeItemIds)
+    public async Task AcceptTradeOffer_CreateTradeThenAcceptTradeOffer_ReturnsAcceptedTradeOffer(params string[] tradeItemIds)
     {
         // Arrange
         
@@ -347,7 +367,7 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async Task RejectTradeOffer(params string[] tradeItemIds)
+    public async Task RejectTradeOffer_CreateTradeOfferThenRejectTradeOffer_ReturnsRejectedTradeOffer(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -374,7 +394,7 @@ public class TradeTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async Task CancelTradeOffer(params string[] tradeItemIds)
+    public async Task CancelTradeOffer_CreateTradeOfferThenCancelTradeOffer_ReturnsCancelledTradeOffer(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -401,7 +421,8 @@ public class TradeTests
     {
         var trade = await _sut.CreateTradeOfferAsync(model);
 
-        currentTradeItems.Add(trade.TradeId, model.Items.Select(x => new TradeItem { ItemId = x.ItemId, Quantity = x.Quantity }).ToList());
+        if (model.Items is not null && model.Items.Any())
+            currentTradeItems.Add(trade.TradeId, model.Items.Select(x => new TradeItem { ItemId = x.ItemId, Quantity = x.Quantity }).ToList());
 
         return trade;
     }

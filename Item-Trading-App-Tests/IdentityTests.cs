@@ -83,7 +83,7 @@ public class IdentityTests
     }
 
     [Fact(DisplayName = "Register user")]
-    public async Task RegisterUser()
+    public async Task Register_RegisterUserWithValidData_ReturnsSuccessfulAuthenticationResult()
     {
         // Arrange
 
@@ -113,7 +113,7 @@ public class IdentityTests
     [InlineData("Test_Register_1", "Test@a.com", "")]
     [InlineData("Test_Register_2", "", "Password123!")]
     [InlineData("", "", "")]
-    public async Task RegisterUserWithInvalidData(string userName, string email, string password)
+    public async Task Register_RegisterUserWithInvalidData_ShouldFail(string userName, string email, string password)
     {
         // Arrange
 
@@ -134,7 +134,7 @@ public class IdentityTests
     }
 
     [Fact(DisplayName = "Login user")]
-    public async Task LoginUser()
+    public async Task Login_LoginUserWithValidData_ReturnsSuccessfulAuthenticationResult()
     {
         // Arrange
 
@@ -170,7 +170,7 @@ public class IdentityTests
     [Theory(DisplayName = "Login user with invalid data")]
     [InlineData("Test", "")]
     [InlineData("", "")]
-    public async Task LoginUserWithInvalidData(string userName, string password)
+    public async Task Login_LoginUserWithInvalidData_ShouldFail(string userName, string password)
     {
         // Arrange
 
@@ -197,7 +197,7 @@ public class IdentityTests
     }
 
     [Fact(DisplayName = "Refresh token")]
-    public async Task RefreshToken()
+    public async Task RefreshToken_RefreshTokenWithValidData_ReturnsSuccessfulAuthenticationResult()
     {
         // Arrange
 
@@ -234,7 +234,7 @@ public class IdentityTests
     [Theory(DisplayName = "Refresh token with invalid data")]
     [InlineData("Test", "")]
     [InlineData("", "")]
-    public async Task RefreshTokenWithInvalidData(string userName, string password)
+    public async Task RefreshToken_RefreshTokenWithInvalidData_ShouldFail(string userName, string password)
     {
         // Arrange
 
@@ -263,7 +263,7 @@ public class IdentityTests
     }
 
     [Fact(DisplayName = "Get username")]
-    public async Task GetUsername()
+    public async Task GetUsername_RegisterUserThenGetUsername_ReturnsRegisteredUsersName()
     {
         // Arrange
 
@@ -281,7 +281,7 @@ public class IdentityTests
 
         await _dbContext.SaveChangesAsync();
 
-        var userId = registerResult.Success ? (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())!.Id : "";
+        var userId = (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())?.Id ?? "";
 
         var usernameQueryStub = new GetUsernameQuery { UserId = userId };
 
@@ -294,25 +294,12 @@ public class IdentityTests
         Assert.Equal(userName, result);
     }
 
-    [Theory(DisplayName = "Get username with invalid data")]
-    [InlineData("Test", "")]
-    [InlineData("", "")]
-    public async Task GetUsernameWithInvalidData(string userName, string password)
+    [Fact(DisplayName = "Get username without registering the user")]
+    public async Task GetUsername_GetUsernameWithoutRegisteringAnUser_ShouldFail()
     {
         // Arrange
 
-        var registerCommandStub = new RegisterCommand
-        {
-            Username = userName,
-            Email = "Test@a.com",
-            Password = password
-        };
-
-        var registerResult = await _sut.RegisterAsync(registerCommandStub);
-
-        await _dbContext.SaveChangesAsync();
-
-        var userId = registerResult.Success ? (await _dbContext.Users.Where(x => x.UserName == userName).FirstOrDefaultAsync())!.Id : "";
+        var userId = (await _dbContext.Users.FirstOrDefaultAsync())?.Id ?? "";
 
         var usernameQueryStub = new GetUsernameQuery { UserId = userId };
 
@@ -328,7 +315,7 @@ public class IdentityTests
     [Theory(DisplayName = "List users")]
     [InlineData("Test_Login", "Password123!", 4)]
     [InlineData("Test_Login_1", "Password123!", 1)]
-    public async Task ListUsers(string userName, string password, int count)
+    public async Task ListUsers_RegisterSeveralUsersThenListTheUserIds_ReturnsRegisteredUserIdsList(string userName, string password, int count)
     {
         // Arrange
 
@@ -361,7 +348,7 @@ public class IdentityTests
     [Theory(DisplayName = "List users with invalid data")]
     [InlineData("Test", "", 2)]
     [InlineData("", "", 1)]
-    public async Task ListUsersWithInvalidData(string userName, string password, int count)
+    public async Task ListUsers_RegisterSeveralUsersWithInvalidData_ShouldFail(string userName, string password, int count)
     {
         // Arrange
 

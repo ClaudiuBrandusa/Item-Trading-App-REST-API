@@ -3,9 +3,9 @@ using Item_Trading_App_REST_API.Data;
 using Item_Trading_App_REST_API.Resources.Queries.TradeItem;
 using Item_Trading_App_REST_API.Services.Cache;
 using Item_Trading_App_REST_API.Services.TradeItem;
-using MediatR;
 using Item_Trading_App_REST_API.Resources.Queries.Item;
 using Item_Trading_App_REST_API.Services.UnitOfWork;
+using MediatR;
 
 namespace Item_Trading_App_Tests;
 public class TradeItemTests
@@ -37,7 +37,7 @@ public class TradeItemTests
     }
 
     [Fact(DisplayName = "Add new trade item")]
-    public async Task AddNewTradeItem()
+    public async Task AddTradeItem_AddNewTradeItem_ReturnsTrue()
     {
         // Arrange
 
@@ -67,7 +67,7 @@ public class TradeItemTests
     [InlineData(0, 0)]
     [InlineData(1, -2)]
     [InlineData(-1, 1)]
-    public async Task AddNewTradeItemWithInvalidData(int price, int quantity)
+    public async Task AddTradeItem_AddNewTradeItemWithInvalidData_ReturnsFalse(int price, int quantity)
     {
         // Arrange
 
@@ -90,7 +90,7 @@ public class TradeItemTests
     }
 
     [Fact(DisplayName = "Has trade item")]
-    public async Task HasTradeItem()
+    public async Task HasTradeItem_AddTradeItemThenCheckIfItHasTradeItem_ReturnsTrue()
     {
         // Arrange
 
@@ -119,7 +119,7 @@ public class TradeItemTests
     }
 
     [Fact(DisplayName = "Has trade item without adding the item first")]
-    public async Task HasTradeItemWithoutAddingTheItemFirst()
+    public async Task HasTradeItem_CheckIfItHasTradeItemWithoutAddingTheItemFirst_ReturnsFalse()
     {
         // Arrange
 
@@ -138,7 +138,7 @@ public class TradeItemTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async Task GetTradeItems(params string[] tradeItemIds)
+    public async Task GetTradeItems_AddSeveralTradeItemsThenGetTradeItems_ReturnsTradeItemsArray(params string[] tradeItemIds)
     {
         // Arrange
 
@@ -166,7 +166,7 @@ public class TradeItemTests
     [InlineData("1")]
     [InlineData("1", "2", "3")]
     [InlineData("1", "2", "3", "4", "5")]
-    public async Task GetItemTradeIdsAsync(params string[] tradeItemIds)
+    public async Task GetItemTradeIds_AddSeveralItemTradesThenGetItemTradeIds_ReturnsItemTradeIdsArray(params string[] tradeItemIds)
     {
         // Arrange
 
