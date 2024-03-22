@@ -7,7 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Item-Trading-App-REST-API",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Item-Trading-App-Contracts", "Item-Trading-App-Contracts\Item-Trading-App-Contracts\Item-Trading-App-Contracts.csproj", "{7C595DC8-44D6-4CEF-8445-CE3F5ECCF296}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Item-Trading-App-Tests", "Item-Trading-App-Tests\Item-Trading-App-Tests.csproj", "{49395F61-709D-416C-98AC-7C7EDD90F219}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Item-Trading-App-Tests", "Item-Trading-App-Tests\Item-Trading-App-Tests.csproj", "{49395F61-709D-416C-98AC-7C7EDD90F219}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2DF7D18C-5E87-4F69-BB8A-D124F0B565B5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3ECD135D-77D0-476D-8E98-73076520C24A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +34,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E266C94E-183A-4DD4-9465-1244FDA216EA} = {2DF7D18C-5E87-4F69-BB8A-D124F0B565B5}
+		{7C595DC8-44D6-4CEF-8445-CE3F5ECCF296} = {2DF7D18C-5E87-4F69-BB8A-D124F0B565B5}
+		{49395F61-709D-416C-98AC-7C7EDD90F219} = {3ECD135D-77D0-476D-8E98-73076520C24A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DFF4B2FE-558E-4E43-A001-02BEFC70D2BC}
