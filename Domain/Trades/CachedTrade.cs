@@ -1,0 +1,18 @@
+﻿namespace Domain.Trade;
+
+public record CachedTrade
+{
+    public string TradeId { get; set; }
+
+    public string SenderUserId { get; set; }
+
+    public string ReceiverUserId { get; set; }
+
+    public bool? Response { get; set; } = null;
+
+    public DateTime SentDate { get; set; }
+
+    public DateTime? ResponseDate { get; set; } = null;
+
+    public string[] TradeItemsId { get; set; }
+}

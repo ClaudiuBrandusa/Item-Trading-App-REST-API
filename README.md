@@ -1,7 +1,28 @@
 # Item Trading App - REST API
-The REST API of an app which will simulate the item trading system between some in-app items and a fake currency.
+The REST API of an application that simulates item trading between in-app items using a fake currency.
 
 # Structure
+## Project architecture
+The project implements the Clean Architecture with Domain Driven Design.
+
+The layers are defined as c# projects:
+### Domain
+[Domain layer library](Domain/Domain.csproj)  
+Contains entities and repository interfaces.
+
+### Application
+[Application layer library](Application/Application.csproj)
+Implements the application's business logic.
+
+### Infrastructure
+[Infrastructure layer library](Infrastructure/Infrastructure.csproj)  
+Implements the interaction with external data storage (database and caching.
+
+### Presentation
+[Presentation layer library](Web.API/Web.API.csproj)  
+ASP.NET Web API
+
+
 ## Database
 We are using Identity (from EntityFrameworkCore) so then we will have some tables used by it. We are not going to discuss about those tables because we can find details about them online (https://docs.microsoft.com/en-us/aspnet/identity/overview/getting-started/introduction-to-aspnet-identity).
 <a href="https://drive.google.com/uc?export=view&id=1exLmGbJ7Cby21H9fOSRvp0wGe3JPsOwy"><img src="https://drive.google.com/uc?export=view&id=1exLmGbJ7Cby21H9fOSRvp0wGe3JPsOwy" style="width: 650px; max-width: 100%; height: auto" title="Click to enlarge picture" /></a>  
