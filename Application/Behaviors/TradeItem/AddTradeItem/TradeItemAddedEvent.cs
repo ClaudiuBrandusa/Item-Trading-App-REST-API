@@ -4,7 +4,7 @@ namespace Application.Behaviors.TradeItem.AddTradeItem;
 
 public record TradeItemAddedEvent : INotification
 {
-    public string TradeId { get; set; }
+    public string TradeId { get; set; } = string.Empty;
 
-    public Domain.TradeItems.TradeItem Data { get; set; }
+    public Domain.Entities.Trades.TradeItem Data { get; set; }
 }

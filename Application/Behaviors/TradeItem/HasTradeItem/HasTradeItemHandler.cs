@@ -1,4 +1,4 @@
-﻿using Application.Services.TradeItem;
+﻿using Application.Services.TradeItems;
 using MediatR;
 
 namespace Application.Behaviors.TradeItem.HasTradeItem;

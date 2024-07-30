@@ -1,11 +1,11 @@
-﻿using Application.Models.Wallet;
+﻿using Application.Results.Wallet;
 using MediatR;
 
 namespace Application.Behaviors.Wallet.UpdateWallet;
 
 public record UpdateWalletCommand : IRequest<WalletResult>
 {
-    public string UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
 
     public int Quantity { get; set; }
 }

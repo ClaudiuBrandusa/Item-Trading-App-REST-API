@@ -10,11 +10,12 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using MediatR;
 using System;
 using Application.Behaviors.Trade.CreateTrade;
-using Application.Models.Trade;
 using Application.Behaviors.Trade.RespondTrade;
 using Application.Behaviors.Trade.CancelTrade;
 using Application.Behaviors.Trade.ListTrades;
 using Application.Behaviors.Trade.GetTrade;
+using Application.Results.Trades;
+using Application.Models.Trades;
 
 namespace Item_Trading_App_REST_API.Controllers;
 

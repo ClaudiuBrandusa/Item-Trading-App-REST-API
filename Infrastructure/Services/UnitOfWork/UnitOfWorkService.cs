@@ -5,14 +5,11 @@ namespace Infrastructure.Services.UnitOfWork;
 
 public class UnitOfWorkService : IUnitOfWorkService, IDisposable
 {
-    private TransactionScope _transaction;
+    private TransactionScope? _transaction;
 
     public void BeginTransaction()
     {
-        if (OperatingSystem.IsWindows())
-            TransactionManager.ImplicitDistributedTransactions = true;
         _transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-        TransactionInterop.GetTransmitterPropagationToken(Transaction.Current);
     }
 
     public void CommitTransaction()
@@ -35,6 +32,8 @@ public class UnitOfWorkService : IUnitOfWorkService, IDisposable
 
     private void ClearTransaction()
     {
+        if (_transaction is null) return;
+
         _transaction.Complete();
         _transaction.Dispose();
         _transaction = null;

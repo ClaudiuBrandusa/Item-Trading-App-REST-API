@@ -4,5 +4,5 @@ namespace Application.Behaviors.TradeItem.GetTradeItemIds;
 
 public record GetTradesUsingTheItemQuery : IRequest<string[]>
 {
-    public string ItemId { get; set; }
+    public string ItemId { get; set; } = string.Empty;
 }

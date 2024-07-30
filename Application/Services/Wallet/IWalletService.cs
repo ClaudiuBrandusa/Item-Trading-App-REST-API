@@ -3,7 +3,7 @@ using Application.Behaviors.Wallet.GetWallet;
 using Application.Behaviors.Wallet.GiveCash;
 using Application.Behaviors.Wallet.TakeCash;
 using Application.Behaviors.Wallet.UpdateWallet;
-using Application.Models.Wallet;
+using Application.Results.Wallet;
 
 namespace Application.Services.Wallet;
 

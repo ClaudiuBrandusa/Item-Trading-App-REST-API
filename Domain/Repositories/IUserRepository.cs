@@ -1,4 +1,4 @@
-﻿using Domain.Identity;
+﻿using Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Repositories;

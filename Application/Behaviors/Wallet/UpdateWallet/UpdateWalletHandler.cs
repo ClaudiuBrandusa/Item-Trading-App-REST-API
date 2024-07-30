@@ -1,4 +1,4 @@
-﻿using Application.Models.Wallet;
+﻿using Application.Results.Wallet;
 using Application.Services.Wallet;
 using MediatR;
 

@@ -1,8 +1,9 @@
-﻿using Domain.Repositories;
-using Domain.TradeItems;
-using Infrastructure.Repositories;
+﻿using Domain.Entities.Items;
+using Domain.Entities.Trades;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
+using Infrastructure.Repositories.TradeItems;
+using Domain.Repositories.TradeItemsHistory;
 
 namespace Infrastructure_UnitTests;
 
@@ -21,7 +22,7 @@ public class TradeItemHistoryRepositoryTests
         var cacheServiceMock = TestingUtils.GetCacheServiceMock();
         var mapper = TestingUtils.GetMapper();
 
-        _sut = new TradeItemHistoryRepository(_contextWrapper, cacheServiceMock.Object, mapper);
+        _sut = new TradeItemHistoryRepository(_contextWrapper, mapper);
     }
 
     [Fact(DisplayName = "Add trade item history")]
@@ -32,17 +33,11 @@ public class TradeItemHistoryRepositoryTests
         int quantity = 5;
         int price = 5;
 
-        var tradeItemMock = new TradeItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            Name = DEFAULT_ITEM_NAME,
-            Quantity = quantity,
-            Price = price
-        };
+        var tradeItemMock = new TradeItem(DEFAULT_ITEM_ID, DEFAULT_ITEM_NAME, quantity, price);
 
         // Act
 
-        var result = await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, tradeItemMock);
+        var result = await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, DEFAULT_ITEM_NAME, tradeItemMock);
 
         // Assert
 
@@ -60,28 +55,22 @@ public class TradeItemHistoryRepositoryTests
 
         for (int i = 0; i < count; i++)
         {
-            var tradeItemMock = new TradeItem
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                Name = $"{DEFAULT_ITEM_NAME}_{i}",
-                Quantity = quantity,
-                Price = price
-            };
+            var tradeItemMock = new TradeItem(Item.GenerateId(), $"{DEFAULT_ITEM_NAME}_{i}", quantity, price);
             
-            var addTradeItemHistoryResult = await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, tradeItemMock);
+            var addTradeItemHistoryResult = await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, DEFAULT_ITEM_NAME, tradeItemMock);
         }
 
         // Act
 
-        var listTradeContentHistoryResult = await _sut.ListTradeContentHistoryAsync(DEFAULT_TRADE_ID);
+        var listTradeItemsHistoryResult = await _sut.ListTradeItemsHistoryAsync(DEFAULT_TRADE_ID);
 
         // Assert
 
-        Assert.NotNull(listTradeContentHistoryResult);
-        Assert.Equal(count, listTradeContentHistoryResult.Length);
+        Assert.NotNull(listTradeItemsHistoryResult);
+        Assert.Equal(count, listTradeItemsHistoryResult.Length);
     }
 
-    [Fact(DisplayName = "Add several trade items history then list them (cached)")]
+    /*[Fact(DisplayName = "Add several trade items history then list them (cached)")]
     public async Task ListTradeContentHistory_AddNewTradeItemHistoryThenListTheTradeItemHistory_ReturnsCachedTradeContentHistoryArray()
     {
         // Arrange
@@ -92,13 +81,7 @@ public class TradeItemHistoryRepositoryTests
 
         for (int i = 0; i < count; i++)
         {
-            var tradeItemMock = new TradeItem
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                Name = $"{DEFAULT_ITEM_NAME}_{i}",
-                Quantity = quantity,
-                Price = price
-            };
+            var tradeItemMock = new TradeItem(Item.GenerateId(), $"{DEFAULT_ITEM_NAME}_{i}", quantity, price);
 
             var addTradeItemHistoryResult = await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, tradeItemMock);
         }
@@ -111,29 +94,23 @@ public class TradeItemHistoryRepositoryTests
 
         Assert.NotNull(listTradeContentHistoryResult);
         Assert.Equal(count, listTradeContentHistoryResult.Length);
-    }
+    }*/
 
     [Fact(DisplayName = "Add trade item history then delete the trade item history")]
-    public async Task DeleteTradeContentHistoryForTrade_AddNewTradeItemHistoryThenDeleteTheAddedTradeItemHistory_ReturnsAmountOfDeletedEntities()
+    public async Task DeleteTradeItemsHistoryForTrade_AddNewTradeItemHistoryThenDeleteTheAddedTradeItemHistory_ReturnsAmountOfDeletedEntities()
     {
         // Arrange
 
         int quantity = 5;
         int price = 5;
 
-        var tradeItemMock = new TradeItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            Name = DEFAULT_ITEM_NAME,
-            Quantity = quantity,
-            Price = price
-        };
+        var tradeItemMock = new TradeItem(DEFAULT_ITEM_ID, DEFAULT_ITEM_NAME, quantity, price);
 
-        await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID , tradeItemMock);
+        await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, DEFAULT_ITEM_NAME, tradeItemMock);
 
         // Act
 
-        var result = await _sut.DeleteTradeContentHistoryForTradeAsync(DEFAULT_TRADE_ID);
+        var result = await _sut.DeleteTradeItemsHistoryForTradeAsync(DEFAULT_TRADE_ID);
 
         // Assert
 

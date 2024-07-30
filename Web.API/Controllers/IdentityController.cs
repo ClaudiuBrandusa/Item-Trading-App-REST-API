@@ -3,7 +3,7 @@ using Application.Behaviors.Identity.ListUsers;
 using Application.Behaviors.Identity.LoginUser;
 using Application.Behaviors.Identity.RefreshToken;
 using Application.Behaviors.Identity.RegisterUser;
-using Application.Models.Identity;
+using Application.Results.Identity;
 using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Base;

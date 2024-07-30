@@ -1,7 +1,7 @@
 ﻿using Application.Services.Identity;
-using Domain.Identity;
+using Domain.Entities.Identity;
 using Domain.Repositories;
-using Infrastructure.Repositories;
+using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -28,8 +28,7 @@ public class RefreshTokenRepositoryTests
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
-
+        
         var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(IdentityService.FormatSecretKey("0"))), SecurityAlgorithms.HmacSha256Signature);
 
         tokenDescriptor = new SecurityTokenDescriptor
@@ -44,7 +43,7 @@ public class RefreshTokenRepositoryTests
             SigningCredentials = signingCredentials
         };
 
-        _sut = new RefreshTokenRepository(_contextWrapper, cacheServiceMock.Object, userManagerMock);
+        _sut = new RefreshTokenRepository(_contextWrapper, userManagerMock);
     }
 
     [Fact(DisplayName = "Generate a refresh token")]

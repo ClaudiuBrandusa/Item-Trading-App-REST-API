@@ -1,4 +1,4 @@
-﻿using Application.Services.TradeItemHistory;
+﻿using Application.Services.TradeItemsHistory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;

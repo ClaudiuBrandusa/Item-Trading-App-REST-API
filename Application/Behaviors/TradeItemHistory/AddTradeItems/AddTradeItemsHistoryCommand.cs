@@ -1,11 +1,11 @@
-﻿using Application.Models.TradeItemHistory;
+﻿using Application.Results.TradeItemsHistory;
 using MediatR;
 
 namespace Application.Behaviors.TradeItemHistory.AddTradeItems;
 
-public record AddTradeItemsHistoryCommand : IRequest<TradeItemHistoryBaseResult>
+public record AddTradeItemsHistoryCommand : IRequest<TradeItemHistoryResult>
 {
-    public string TradeId { get; set; }
+    public string TradeId { get; set; } = string.Empty;
 
-    public Domain.TradeItems.TradeItem[] TradeItems { get; set; }
+    public Domain.Entities.Trades.TradeItem[] TradeItems { get; set; } = Array.Empty<Domain.Entities.Trades.TradeItem>();
 }

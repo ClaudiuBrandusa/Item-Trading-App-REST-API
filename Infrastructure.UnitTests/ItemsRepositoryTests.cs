@@ -1,7 +1,7 @@
-using Domain.Items;
-using Domain.Repositories;
+using Domain.Entities.Items;
+using Domain.Repositories.Items;
 using Infrastructure.Data;
-using Infrastructure.Repositories;
+using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 
@@ -22,7 +22,7 @@ public class ItemsRepositoryTests
 
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
 
-        _sut = new ItemRepository(_contextWrapper, cacheServiceMock.Object);
+        _sut = new ItemRepository(_contextWrapper);
     }
 
     [Fact(DisplayName = "Create a new item and return it")]
@@ -30,12 +30,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemMock = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemMock = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
@@ -47,9 +42,7 @@ public class ItemsRepositoryTests
 
         Assert.True(result, "The item should be created");
         Assert.NotNull(createdItem);
-        Assert.Equal(itemMock.ItemId, createdItem.ItemId);
-        Assert.Equal(itemMock.Name, createdItem.Name);
-        Assert.Equal(itemMock.Description, createdItem.Description);
+        Assert.Equal(itemMock, createdItem);
     }
 
     [Fact(DisplayName = "Create a new item and return it (cached)")]
@@ -57,26 +50,19 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemMock = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemMock = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
         var result = await _sut.AddEntityAsync(itemMock);
 
-        var createdItem = await _sut.GetItemEntityCachedAsync(itemMock.ItemId);
+        var createdItem = await _sut.GetItemEntityAsync(itemMock.ItemId);
 
         // Assert
 
         Assert.True(result, "The item should be created");
         Assert.NotNull(createdItem);
-        Assert.Equal(itemMock.ItemId, createdItem.ItemId);
-        Assert.Equal(itemMock.Name, createdItem.Name);
-        Assert.Equal(itemMock.Description, createdItem.Description);
+        Assert.Equal(itemMock, createdItem);
     }
 
     [Fact(DisplayName = "Create a new item with invalid data")]
@@ -84,11 +70,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item("", DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
@@ -104,18 +86,13 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemMock = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemMock = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         await _sut.AddEntityAsync(itemMock);
 
         string newName = itemMock.Name + "_NEW";
 
-        itemMock.Name = newName;
+        itemMock.UpdateItemName(newName);
 
         // Act
 
@@ -135,16 +112,11 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         await _sut.AddEntityAsync(itemStub);
 
-        itemStub.Name = string.Empty;
+        itemStub.UpdateItemName(string.Empty);
 
         // Act
 
@@ -160,12 +132,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
@@ -181,12 +148,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
@@ -202,12 +164,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         var addResult = await _sut.AddEntityAsync(itemStub);
 
@@ -225,12 +182,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
@@ -246,12 +198,7 @@ public class ItemsRepositoryTests
     {
         // Arrange
 
-        var itemStub = new Item
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            Name = DEFAULT_ITEM_NAME,
-            Description = DEFAULT_ITEM_DESCRIPTION
-        };
+        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
 
         // Act
 
@@ -275,12 +222,7 @@ public class ItemsRepositoryTests
 
         for(int i = 0; i < length; i++)
         {
-            var itemStub = new Item
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                Name = $"{DEFAULT_ITEM_NAME}_{i}",
-                Description = DEFAULT_ITEM_DESCRIPTION
-            };
+            var itemStub = new Item($"{DEFAULT_ITEM_NAME}_{i}", DEFAULT_ITEM_DESCRIPTION);
 
             await _sut.AddEntityAsync(itemStub);
         }
@@ -304,19 +246,14 @@ public class ItemsRepositoryTests
 
         for (int i = 0; i < length; i++)
         {
-            var itemStub = new Item
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                Name = $"{DEFAULT_ITEM_NAME}_{i}",
-                Description = DEFAULT_ITEM_DESCRIPTION
-            };
+            var itemStub = new Item($"{DEFAULT_ITEM_NAME}_{i}", DEFAULT_ITEM_DESCRIPTION);
 
             await _sut.AddEntityAsync(itemStub);
         }
 
         // Act
 
-        var result = await _sut.ListItemsCachedAsync();
+        var result = await _sut.ListItemsAsync();
 
         // Assert
 

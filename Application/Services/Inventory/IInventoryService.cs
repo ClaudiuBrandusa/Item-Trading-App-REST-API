@@ -9,7 +9,8 @@ using Application.Behaviors.Inventory.LockItem;
 using Application.Behaviors.Inventory.RemoveItemFromUsers;
 using Application.Behaviors.Inventory.UnlockItem;
 using Application.Models.Inventory;
-using Application.Models.Items;
+using Application.Results.Inventory;
+using Application.Results.Items;
 
 namespace Application.Services.Inventory;
 

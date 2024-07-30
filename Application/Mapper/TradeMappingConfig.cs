@@ -1,6 +1,6 @@
 ﻿using Application.Behaviors.Trade.GetTrade;
 using Application.Behaviors.Trade.ListTrades;
-using Application.Models.Trade;
+using Application.Models.Trades;
 using Mapster;
 
 namespace Application.Mapper;

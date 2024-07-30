@@ -1,5 +1,5 @@
 ﻿using Application.Constants;
-using Application.Models.Trade;
+using Application.Models.Trades;
 using Application.Services.Notification;
 using MediatR;
 

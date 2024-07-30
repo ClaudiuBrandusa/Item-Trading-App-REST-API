@@ -1,6 +1,6 @@
 ﻿using MediatR;
-using Application.Models.Items;
 using Application.Services.Item;
+using Application.Results.Items;
 
 namespace Application.Behaviors.Item.GetItem;
 

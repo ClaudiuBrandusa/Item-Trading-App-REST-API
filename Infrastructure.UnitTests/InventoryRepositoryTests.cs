@@ -1,6 +1,6 @@
-﻿using Domain.Inventory;
-using Domain.Repositories;
-using Infrastructure.Repositories;
+﻿using Domain.Aggregates.Inventory;
+using Domain.Repositories.Inventory;
+using Infrastructure.Repositories.Inventory;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 
@@ -17,10 +17,9 @@ public class InventoryRepositoryTests
     public InventoryRepositoryTests()
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
         var mapper = TestingUtils.GetMapper();
 
-        _sut = new InventoryRepository(_contextWrapper, cacheServiceMock.Object, mapper);
+        _sut = new InventoryRepository(_contextWrapper, mapper);
     }
 
     [Fact(DisplayName = "Create inventory item then get item by id")]
@@ -28,18 +27,13 @@ public class InventoryRepositoryTests
     {
         // Arrange
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            UserId = DEFAULT_USER_ID,
-            Quantity = 5
-        };
+        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, 5);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 
         // Act
 
-        var itemResult = await _sut.GetInventoryItemEntityAsync(inventoryItemMock.UserId, inventoryItemMock.ItemId);
+        var itemResult = await _sut.GetOwnedItemEntityAsync(inventoryItemMock.UserId, inventoryItemMock.ItemId);
 
         // Assert
 
@@ -49,17 +43,12 @@ public class InventoryRepositoryTests
         Assert.Equal(inventoryItemMock.Quantity, itemResult.Quantity);
     }
 
-    [Fact(DisplayName = "Create inventory item then get item by id (cached)")]
+    /*[Fact(DisplayName = "Create inventory item then get item by id (cached)")]
     public async Task GetInventoryItem_CreateInventoryItemThenGetItemById_ReturnsCachedCreatedInventoryItem()
     {
         // Arrange
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            UserId = DEFAULT_USER_ID,
-            Quantity = 5
-        };
+        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, 5);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 
@@ -72,7 +61,7 @@ public class InventoryRepositoryTests
         Assert.NotNull(itemResult);
         Assert.Equal(inventoryItemMock.ItemId, itemResult.Id);
         Assert.Equal(inventoryItemMock.Quantity, itemResult.Quantity);
-    }
+    }*/
 
     [Fact(DisplayName = "Create several inventory items then list them")]
     public async Task ListOwnedItems_CreateSeveralOwnedItemsThenListThem_ReturnsAnArrayOfTheNewlyCreatedOwnedItems()
@@ -83,12 +72,7 @@ public class InventoryRepositoryTests
 
         for (int i  = 0; i < count; i++)
         {
-            var inventoryItemMock = new OwnedItem
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                UserId = DEFAULT_USER_ID,
-                Quantity = 5 + i
-            };
+            var inventoryItemMock = new OwnedItem(Guid.NewGuid().ToString(), DEFAULT_USER_ID, 5 + i);
 
             var addItem = await _sut.AddEntityAsync(inventoryItemMock);
         }
@@ -103,7 +87,7 @@ public class InventoryRepositoryTests
         Assert.Equal(count, listItemsResult.Length);
     }
 
-    [Fact(DisplayName = "Create several inventory items then list them (cached)")]
+    /*[Fact(DisplayName = "Create several inventory items then list them (cached)")]
     public async Task ListOwnedItems_CreateSeveralOwnedItemsThenListTheCachedItems_ReturnsAnArrayOfTheNewlyCreatedOwnedItems()
     {
         // Arrange
@@ -112,12 +96,7 @@ public class InventoryRepositoryTests
 
         for (int i = 0; i < count; i++)
         {
-            var inventoryItemMock = new OwnedItem
-            {
-                ItemId = Guid.NewGuid().ToString(),
-                UserId = DEFAULT_USER_ID,
-                Quantity = 5 + i
-            };
+            var inventoryItemMock = new OwnedItem(Guid.NewGuid().ToString(), DEFAULT_USER_ID, 5 + i);
 
             var addItem = await _sut.AddEntityAsync(inventoryItemMock);
         }
@@ -130,7 +109,7 @@ public class InventoryRepositoryTests
 
         Assert.NotNull(listItemsResult);
         Assert.Equal(count, listItemsResult.Length);
-    }
+    }*/
 
     [Fact(DisplayName = "Create an item then lock a given amount")]
     public async Task LockItem_CreateItemThenLockAGivenAmount_ReturnsTrue()
@@ -140,12 +119,7 @@ public class InventoryRepositoryTests
         int addedAmount = 5;
         int lockedAmount = 3;
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            UserId = DEFAULT_USER_ID,
-            Quantity = addedAmount
-        };
+        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, addedAmount);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 
@@ -166,12 +140,7 @@ public class InventoryRepositoryTests
         int addedAmount = 5;
         int lockedAmount = 8;
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            UserId = DEFAULT_USER_ID,
-            Quantity = addedAmount
-        };
+        var inventoryItemMock = new OwnedItem(Guid.NewGuid().ToString(), DEFAULT_USER_ID, addedAmount);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 
@@ -192,12 +161,7 @@ public class InventoryRepositoryTests
         int addedAmount = 5;
         int lockedAmount = 3;
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = Guid.NewGuid().ToString(),
-            UserId = DEFAULT_USER_ID,
-            Quantity = addedAmount
-        };
+        var inventoryItemMock = new OwnedItem(Guid.NewGuid().ToString(), DEFAULT_USER_ID, addedAmount);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 
@@ -205,7 +169,7 @@ public class InventoryRepositoryTests
 
         // Act
 
-        var lockedAmountResult = await _sut.GetAmountOfLockedItemCachedAsync(DEFAULT_USER_ID, inventoryItemMock.ItemId);
+        var lockedAmountResult = await _sut.GetAmountOfLockedItemAsync(DEFAULT_USER_ID, inventoryItemMock.ItemId);
 
         // Assert
 
@@ -222,12 +186,7 @@ public class InventoryRepositoryTests
 
         for (int i = 0; i < count; i++)
         {
-            var item = new OwnedItem
-            {
-                ItemId = itemId,
-                UserId = Guid.NewGuid().ToString(),
-                Quantity = i + 1
-            };
+            var item = new OwnedItem(itemId, Guid.NewGuid().ToString(), i + 1);
 
             await _sut.AddEntityAsync(item);
         }
@@ -250,12 +209,7 @@ public class InventoryRepositoryTests
         int addedQuantity = 5;
         int lockedQuantity = 3;
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            UserId = DEFAULT_USER_ID,
-            Quantity = addedQuantity
-        };
+        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, addedQuantity);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 
@@ -278,12 +232,7 @@ public class InventoryRepositoryTests
         int addedQuantity = 5;
         int lockedQuantity = 3;
 
-        var inventoryItemMock = new OwnedItem
-        {
-            ItemId = DEFAULT_ITEM_ID,
-            UserId = DEFAULT_USER_ID,
-            Quantity = addedQuantity
-        };
+        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, addedQuantity);
 
         var addItem = await _sut.AddEntityAsync(inventoryItemMock);
 

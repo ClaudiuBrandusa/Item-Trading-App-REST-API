@@ -1,6 +1,6 @@
 ﻿using Application.Behaviors.TradeItem.GetTradeItemIds;
 using Application.Extensions;
-using Application.Services.TradeItem;
+using Application.Services.TradeItems;
 using MapsterMapper;
 using MediatR;
 

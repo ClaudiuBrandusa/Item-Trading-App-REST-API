@@ -1,5 +1,4 @@
-﻿using Application.Services.Cache;
-using Domain.Repositories;
+﻿using Domain.Repositories;
 using Infrastructure.Data;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
@@ -10,14 +9,12 @@ namespace Infrastructure.Repositories;
 public abstract class RepositoryBase : IRepository, IDisposable
 {
     protected IDatabaseContextWrapper DatabaseContextWrapper { get; init; }
-    protected readonly ICacheService cacheService;
     protected readonly DatabaseContext context;
 
-    public RepositoryBase(IDatabaseContextWrapper databaseContextWrapper, ICacheService cacheService)
+    public RepositoryBase(IDatabaseContextWrapper databaseContextWrapper)
     {
         DatabaseContextWrapper = databaseContextWrapper;
         context = databaseContextWrapper.ProvideDatabaseContext();
-        this.cacheService = cacheService;
     }
 
     public async Task<bool> AddEntityAsync<T>(T entity) where T : class

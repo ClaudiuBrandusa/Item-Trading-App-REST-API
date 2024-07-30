@@ -1,17 +1,13 @@
 ﻿using MediatR;
 using MapsterMapper;
 using Application.Behaviors.Inventory.AddItem;
-using Application.Models.Inventory;
 using Application.Behaviors.Inventory.DropItem;
 using Application.Behaviors.Inventory.HasItem;
 using Application.Behaviors.Inventory.UnlockItem;
 using Application.Behaviors.Trade.CreateTrade;
-using Application.Models.Trade;
 using Application.Behaviors.Wallet.GetCash;
 using Application.Behaviors.Wallet.TakeCash;
 using Application.Behaviors.Wallet.GiveCash;
-using Application.Constants;
-using Application.Models.Base;
 using Application.Behaviors.Trade.RespondTrade;
 using Application.Behaviors.Trade.ListTrades;
 using Application.Extensions;
@@ -26,25 +22,28 @@ using Application.Behaviors.TradeItem.HasTradeItem;
 using Application.Behaviors.TradeItem.AddTradeItem;
 using Application.Behaviors.Inventory.LockItem;
 using Application.Services.UnitOfWork;
-using Application.Services.Cache;
-using Domain.Repositories;
-using Domain.Trade;
+using Domain.ValueObjects.Trades;
+using Domain.Repositories.Trades;
+using Application.Models;
+using Application.Results.Inventory;
+using Application.Results.Trades;
+using Application.Models.Trades;
+using Domain.Entities.Trades;
+using Application.Models.TradeItems;
 
 namespace Application.Services.Trade;
 
 public class TradeService : ITradeService, IDisposable
 {
-    private readonly ITradeRepository _repository;
-    private readonly ICacheService _cacheService;
+    private readonly ICachedTradeRepository _repository;
     private readonly ISender _sender;
     private readonly IPublisher _publisher;
     private readonly IMapper _mapper;
     private readonly IUnitOfWorkService _unitOfWork;
 
-    public TradeService(ITradeRepository tradeRepository, ICacheService cacheService, ISender sender, IPublisher publisher, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeService(ICachedTradeRepository tradeRepository, ISender sender, IPublisher publisher, IMapper mapper, IUnitOfWorkService unitOfWork)
     {
         _repository = tradeRepository;
-        _cacheService = cacheService;
         _sender = sender;
         _publisher = publisher;
         _mapper = mapper;
@@ -59,8 +58,8 @@ public class TradeService : ITradeService, IDisposable
                 Errors = new[] { "Invalid input data" }
             };
 
-        var items = new List<Domain.TradeItems.TradeItem>();
-        Domain.Trades.Trade offer;
+        var items = new List<TradeItemDTO>();
+        Domain.Aggregates.Trades.Trade offer;
 
         _unitOfWork.BeginTransaction();
 
@@ -74,17 +73,13 @@ public class TradeService : ITradeService, IDisposable
                     Errors = new[] { "Invalid input data" }
                 };
 
-            offer = new Domain.Trades.Trade
-            {
-                TradeId = Guid.NewGuid().ToString(),
-                SentDate = DateTime.Now
-            };
+            offer = new Domain.Aggregates.Trades.Trade(DateTime.Now);
 
             await _repository.AddEntityAsync(offer);
 
             foreach (var item in items)
             {
-                var request = _mapper.AdaptToType<Domain.TradeItems.TradeItem, AddTradeItemCommand>(item, ((string, object))(nameof(AddTradeItemCommand.TradeId), offer.TradeId));
+                var request = _mapper.AdaptToType<TradeItemDTO, AddTradeItemCommand>(item, (nameof(AddTradeItemCommand.TradeId), offer.TradeId));
                 if (!await _sender.Send(request))
                 {
                     _unitOfWork.RollbackTransaction();
@@ -254,7 +249,6 @@ public class TradeService : ITradeService, IDisposable
         var receiverNameTask = GetUsernameAsync(receiverId);
 
         await Task.WhenAll(
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade),
             _publisher.Publish(new TradeRespondedEvent
             {
                 TradeId = model.TradeId,
@@ -352,7 +346,6 @@ public class TradeService : ITradeService, IDisposable
         var receiverNameTask = GetUsernameAsync(senderId);
 
         await Task.WhenAll(
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(model.TradeId), trade),
             _publisher.Publish(new TradeRespondedEvent
             {
                 TradeId = model.TradeId,
@@ -423,7 +416,7 @@ public class TradeService : ITradeService, IDisposable
             receiverId = await GetReceiverIdAsync(model.TradeId);
             trade.ReceiverUserId = receiverId;
 
-            if (!await _repository.RemoveEntityAsync(new Domain.Trades.Trade { TradeId = model.TradeId }))
+            if (!await _repository.RemoveEntityAsync(new Domain.Aggregates.Trades.Trade(model.TradeId, DateTime.Now)))
             {
                 _unitOfWork.RollbackTransaction();
                 return new TradeOfferResult
@@ -449,7 +442,7 @@ public class TradeService : ITradeService, IDisposable
         var receiverNameTask = GetUsernameAsync(receiverId);
 
         await Task.WhenAll(
-             ClearCacheUsedForTradeAsync(model.TradeId, senderId, receiverId, trade.TradeItemsId),
+             ClearCacheUsedForTradeAsync(model.TradeId, senderId, receiverId, trade.TradeItems.Select(x => x.ItemId).ToArray()),
              _publisher.Publish(new TradeCancelledEvent
              {
                  TradeId = model.TradeId,
@@ -520,13 +513,24 @@ public class TradeService : ITradeService, IDisposable
 
         var senderNameTask = GetUsernameAsync(trade.SenderUserId);
         var receiverNameTask = GetUsernameAsync(trade.ReceiverUserId);
-        var tradeItemsTask = _repository.GetTradeItemsAsync(requestTradeOffer.TradeId, false);
+        var tradeItemsTask = _repository.GetTradeItemsAsync(trade.TradeId, trade.Response is not null);
 
         await Task.WhenAll(
             senderNameTask,
             receiverNameTask,
             tradeItemsTask
         );
+
+        var tradeItems = await tradeItemsTask;
+        var tradeItemsData = new TradeItemDTO[tradeItems.Length];
+
+        for (int i = 0; i < tradeItems.Length; i++)
+        {
+            string itemName = await GetItemNameAsync(tradeItems[i].ItemId);
+
+            tradeItemsData[i] = _mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeItems[i], (nameof(TradeItemDTO.ItemName), itemName));
+        }
+
 
         return new TradeOfferResult
         {
@@ -538,7 +542,7 @@ public class TradeService : ITradeService, IDisposable
             CreationDate = trade.SentDate,
             Response = trade.Response,
             ResponseDate = trade.ResponseDate,
-            Items = await tradeItemsTask,
+            Items = tradeItemsData,
             Success = true
         };
     }
@@ -549,7 +553,7 @@ public class TradeService : ITradeService, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private async Task<BaseResult> RespondTradeAsync(RespondTradeCommand model)
+    private async Task<Result> RespondTradeAsync(RespondTradeCommand model)
     {
         // get trade items
         var tradeItems = await _sender.Send(new GetTradeItemsQuery { TradeId = model.TradeId });
@@ -558,7 +562,7 @@ public class TradeService : ITradeService, IDisposable
         var moveTradeItemsResult = await _sender.Send(new AddTradeItemsHistoryCommand { TradeId = model.TradeId, TradeItems = tradeItems });
 
         if (!moveTradeItemsResult.Success)
-            return new BaseResult
+            return new Result
             {
                 Errors = moveTradeItemsResult.Errors
             };
@@ -567,29 +571,19 @@ public class TradeService : ITradeService, IDisposable
         var clarTradeContentResult = await _sender.Send(new RemoveTradeItemsCommand { TradeId = model.TradeId, KeepCache = true });
 
         if (!clarTradeContentResult)
-            return new BaseResult
+            return new Result
             {
                 Errors = new string[] { "Something went wrong" }
             };
 
-        return new BaseResult
+        return new Result
         {
             Success = true
         };
     }
 
-    private Task ClearCacheUsedForTradeAsync(string tradeId, string senderId, string receiverId, string[] tradeItemIds)
-    {
-        var tasks = new Task[3 + tradeItemIds.Length];
-
-        tasks[0] = _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetTradeKey(tradeId));
-        tasks[1] = _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetSentTradeKey(senderId, tradeId));
-        tasks[2] = _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetReceivedTradeKey(receiverId, tradeId));
-        for (int i = 0; i < tradeItemIds.Length; i++)
-            tasks[3 + i] = _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(tradeItemIds[i]), tradeId);
-
-        return Task.WhenAll(tasks);
-    }
+    private Task ClearCacheUsedForTradeAsync(string tradeId, string senderId, string receiverId, string[] tradeItemIds) =>
+        _repository.ClearTradeCache(tradeId, senderId, receiverId, tradeItemIds);
 
     private async Task<string[]> GetSentTradeOffersIdListAsync(string userId, string[] tradeItems, bool responded = false)
     {
@@ -658,7 +652,7 @@ public class TradeService : ITradeService, IDisposable
         }
     }
 
-    private async Task ProcessTradeItemsFromInputModelAsync(CreateTradeOfferCommand model, List<Domain.TradeItems.TradeItem> outputList)
+    private async Task ProcessTradeItemsFromInputModelAsync(CreateTradeOfferCommand model, List<TradeItemDTO> outputList)
     {
         var tasks = new List<Task>();
 
@@ -668,24 +662,26 @@ public class TradeService : ITradeService, IDisposable
                 continue;
 
             // check if the user has the required quantity of this item
-            if (!await _sender.Send(_mapper.AdaptToType<Domain.TradeItems.TradeItem, HasItemQuantityQuery>(item, ((string, object))(nameof(HasItemQuantityQuery.UserId), model.SenderUserId), (nameof(HasItemQuantityQuery.Notify), true))))
+            if (!await _sender.Send(_mapper.AdaptToType<TradeItem, HasItemQuantityQuery>(item, ((string, object))(nameof(HasItemQuantityQuery.UserId), model.SenderUserId), (nameof(HasItemQuantityQuery.Notify), true))))
                 continue;
 
             // lock the required quantity of this item
-            if (!(await _sender.Send(_mapper.AdaptToType<Domain.TradeItems.TradeItem, LockItemCommand>(item, ((string, object))(nameof(LockItemCommand.UserId), model.SenderUserId), (nameof(LockItemCommand.Notify), true)))).Success)
+            if (!(await _sender.Send(_mapper.AdaptToType<TradeItem, LockItemCommand>(item, ((string, object))(nameof(LockItemCommand.UserId), model.SenderUserId), (nameof(LockItemCommand.Notify), true)))).Success)
                 continue;
+
+            var tradeItemData = _mapper.AdaptToType<TradeItem, TradeItemDTO>(item, (nameof(TradeItemDTO.ItemName), string.Empty));
 
             var task = new Task(async () =>
             {
                 var itemName = await GetItemNameAsync(item.ItemId);
-                item.Name = itemName;
+                tradeItemData.ItemName = itemName;
             });
 
             task.Start();
 
             tasks.Add(task);
 
-            outputList.Add(item);
+            outputList.Add(tradeItemData);
         }
 
         await Task.WhenAll(tasks);
@@ -697,29 +693,12 @@ public class TradeService : ITradeService, IDisposable
         trade.ResponseDate = DateTime.Now;
 
         return _repository.UpdateEntityAsync(
-            new Domain.Trades.Trade
-            {
-                TradeId = trade.TradeId,
-                Response = trade.Response,
-                ResponseDate = trade.ResponseDate,
-                SentDate = trade.SentDate
-            });
+            new Domain.Aggregates.Trades.Trade(trade.TradeId, trade.SentDate, trade.ResponseDate, trade.Response));
     }
 
-    private Task SetCacheForCreatedTradeAsync(Domain.Trades.Trade tradeEntity, CreateTradeOfferCommand model)
+    private Task SetCacheForCreatedTradeAsync(Domain.Aggregates.Trades.Trade tradeEntity, CreateTradeOfferCommand model)
     {
-        return Task.WhenAll(
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(tradeEntity.TradeId), new CachedTrade
-            {
-                TradeId = tradeEntity.TradeId,
-                SenderUserId = model.SenderUserId,
-                ReceiverUserId = model.TargetUserId,
-                TradeItemsId = model.Items.Select(x => x.ItemId).ToArray(),
-                SentDate = tradeEntity.SentDate
-            }),
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetSentTradeKey(model.SenderUserId, tradeEntity.TradeId), ""),
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetReceivedTradeKey(model.TargetUserId, tradeEntity.TradeId), "")
-        );
+        return _repository.SetCacheForTrade(tradeEntity, model.SenderUserId, model.TargetUserId, model.Items.ToArray());
     }
 
     private async Task<bool> IsRespondedAsync(string tradeId)
@@ -766,7 +745,7 @@ public class TradeService : ITradeService, IDisposable
             if (item is null)
                 continue;
 
-            var request = _mapper.AdaptToType<Domain.TradeItems.TradeItem, UnlockItemCommand>(item, ((string, object))(nameof(UnlockItemCommand.UserId), userId), (nameof(UnlockItemCommand.Notify), true));
+            var request = _mapper.AdaptToType<TradeItem, UnlockItemCommand>(item, ((string, object))(nameof(UnlockItemCommand.UserId), userId), (nameof(UnlockItemCommand.Notify), true));
 
             tasks[i] = _sender.Send(request);
         }
@@ -789,7 +768,7 @@ public class TradeService : ITradeService, IDisposable
         {
             var item = tradeItems[i];
 
-            tasks[i] = _sender.Send(_mapper.AdaptToType<Domain.TradeItems.TradeItem, AddInventoryItemCommand>(item, ((string, object))(nameof(AddInventoryItemCommand.UserId), userId), (nameof(AddInventoryItemCommand.Notify), true)));
+            tasks[i] = _sender.Send(_mapper.AdaptToType<TradeItem, AddInventoryItemCommand>(item, ((string, object))(nameof(AddInventoryItemCommand.UserId), userId), (nameof(AddInventoryItemCommand.Notify), true)));
         }
 
         await Task.WhenAll(tasks);
@@ -810,7 +789,7 @@ public class TradeService : ITradeService, IDisposable
         {
             var item = tradeItems[i];
 
-            tasks[i] = _sender.Send(_mapper.AdaptToType<Domain.TradeItems.TradeItem, DropInventoryItemCommand>(item, ((string, object))(nameof(DropInventoryItemCommand.UserId), userId), (nameof(DropInventoryItemCommand.Notify), true)));
+            tasks[i] = _sender.Send(_mapper.AdaptToType<TradeItem, DropInventoryItemCommand>(item, ((string, object))(nameof(DropInventoryItemCommand.UserId), userId), (nameof(DropInventoryItemCommand.Notify), true)));
         }
 
         await Task.WhenAll(tasks);

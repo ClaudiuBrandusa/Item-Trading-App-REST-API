@@ -5,18 +5,17 @@ The REST API of an application that simulates item trading between in-app items 
 ## Project architecture
 The project implements the Clean Architecture with Domain Driven Design.
 
-The layers are defined as c# projects:
 ### Domain
 [Domain layer library](Domain/Domain.csproj)  
-Contains entities and repository interfaces.
+Contains entities, aggregate roots, value objects and repository interfaces.
 
 ### Application
 [Application layer library](Application/Application.csproj)
-Implements the application's business logic.
+Implements the application's business logic. Contains the implementation of some services. Here some DTOs are defined.
 
 ### Infrastructure
 [Infrastructure layer library](Infrastructure/Infrastructure.csproj)  
-Implements the interaction with external data storage (database and caching.
+Implements the interaction with external data storage (database and caching). The repositories and the database context are implemented here.
 
 ### Presentation
 [Presentation layer library](Web.API/Web.API.csproj)  
@@ -78,7 +77,7 @@ Action example:
 Action name (action description)
 `endpoint`
 ### Identity  
-[IdentityController.cs](Item-Trading-App-REST-API/Controllers/IdentityController.cs)
+[IdentityController.cs](Web.API/Controllers/IdentityController.cs)
 - Register (registers the user) `identity/register`
 - Login (connects the user) `identity/login`
 - Refresh (refreshes the user's token) `identity/refresh`
@@ -86,14 +85,14 @@ Action name (action description)
 - ListUsers (returns a list with all of the registered users' id) `identity/list_users`
 
 ### Inventory  
-[InventoryController.cs](Item-Trading-App-REST-API/Controllers/InventoryController.cs)
+[InventoryController.cs](Web.API/Controllers/InventoryController.cs)
 - Add (adds an item to the user's inventory) `inventory/add`
 - Drop (removes a given amount of the item from the user's inventory) `inventory/drop`
 - Get (returns details about an item from the user's inventory) `inventory/get`
 - List (returns a list of all items id from the user's inventory) `inventory/list`
 
 ### Item  
-[ItemController.cs](Item-Trading-App-REST-API/Controllers/ItemController.cs)
+[ItemController.cs](Web.API/Controllers/ItemController.cs)
 - Get (returns details about an item) `item/get`
 - List (returns a list of all items id) `item/list`
 - Create (creates a new item) `item/create`
@@ -101,7 +100,7 @@ Action name (action description)
 - Delete (deletes an item) `item/delete`
 
 ### Trade  
-[TradeController.cs](Item-Trading-App-REST-API/Controllers/TradeController.cs)
+[TradeController.cs](Web.API/Controllers/TradeController.cs)
 - GetSent (returns a sent trade offer) `trade/get_sent`
 - GetSentResponded (returns a sent trade offer which was responded) `trade/get_sent_responded`
 - GetReceived (returns a received trade offer) `trade/get_received`
@@ -116,11 +115,13 @@ Action name (action description)
 - Cancel (cancels a sent trade offer) `trade/cancel`
 
 ### Wallet  
-[WalletController.cs](Item-Trading-App-REST-API/Controllers/WalletController.cs)
+[WalletController.cs](Web.API/Controllers/WalletController.cs)
 - Get (returns data about the user's wallet) `wallet/get`
 - Update (updates the user's wallet data) `wallet/update`
 
 # Setup
+You could just run the docker compose and have the app already configured or you could follow the next steps.
+
 ### Database
 In order to setup the database you have to update it to the last migration.
 You could do this by using PMC (Package Manager Console).  

@@ -1,6 +1,6 @@
 ﻿using Application.Behaviors.TradeItem.AddTradeItem;
-using Domain.TradeItems;
-using Domain.Trades;
+using Application.Models.TradeItems;
+using Domain.Entities.Trades;
 using Mapster;
 
 namespace Application.Mapper;
@@ -9,17 +9,37 @@ public class TradeItemMappingConfig : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.ForType<TradeItem, AddTradeItemCommand>()
-            .Map(dest => dest.TradeId, src => MapContext.Current!.Parameters[nameof(AddTradeItemCommand.TradeId)].ToString());
+        config.ForType<TradeItem, TradeItemDTO>()
+            .Map(dest => dest.ItemName, src => MapContext.Current!.Parameters[nameof(TradeItemDTO.ItemName)].ToString());
 
-        config.ForType<TradeContent, TradeItem>()
-            .Map(dest => dest.Name, src => MapContext.Current!.Parameters[nameof(TradeItem.Name)].ToString());
+        config.ForType<AddTradeItemCommand, TradeItem>()
+            .MapWith((AddTradeItemCommand command) => new TradeItem(command.TradeId, command.ItemId, command.Quantity, command.Price));
 
-        config.ForType<TradeContentHistory, TradeItem>()
-            .Map(dest => dest.Name, src => src.ItemName);
+        config.ForType<TradeItemHistory, TradeItem>()
+            .MapWith((TradeItemHistory entity) => new TradeItem
+            (
+                entity.TradeId,
+                entity.ItemId,
+                entity.Quantity,
+                entity.Price
+            ));
 
-        config.ForType<TradeItem, TradeContentHistory>()
-            .Map(dest => dest.ItemName, src => src.Name)
-            .Map(dest => dest.TradeId, src => MapContext.Current!.Parameters[nameof(TradeContentHistory.TradeId)].ToString());
+        config.ForType<TradeItem, TradeItemHistory>()
+            .MapWith((TradeItem tradeItem) => new TradeItemHistory(
+                MapContext.Current!.Parameters[nameof(TradeItemHistory.TradeId)].ToString() ?? string.Empty,
+                tradeItem.ItemId,
+                MapContext.Current!.Parameters[nameof(TradeItemHistory.ItemName)].ToString() ?? string.Empty,
+                tradeItem.Quantity,
+                tradeItem.Price
+            ));
+
+        config.ForType<CachedTradeItem, TradeItem>()
+            .MapWith((CachedTradeItem cachedEntity) => new TradeItem
+            (
+                cachedEntity.TradeId,
+                cachedEntity.ItemId,
+                cachedEntity.Quantity,
+                cachedEntity.Price
+            ));
     }
 }

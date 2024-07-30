@@ -1,4 +1,4 @@
-﻿using Application.Models.Items;
+﻿using Application.Results.Items;
 using Application.Services.Item;
 using MediatR;
 

@@ -1,4 +1,4 @@
-﻿using Application.Models.Inventory;
+﻿using Application.Results.Inventory;
 using MediatR;
 
 namespace Application.Behaviors.Inventory.GetItem;

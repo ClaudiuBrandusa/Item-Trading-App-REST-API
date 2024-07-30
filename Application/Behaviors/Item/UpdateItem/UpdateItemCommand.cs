@@ -4,5 +4,5 @@ namespace Application.Behaviors.Item.UpdateItem;
 
 public record UpdateItemCommand : CreateItemCommand
 {
-    public string ItemId { get; set; }
+    public string ItemId { get; set; } = string.Empty;
 }

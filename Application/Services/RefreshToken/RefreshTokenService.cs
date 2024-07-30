@@ -1,4 +1,4 @@
-﻿using Application.Models.RefreshToken;
+﻿using Application.Results.RefreshToken;
 using Application.Services.UnitOfWork;
 using Domain.Repositories;
 using Item_Trading_App_REST_API.Options;
@@ -46,8 +46,11 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
     {
         var refreshToken = await _repository.GetRefreshTokenAsync(refreshTokenId);
 
-        if (refreshToken is null || refreshToken == default)
-            return null;
+        if (refreshToken is null)
+            return new RefreshTokenResult
+            {
+                Errors = new string[] { "Something went wrong" }
+            };
 
         return new RefreshTokenResult
         {

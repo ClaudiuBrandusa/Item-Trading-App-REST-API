@@ -4,5 +4,5 @@ namespace Application.Behaviors.Identity.GetUsername;
 
 public record GetUsernameQuery : IRequest<string>
 {
-    public string UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
 }

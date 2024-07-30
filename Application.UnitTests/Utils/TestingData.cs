@@ -1,5 +1,5 @@
 ﻿using Application.Behaviors.TradeItem.AddTradeItem;
-using Domain.TradeItems;
+using Domain.Entities.Trades;
 
 namespace Application_UnitTests.Utils;
 
@@ -15,20 +15,11 @@ public static class TestingData
 
         foreach(string tradeItemId in tradeItemIds)
         {
-            string itemName = $"item_name_{tradeItemId}";
-
-            itemPrices.Add(tradeItemId, new TradeItem
-            {
-                ItemId = tradeItemId,
-                Name = itemName,
-                Price = 1,
-                Quantity = 1
-            });
+            itemPrices.Add(tradeItemId, new TradeItem(DefaultTradeId, tradeItemId, 1, 1));
 
             tradeItemRequests.Add(tradeItemId, new AddTradeItemCommand
             {
                 ItemId = tradeItemId,
-                Name = itemName,
                 Price = 1,
                 Quantity = 1,
                 TradeId = DefaultTradeId
@@ -39,11 +30,6 @@ public static class TestingData
     public static TradeItem[] GetTradeItems(string[] tradeItemIds)
     {
         return itemPrices.Where(x => tradeItemIds.Contains(x.Key)).Select(x => x.Value).ToArray();
-    }
-
-    public static string GetTradeItemName(string tradeItemId)
-    {
-        return itemPrices.Where(x => x.Key == tradeItemId).FirstOrDefault().Value.Name;
     }
 
     public static AddTradeItemCommand[] GetTradeItemRequests(string[] tradeItemIds)

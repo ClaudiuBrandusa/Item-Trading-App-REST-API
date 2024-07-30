@@ -8,6 +8,7 @@ using Shared.Installers;
 using Application;
 using Infrastructure;
 using System.Reflection;
+using Item_Trading_App_REST_API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,5 +62,9 @@ app.UseWebSockets();
 app.MapControllers();
 
 app.MapHub<NotificationHub>("/hubs/notification");
+
+app.MigrateDatabase();
+
+await app.SeedDatabase();
 
 app.Run();

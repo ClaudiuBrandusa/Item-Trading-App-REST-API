@@ -1,4 +1,4 @@
-﻿using Application.Models.RefreshToken;
+﻿using Application.Results.RefreshToken;
 
 namespace Application.Services.RefreshToken;
 

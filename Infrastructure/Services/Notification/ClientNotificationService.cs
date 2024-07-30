@@ -17,16 +17,16 @@ public class ClientNotificationService : IClientNotificationService
 
     #region Create
 
-    public Task SendCreatedNotificationToUserAsync(string userId, string categoryType, string id, object customData = null) =>
+    public Task SendCreatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
 
-    public Task SendCreatedNotificationToAllUsersAsync(string categoryType, string id, object customData = null) =>
+    public Task SendCreatedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
 
-    public Task SendCreatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object customData = null) =>
+    public Task SendCreatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
 
-    public Task SendCreatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object customData = null) =>
+    public Task SendCreatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
 
     #endregion Create
@@ -49,32 +49,32 @@ public class ClientNotificationService : IClientNotificationService
 
     #region Update
 
-    public Task SendUpdatedNotificationToUserAsync(string userId, string categoryType, string id, object customData = null) =>
+    public Task SendUpdatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
 
-    public Task SendUpdatedNotificationToAllUsersAsync(string categoryType, string id, object customData = null) =>
+    public Task SendUpdatedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
 
-    public Task SendUpdatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object customData = null) =>
+    public Task SendUpdatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
 
-    public Task SendUpdatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object customData = null) =>
+    public Task SendUpdatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
 
     #endregion Update
 
     #region Delete
 
-    public Task SendDeletedNotificationToUserAsync(string userId, string categoryType, string id, object customData = null) =>
+    public Task SendDeletedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
 
-    public Task SendDeletedNotificationToAllUsersAsync(string categoryType, string id, object customData = null) =>
+    public Task SendDeletedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
 
-    public Task SendDeletedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object customData = null) =>
+    public Task SendDeletedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
 
-    public Task SendDeletedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object customData = null) =>
+    public Task SendDeletedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
 
     #endregion Delete

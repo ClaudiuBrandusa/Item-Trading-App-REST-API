@@ -3,10 +3,10 @@ using Application.Behaviors.Identity.ListUsers;
 using Application.Behaviors.Identity.LoginUser;
 using Application.Behaviors.Identity.RefreshToken;
 using Application.Behaviors.Identity.RegisterUser;
-using Application.Models.Identity;
-using Application.Models.RefreshToken;
+using Application.Results.Identity;
+using Application.Results.RefreshToken;
 using Application.Services.RefreshToken;
-using Domain.Identity;
+using Domain.Entities.Identity;
 using Domain.Repositories;
 using Item_Trading_App_REST_API.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -47,11 +47,9 @@ public class IdentityService : IIdentityService, IDisposable
                 Errors = new[] { "Invalid input data" }
             };
 
-        var newUserId = Guid.NewGuid();
-
         var newUser = new User
         {
-            Id = newUserId.ToString(),
+            Id = User.GenerateId(),
             UserName = model.Username,
             Email = model.Email
         };

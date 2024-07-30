@@ -1,7 +1,7 @@
-﻿using Domain.Identity;
+﻿using Domain.Entities.Identity;
 using Domain.Repositories;
 using Infrastructure.Data;
-using Infrastructure.Repositories;
+using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -19,9 +19,8 @@ public class IdentityRepositoryTests
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
-
-        _sut = new IdentityRepository(_contextWrapper, cacheServiceMock.Object, userManagerMock);
+        
+        _sut = new IdentityRepository(_contextWrapper, userManagerMock);
     }
 
     [Fact(DisplayName = "Create user and check password")]

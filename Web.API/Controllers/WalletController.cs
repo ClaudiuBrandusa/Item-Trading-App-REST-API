@@ -1,6 +1,6 @@
 ﻿using Application.Behaviors.Wallet.GetWallet;
 using Application.Behaviors.Wallet.UpdateWallet;
-using Application.Models.Wallet;
+using Application.Results.Wallet;
 using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Wallet;
 using Item_Trading_App_Contracts.Responses.Base;
