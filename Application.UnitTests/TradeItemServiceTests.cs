@@ -6,7 +6,7 @@ using Application.Behaviors.TradeItem.HasTradeItem;
 using Application.Behaviors.TradeItem.GetTradeItems;
 using Domain.Entities.Trades;
 using Application.Services.TradeItems;
-using Domain.Repositories.TradeItems;
+using Application.Repositories;
 
 namespace Application_UnitTests;
 public class TradeItemServiceTests

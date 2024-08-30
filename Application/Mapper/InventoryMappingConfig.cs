@@ -7,6 +7,7 @@ using Application.Behaviors.Inventory.ListItems;
 using Application.Behaviors.Inventory.LockItem;
 using Application.Behaviors.Inventory.UnlockItem;
 using Application.Models.Inventory;
+using Application.Models.TradeItems;
 using Domain.Aggregates.Inventory;
 using Domain.Entities.Trades;
 using Mapster;
@@ -57,12 +58,19 @@ public class InventoryMappingConfig : IRegister
                 UserId = ownedItem.UserId,
                 Quantity = ownedItem.Quantity
             });
-        
-        config.ForType<TradeItem, LockItemCommand>()
+
+        config.ForType<CachedOwnedItem, OwnedItem>()
+            .MapWith((CachedOwnedItem cachedOwnedItem) => new OwnedItem(
+                cachedOwnedItem.ItemId,
+                cachedOwnedItem.UserId,
+                cachedOwnedItem.Quantity
+            ));
+
+        config.ForType<TradeItemDTO, LockItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(LockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(LockItemCommand.Notify)]);
 
-        config.ForType<TradeItem, HasItemQuantityQuery>()
+        config.ForType<TradeItemDTO, HasItemQuantityQuery>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(LockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(LockItemCommand.Notify)]);
 

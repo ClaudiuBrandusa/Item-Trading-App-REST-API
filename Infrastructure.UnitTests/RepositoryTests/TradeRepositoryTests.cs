@@ -7,7 +7,7 @@ using Infrastructure_IntegrationTests.Utils;
 using MediatR;
 using Moq;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class TradeRepositoryTests
 {

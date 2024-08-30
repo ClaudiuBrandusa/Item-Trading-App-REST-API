@@ -4,7 +4,7 @@ using Infrastructure.Repositories.Inventory;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class InventoryRepositoryTests
 {
@@ -70,7 +70,7 @@ public class InventoryRepositoryTests
 
         int count = 5;
 
-        for (int i  = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
             var inventoryItemMock = new OwnedItem(Guid.NewGuid().ToString(), DEFAULT_USER_ID, 5 + i);
 
@@ -243,7 +243,7 @@ public class InventoryRepositoryTests
         var lockedItemEntityResult = await _sut.GetLockedInventoryItemEntityAsync(inventoryItemMock.UserId, inventoryItemMock.ItemId);
 
         // Assert
-        
+
         Assert.NotNull(lockedItemEntityResult);
         Assert.Equal(lockedQuantity, lockedItemEntityResult.Quantity);
         Assert.Equal(inventoryItemMock.UserId, lockedItemEntityResult.UserId);

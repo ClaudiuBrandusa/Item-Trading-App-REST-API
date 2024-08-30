@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20240729114153_Init")]
-    partial class Init
+    [Migration("20240828173801_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -511,13 +511,15 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Aggregates.Trades.Trade", null)
+                    b.HasOne("Domain.Aggregates.Trades.Trade", "Trade")
                         .WithMany("TradeContents")
                         .HasForeignKey("TradeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Item");
+
+                    b.Navigation("Trade");
                 });
 
             modelBuilder.Entity("Domain.Entities.Trades.TradeItemHistory", b =>

@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Items;
 
-namespace Domain.Repositories.Items;
+namespace Application.Repositories;
 
 public interface ICachedItemRepository : ICachedRepository, IDisposable
 {

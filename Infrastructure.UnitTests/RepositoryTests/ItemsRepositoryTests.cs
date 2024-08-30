@@ -5,7 +5,7 @@ using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class ItemsRepositoryTests
 {
@@ -220,7 +220,7 @@ public class ItemsRepositoryTests
 
         int length = 3;
 
-        for(int i = 0; i < length; i++)
+        for (int i = 0; i < length; i++)
         {
             var itemStub = new Item($"{DEFAULT_ITEM_NAME}_{i}", DEFAULT_ITEM_DESCRIPTION);
 
@@ -265,7 +265,7 @@ public class ItemsRepositoryTests
 
     private DatabaseContext GetDatabaseContext()
     {
-        return _contextWrapper.ProvideDatabaseContext();   
+        return _contextWrapper.ProvideDatabaseContext();
     }
 
     #endregion Utils

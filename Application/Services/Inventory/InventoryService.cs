@@ -15,11 +15,9 @@ using Application.Behaviors.Inventory.GetLockedAmount;
 using Application.Behaviors.Inventory.RemoveItemFromUsers;
 using Application.Behaviors.Inventory.ListUsersOwningItem;
 using Application.Behaviors.Inventory.HasItem;
-using Application.Services.UnitOfWork;
 using Application.Services.Notification;
-using Domain.Entities.Inventory;
 using Domain.Aggregates.Inventory;
-using Domain.Repositories.Inventory;
+using Application.Repositories;
 using Application.Results.Items;
 using Application.Results.Inventory;
 
@@ -32,16 +30,14 @@ public class InventoryService : IInventoryService, IDisposable
     private readonly ISender _sender;
     private readonly IPublisher _publisher;
     private readonly IMapper _mapper;
-    private readonly IUnitOfWorkService _unitOfWorkService;
 
-    public InventoryService(ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IPublisher publisher, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public InventoryService(ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IPublisher publisher, IMapper mapper)
     {
         _repository = inventoryRepository;
         _clientNotificationService = clientNotificationService;
         _sender = sender;
         _publisher = publisher;
         _mapper = mapper;
-        _unitOfWorkService = unitOfWork;
     }
 
     public async Task<bool> HasItemAsync(HasItemQuantityQuery model)
@@ -251,7 +247,7 @@ public class InventoryService : IInventoryService, IDisposable
         {
             UserId = model.UserId,
             ItemId = model.ItemId,
-            Quantity = model.Quantity,
+            Quantity = amount,
             Success = true
         };
     }
@@ -274,15 +270,13 @@ public class InventoryService : IInventoryService, IDisposable
 
         amount -= model.Quantity;
         bool modified = false;
-        var lockedItem = new LockedItem(model.UserId, model.ItemId, amount);
-
+        
         try
         {
             modified = await _repository.UnlockItemAsync(model.UserId, model.ItemId, model.Quantity);
         }
         catch (Exception)
         {
-            _unitOfWorkService.RollbackTransaction();
             modified = false;
         }
 
@@ -291,6 +285,8 @@ public class InventoryService : IInventoryService, IDisposable
             {
                 Errors = new[] { "Something went wrong" }
             };
+
+        amount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
         var eventNotification = _mapper.AdaptToType<UnlockItemCommand, InventoryItemUnlockedEvent>(model, (nameof(InventoryItemUnlockedEvent.Quantity), await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId)));
 

@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Trades;
 
-namespace Domain.Repositories.TradeItems;
+namespace Application.Repositories;
 
 public interface ICachedTradeItemRepository : ICachedRepository, IDisposable
 {

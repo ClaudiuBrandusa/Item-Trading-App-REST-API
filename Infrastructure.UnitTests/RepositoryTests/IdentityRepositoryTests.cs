@@ -6,7 +6,7 @@ using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 public class IdentityRepositoryTests
 {
     private readonly IIdentityRepository _sut;
@@ -19,7 +19,7 @@ public class IdentityRepositoryTests
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
-        
+
         _sut = new IdentityRepository(_contextWrapper, userManagerMock);
     }
 
@@ -195,7 +195,7 @@ public class IdentityRepositoryTests
 
         int count = 3;
 
-        for(int i = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
             var userMock = new User
             {

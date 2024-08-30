@@ -34,7 +34,7 @@ public class IdentityRepository : RepositoryBase, IIdentityRepository
         if (user is null)
             return "";
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return user.UserName ?? string.Empty;
     }

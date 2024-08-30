@@ -1,7 +1,6 @@
 ﻿using Application.Installers;
 using Application.Services.Cache;
 using Domain.Repositories;
-using Infrastructure.Data;
 using Mapster;
 using MapsterMapper;
 using Microsoft.IdentityModel.Tokens;

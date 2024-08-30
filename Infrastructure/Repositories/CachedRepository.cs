@@ -1,4 +1,5 @@
 ﻿using Application.Services.Cache;
+using Application.Repositories;
 using Domain.Repositories;
 
 namespace Infrastructure.Repositories;
@@ -20,7 +21,7 @@ public abstract class CachedRepository : ICachedRepository
         
         if (!result) return false;
 
-        await _cacheService.SetCacheValueAsync(GetCacheKey(entity), ConvertBeforeCaching(entity));
+        await SetCacheAsync(entity);
 
         return true;
     }
@@ -31,7 +32,7 @@ public abstract class CachedRepository : ICachedRepository
 
         if (!result) return false;
 
-        await _cacheService.SetCacheValueAsync(GetCacheKey(entity), ConvertBeforeCaching(entity));
+        await SetCacheAsync(entity);
 
         return true;
     }
@@ -60,6 +61,11 @@ public abstract class CachedRepository : ICachedRepository
     }
 
     public Task<int> SaveChangesAsync() => _repository.SaveChangesAsync();
+
+    protected virtual Task SetCacheAsync(object entity)
+    {
+        return _cacheService.SetCacheValueAsync(GetCacheKey(entity), ConvertBeforeCaching(entity));
+    }
 
     protected abstract string GetCacheKey(object entity);
 

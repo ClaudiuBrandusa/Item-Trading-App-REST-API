@@ -21,6 +21,8 @@ Implements the interaction with external data storage (database and caching). Th
 [Presentation layer library](Web.API/Web.API.csproj)  
 ASP.NET Web API
 
+## Automated testing
+The project has unit tests and integration tests. The unit tests can be simply run by using the `dotnet test` command. The integration tests need docker support due to using the [testcontainers](https://www.nuget.org/packages/Testcontainers) nuget package.
 
 ## Database
 We are using Identity (from EntityFrameworkCore) so then we will have some tables used by it. We are not going to discuss about those tables because we can find details about them online (https://docs.microsoft.com/en-us/aspnet/identity/overview/getting-started/introduction-to-aspnet-identity).

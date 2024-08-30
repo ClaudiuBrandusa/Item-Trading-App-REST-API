@@ -10,7 +10,7 @@ using Application.Models.Inventory;
 using Application.Services.Item;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
-using Domain.Repositories.Items;
+using Application.Repositories;
 using MediatR;
 
 namespace Application_UnitTests;

@@ -1,6 +1,7 @@
 ﻿using Application.Constants;
 using Application.Services.Cache;
 using Domain.Repositories.Inventory;
+using Application.Repositories;
 using Application.Extensions;
 using MapsterMapper;
 using Domain.Aggregates.Inventory;
@@ -157,14 +158,22 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
     protected override string GetCacheKey(object entity)
     {
-        if (entity is not OwnedItem ownedItem) return string.Empty;
+        if (entity is OwnedItem ownedItem)
+            return CacheKeys.Inventory.GetAmountKey(ownedItem.UserId, ownedItem.ItemId);
+        else if (entity is LockedItem lockedItem)
+            return CacheKeys.Inventory.GetLockedAmountKey(lockedItem.UserId, lockedItem.ItemId);
 
-        return CacheKeys.Inventory.GetAmountKey(ownedItem.UserId, ownedItem.ItemId);
+        return string.Empty;
     }
 
     protected override object ConvertBeforeCaching(object entity)
     {
-        return _mapper.AdaptToType<OwnedItem, CachedOwnedItem>((OwnedItem)entity);
+        if (entity is OwnedItem ownedItem)
+            return _mapper.AdaptToType<OwnedItem, CachedOwnedItem>((OwnedItem)entity);
+        else if (entity is LockedItem lockedItem)
+            return lockedItem.Quantity;
+
+        return entity;
     }
 
     public void Dispose() => _repository.Dispose();

@@ -5,7 +5,7 @@ using Application.Behaviors.TradeItem.HasTradeItem;
 using Application.Behaviors.TradeItem.RemoveTradeItems;
 using Application.Extensions;
 using Domain.Entities.Trades;
-using Domain.Repositories.TradeItems;
+using Application.Repositories;
 using MapsterMapper;
 using MediatR;
 

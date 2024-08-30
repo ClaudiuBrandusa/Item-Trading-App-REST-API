@@ -10,7 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class RefreshTokenRepositoryTests
 {
@@ -28,7 +28,7 @@ public class RefreshTokenRepositoryTests
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
-        
+
         var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(IdentityService.FormatSecretKey("0"))), SecurityAlgorithms.HmacSha256Signature);
 
         tokenDescriptor = new SecurityTokenDescriptor

@@ -5,6 +5,7 @@ using Domain.Entities.Trades;
 using MapsterMapper;
 using Application.Models.TradeItems;
 using Domain.Repositories.TradeItemsHistory;
+using Application.Repositories;
 
 namespace Infrastructure.Repositories.TradeItems;
 

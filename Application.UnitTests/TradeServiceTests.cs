@@ -13,7 +13,10 @@ using Application.Behaviors.TradeItem.RemoveTradeItems;
 using Application.Behaviors.TradeItemHistory.AddTradeItems;
 using Application.Behaviors.TradeItemHistory.GetTradeItems;
 using Application.Behaviors.Wallet.GetCash;
+using Application.Extensions;
+using Application.Models.TradeItems;
 using Application.Models.Trades;
+using Application.Repositories;
 using Application.Results.Inventory;
 using Application.Results.TradeItemsHistory;
 using Application.Results.Trades;
@@ -21,8 +24,7 @@ using Application.Services.Trade;
 using Application.Services.UnitOfWork;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
-using Domain.Repositories.Trades;
-using Domain.ValueObjects.Trades;
+using MapsterMapper;
 using MediatR;
 
 namespace Application_UnitTests;
@@ -30,6 +32,7 @@ namespace Application_UnitTests;
 public class TradeServiceTests
 {
     private readonly ITradeService _sut; // service under test
+    private readonly IMapper _mapper;
     private readonly string senderUserId = Guid.NewGuid().ToString();
     private readonly string receiverUserId = Guid.NewGuid().ToString();
     private readonly string defaultUserName = "default_username";
@@ -42,10 +45,30 @@ public class TradeServiceTests
         collection = new List<Trade>();
         cachedTrades = new List<CachedTrade>();
         var tradeRepositoryMock = TestingUtils.CreateRepositoryMock<Trade, ICachedTradeRepository>(collection);
-        var _mapper = TestingUtils.GetMapper();
+        _mapper = TestingUtils.GetMapper();
         var senderMock = new Mock<ISender>();
         var publisherMock = new Mock<IPublisher>();
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();
+
+        unitOfWorkMock.Setup(x => x.ExplicitTransaction(It.IsAny<Func<Task<bool>>>()))
+            .Returns(async (Func<Task<bool>> func) =>
+            {
+                return await func();
+            });
+
+        unitOfWorkMock.Setup(x => x.ExplicitTransaction(It.IsAny<Func<TaskCompletionSource<TradeOfferResult?>, Task<bool>>>()))
+            .Returns(async (Func<TaskCompletionSource<TradeOfferResult?>, Task<bool>> func) =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<TradeOfferResult?>();
+                var task = taskCompletionSource.Task;
+
+                var commitTransaction = await func(taskCompletionSource);
+
+                if (!task.IsCompleted && !task.IsCanceled)
+                    taskCompletionSource.SetResult(null);
+
+                return await task;
+            });
 
         #region MediatorMocks
 
@@ -67,7 +90,7 @@ public class TradeServiceTests
                     trade.SentDate,
                     trade.Response,
                     trade.ResponseDate,
-                    new TradeItem[0])
+                    new TradeItemDTO[0])
                 );
             });
 
@@ -234,7 +257,7 @@ public class TradeServiceTests
         {
             SenderUserId = senderUserId,
             TargetUserId = receiverUserId,
-            Items = tradeItems
+            Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
         };
 
         // Act
@@ -258,7 +281,7 @@ public class TradeServiceTests
         {
             SenderUserId = senderUserId,
             TargetUserId = receiverUserId,
-            Items = new List<TradeItem>()
+            Items = new List<TradeItemDTO>()
         };
 
         // Act
@@ -519,7 +542,7 @@ public class TradeServiceTests
 
             var cachedTrade = cachedTrades.FirstOrDefault(x => x.TradeId == trade.TradeId);
 
-            cachedTrade!.TradeItems = currentTradeItems[trade.TradeId].ToArray();
+            cachedTrade!.TradeItems = currentTradeItems[trade.TradeId].Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty))).ToArray();
         }
 
         return trade;
@@ -537,7 +560,7 @@ public class TradeServiceTests
             {
                 SenderUserId = senderUserId,
                 TargetUserId = receiverUserId,
-                Items = tradeItems
+                Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
             });
 
             if (responded)
@@ -561,7 +584,7 @@ public class TradeServiceTests
         {
             SenderUserId = senderUserId,
             TargetUserId = receiverUserId,
-            Items = tradeItems
+            Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
         };
 
         return await InitTrade(createTradeStub);

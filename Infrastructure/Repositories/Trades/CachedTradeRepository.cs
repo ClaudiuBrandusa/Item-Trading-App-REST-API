@@ -1,20 +1,26 @@
 ﻿using Application.Constants;
 using Application.Services.Cache;
 using Domain.Repositories.Trades;
-using Domain.ValueObjects.Trades;
 using Application.Extensions;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
+using Application.Repositories;
+using Application.Models.TradeItems;
+using Application.Models.Trades;
+using MediatR;
+using Application.Behaviors.Item.GetItemName;
 
 namespace Infrastructure.Repositories.Trades;
 
 public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
 {
     private readonly ITradeRepository _repository;
+    private readonly ISender _sender;
 
-    public CachedTradeRepository(ITradeRepository repository, ICacheService cacheService) : base(repository, cacheService)
+    public CachedTradeRepository(ITradeRepository repository, ICacheService cacheService, ISender sender) : base(repository, cacheService)
     {
         _repository = repository;
+        _sender = sender;
     }
 
     public ValueTask AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId) =>
@@ -25,7 +31,7 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     public Task<CachedTrade?> GetCachedTradeAsync(string tradeId)
     {
         return _cacheService.GetEntityReferenceAsync(
-            CacheKeys.Trade.GetTradeKey(tradeId),
+            GetTradeCacheKey(tradeId),
             async (args) =>
             {
                 var tradeTask = _repository.GetTradeEntityAsync(tradeId);
@@ -38,6 +44,36 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
 
                 var tradeItems = await _repository.GetTradeItemsAsync(trade.TradeId, trade.Response.HasValue /* if trade.Response has value, then it means it is a responded trade */ );
 
+                var tradeItemDTOs = tradeItems.Select(x => new TradeItemDTO
+                {
+                    ItemId = x.ItemId,
+                    Price = x.Price,
+                    Quantity = x.Quantity
+                }).ToArray();
+
+                var tasks = new List<Task>();
+
+                for (int i = 0; i < tradeItems.Length; i++)
+                {
+                    var tradeItem = tradeItemDTOs[i];
+
+                    var task = Task.Factory.StartNew(async () =>
+                    {
+                        var query = new GetItemNameQuery
+                        {
+                            ItemId = tradeItem.ItemId
+                        };
+
+                        var itemName = await _sender.Send(query);
+
+                        tradeItem.ItemName = itemName;
+                    });
+
+                    tasks.Add(task);
+                }
+
+                await Task.WhenAll(tasks);
+
                 return new CachedTrade(
                     trade.TradeId,
                     (await sentTradeTask)?.SenderId ?? "",
@@ -45,7 +81,7 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
                     trade.SentDate,
                     trade.Response,
                     trade.ResponseDate,
-                    tradeItems
+                    tradeItemDTOs
                 );
             },
             true
@@ -55,7 +91,7 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     public Task<string[]> ListReceivedTradeIdsCachedAsync(string userId)
     {
         return _cacheService.GetEntityIdsAsync(
-            CacheKeys.Trade.GetReceivedTradeKey(userId, ""),
+            GetReceivedTradeCacheKey(userId, ""),
             async (args) => await _repository.ListReceivedTradeIdsAsync(userId),
             true
         );
@@ -64,28 +100,28 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     public Task<string[]> ListSentTradeIdsCachedAsync(string userId)
     {
         return _cacheService.GetEntityIdsAsync(
-            CacheKeys.Trade.GetSentTradeKey(userId, ""),
+            GetSentTradeCacheKey(userId, ""),
             async (args) => await _repository.ListSentTradeIdsAsync(userId),
             true
         );
     }
 
-    public Task SetCacheForTrade(Trade trade, string senderId, string receiverId, TradeItem[] tradeItemIds)
+    public Task SetCacheForTrade(Trade trade, string senderId, string receiverId, TradeItemDTO[] tradeItems)
     {
         string tradeId = trade.TradeId;
 
         return Task.WhenAll(
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetTradeKey(tradeId), new CachedTrade(
+            _cacheService.SetCacheValueAsync(GetTradeCacheKey(tradeId), new CachedTrade(
                 tradeId,
                 senderId,
                 receiverId,
                 trade.SentDate,
                 trade.Response,
                 trade.ResponseDate,
-                tradeItemIds
+                tradeItems
             )),
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetSentTradeKey(senderId, tradeId), ""),
-            _cacheService.SetCacheValueAsync(CacheKeys.Trade.GetReceivedTradeKey(receiverId, tradeId), "")
+            _cacheService.SetCacheValueAsync(GetSentTradeCacheKey(senderId, tradeId), ""),
+            _cacheService.SetCacheValueAsync(GetReceivedTradeCacheKey(receiverId, tradeId), "")
         );
     }
 
@@ -93,9 +129,9 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     {
         var tasks = new Task[3 + tradeItemIds.Length];
 
-        tasks[0] = _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetTradeKey(tradeId));
-        tasks[1] = _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetSentTradeKey(senderId, tradeId));
-        tasks[2] = _cacheService.ClearCacheKeyAsync(CacheKeys.Trade.GetReceivedTradeKey(receiverId, tradeId));
+        tasks[0] = _cacheService.ClearCacheKeyAsync(GetTradeCacheKey(tradeId));
+        tasks[1] = _cacheService.ClearCacheKeyAsync(GetSentTradeCacheKey(senderId, tradeId));
+        tasks[2] = _cacheService.ClearCacheKeyAsync(GetReceivedTradeCacheKey(receiverId, tradeId));
         for (int i = 0; i < tradeItemIds.Length; i++)
             tasks[3 + i] = _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(tradeItemIds[i]), tradeId);
 
@@ -108,6 +144,18 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     {
         if (entity is not Trade trade) return string.Empty;
 
-        return CacheKeys.Item.GetItemKey(trade.TradeId);
+        return GetTradeCacheKey(trade.TradeId);
     }
+
+    protected override Task SetCacheAsync(object entity)
+    {
+        // the cache will be set from a separate method
+        return Task.CompletedTask;
+    }
+
+    private static string GetTradeCacheKey(string tradeId) => CacheKeys.Trade.GetTradeKey(tradeId);
+
+    private static string GetSentTradeCacheKey(string tradeId, string senderId) => CacheKeys.Trade.GetSentTradeKey(senderId, tradeId);
+
+    private static string GetReceivedTradeCacheKey(string tradeId, string receiverId) => CacheKeys.Trade.GetReceivedTradeKey(receiverId, tradeId);
 }

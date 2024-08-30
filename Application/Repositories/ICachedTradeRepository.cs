@@ -1,8 +1,9 @@
-﻿using Domain.Aggregates.Trades;
+﻿using Application.Models.TradeItems;
+using Application.Models.Trades;
+using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
-using Domain.ValueObjects.Trades;
 
-namespace Domain.Repositories.Trades;
+namespace Application.Repositories;
 
 public interface ICachedTradeRepository : ICachedRepository, IDisposable
 {
@@ -19,7 +20,7 @@ public interface ICachedTradeRepository : ICachedRepository, IDisposable
 
     Task<string[]> ListSentTradeIdsCachedAsync(string userId);
 
-    Task SetCacheForTrade(Trade trade, string senderId, string receiverId, TradeItem[] tradeItemIds);
+    Task SetCacheForTrade(Trade trade, string senderId, string receiverId, TradeItemDTO[] tradeItemIds);
 
     Task ClearTradeCache(string tradeId, string senderId, string receiverId, string[] tradeItemIds);
 }

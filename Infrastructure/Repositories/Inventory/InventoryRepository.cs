@@ -44,7 +44,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
         var inventoryItemEntity = await GetInventoryItemQuery(dbContext, userId, itemId);
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return inventoryItemEntity;
     }
@@ -59,7 +59,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
                 .Where(oi => Equals(oi.UserId, userId))
                 .ToArrayAsync();
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return array;
     }
@@ -70,7 +70,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
         var lockedInventoryItemEntity = await GetLockedInventoryItemQuery(dbContext, userId, itemId);
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return lockedInventoryItemEntity;
     }

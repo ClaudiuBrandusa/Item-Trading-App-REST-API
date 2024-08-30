@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\**" />
+    <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
     <PackageReference Include="MediatR" Version="12.1.1" />
@@ -25,10 +32,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.5.0" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\" />
   </ItemGroup>
 
   <ItemGroup>

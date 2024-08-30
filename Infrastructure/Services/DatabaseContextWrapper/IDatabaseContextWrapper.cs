@@ -8,5 +8,5 @@ public interface IDatabaseContextWrapper
 
     Task<DatabaseContext> ProvideDatabaseContextAsync();
 
-    void Dispose(DatabaseContext context);
+    void DisposeDatabaseContext(DatabaseContext context);
 }

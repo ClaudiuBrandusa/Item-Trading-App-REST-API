@@ -6,7 +6,7 @@ using Domain.Aggregates.Trades;
 using Domain.Repositories.TradeItems;
 using Infrastructure.Repositories.TradeItems;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class TradeItemRepositoryTests
 {

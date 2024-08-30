@@ -9,7 +9,7 @@ using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.Item.GetItemDescription;
 using Application.Behaviors.TradeItem.ItemUsedInTrade;
-using Domain.Repositories.Items;
+using Application.Repositories;
 using Application.Results.Items;
 
 namespace Application.Services.Item;

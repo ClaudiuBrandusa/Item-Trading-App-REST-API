@@ -5,7 +5,7 @@ using Infrastructure_IntegrationTests.Utils;
 using Infrastructure.Repositories.TradeItems;
 using Domain.Repositories.TradeItemsHistory;
 
-namespace Infrastructure_UnitTests;
+namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class TradeItemHistoryRepositoryTests
 {
@@ -56,7 +56,7 @@ public class TradeItemHistoryRepositoryTests
         for (int i = 0; i < count; i++)
         {
             var tradeItemMock = new TradeItem(Item.GenerateId(), $"{DEFAULT_ITEM_NAME}_{i}", quantity, price);
-            
+
             var addTradeItemHistoryResult = await _sut.AddTradeItemHistoryAsync(DEFAULT_TRADE_ID, DEFAULT_ITEM_NAME, tradeItemMock);
         }
 

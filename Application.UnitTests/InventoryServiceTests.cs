@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Application.Services.Inventory;
 using Application.Services.Notification;
-using Application.Services.UnitOfWork;
 using Application.Behaviors.Inventory.AddItem;
 using Application.Behaviors.Inventory.DropItem;
 using Application.Behaviors.Inventory.LockItem;
@@ -15,8 +14,8 @@ using Domain.Entities.Items;
 using Domain.Entities.Inventory;
 using Domain.Entities.Identity;
 using Domain.Aggregates.Inventory;
-using Domain.Repositories.Inventory;
 using Application.Results.Items;
+using Application.Repositories;
 
 namespace Application_UnitTests;
 
@@ -156,9 +155,8 @@ public class InventoryServiceTests
         #endregion MediatorMocks
 
         var clientNotificationServiceMock = new Mock<IClientNotificationService>();
-        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
 
-        _sut = new InventoryService(inventoryRepositoryMock.Object, clientNotificationServiceMock.Object, senderMock.Object, publisherMock.Object, mapper, unitOfWorkMock.Object);
+        _sut = new InventoryService(inventoryRepositoryMock.Object, clientNotificationServiceMock.Object, senderMock.Object, publisherMock.Object, mapper);
     }
 
     [Fact(DisplayName = "Add item to inventory")]
@@ -614,7 +612,7 @@ public class InventoryServiceTests
         // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(quantityLocked, result.Quantity);
+        Assert.Equal(quantityAdded - quantityLocked, result.Quantity);
         Assert.Equal(DEFAULT_USER_ID, result.UserId);
         Assert.Equal(DEFAULT_ITEM_ID, result.ItemId);
     }
@@ -735,7 +733,7 @@ public class InventoryServiceTests
         // Assert
 
         Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(quantityLocked - quantityUnlocked, result.Quantity);
+        Assert.Equal(quantityAdded - quantityLocked + quantityUnlocked, result.Quantity);
         Assert.Equal(DEFAULT_USER_ID, result.UserId);
         Assert.Equal(DEFAULT_ITEM_ID, result.ItemId);
     }

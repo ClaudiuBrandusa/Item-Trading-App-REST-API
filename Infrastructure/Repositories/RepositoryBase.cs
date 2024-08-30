@@ -86,7 +86,7 @@ public abstract class RepositoryBase : IRepository, IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        DatabaseContextWrapper.Dispose(context);
+        DatabaseContextWrapper.DisposeDatabaseContext(context);
     }
 
     private bool IsEntityValid<T>(T entity)

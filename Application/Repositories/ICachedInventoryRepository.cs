@@ -1,6 +1,6 @@
 ﻿using Domain.Aggregates.Inventory;
 
-namespace Domain.Repositories.Inventory;
+namespace Application.Repositories;
 
 public interface ICachedInventoryRepository : ICachedRepository, IDisposable
 {

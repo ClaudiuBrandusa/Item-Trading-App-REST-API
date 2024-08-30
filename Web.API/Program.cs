@@ -68,3 +68,5 @@ app.MigrateDatabase();
 await app.SeedDatabase();
 
 app.Run();
+
+public partial class Program { }

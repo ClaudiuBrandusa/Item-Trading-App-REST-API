@@ -1,6 +1,7 @@
 ﻿using Domain.Entities.Trades;
+using Domain.Repositories;
 
-namespace Domain.Repositories.TradeItemsHistory;
+namespace Application.Repositories;
 
 public interface ICachedTradeItemHistoryRepository : IRepository, IDisposable
 {

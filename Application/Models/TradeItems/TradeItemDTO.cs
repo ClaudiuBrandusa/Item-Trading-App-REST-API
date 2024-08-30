@@ -2,8 +2,6 @@
 
 public class TradeItemDTO
 {
-    public string TradeId { get; set; }
-
     public string ItemId { get; set; }
 
     public string ItemName { get; set; }

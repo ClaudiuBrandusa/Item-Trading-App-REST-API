@@ -3,9 +3,9 @@ using Application.Behaviors.TradeItemHistory.AddTradeItems;
 using Application.Behaviors.TradeItemHistory.GetTradeItems;
 using Application.Behaviors.TradeItemHistory.RemoveTradeItems;
 using Application.Extensions;
+using Application.Repositories;
 using Application.Results.TradeItemsHistory;
 using Domain.Entities.Trades;
-using Domain.Repositories.TradeItemsHistory;
 using MapsterMapper;
 using MediatR;
 

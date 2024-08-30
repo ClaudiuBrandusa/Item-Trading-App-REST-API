@@ -40,7 +40,7 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 
         var tradeEntity = await GetTradeQuery(dbContext, tradeId);
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return tradeEntity;
     }
@@ -51,7 +51,7 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 
         var sentTradeEntity = await GetSentTradeQuery(dbContext, tradeId);
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return sentTradeEntity;
     }
@@ -62,7 +62,7 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 
         var receivedTradeEntity = await GetReceivedTradeQuery(dbContext, tradeId);
 
-        DatabaseContextWrapper.Dispose(dbContext);
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return receivedTradeEntity;
     }

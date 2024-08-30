@@ -38,6 +38,7 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
             Used = refreshToken.Used,
             CreationDate = refreshToken.CreationDate,
             ExpiryDate = refreshToken.ExpiryDate,
+            JwtId = refreshToken.JwtId,
             Invalidated = refreshToken.Invalidated
         };
     }
@@ -60,6 +61,7 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
             ExpiryDate = refreshToken.ExpiryDate,
             Invalidated = refreshToken.Invalidated,
             Used = refreshToken.Used,
+            JwtId = refreshToken.JwtId,
             Success = true
         };
     }
@@ -96,103 +98,107 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
             CreationDate = lastRefreshToken.CreationDate,
             ExpiryDate = lastRefreshToken.ExpiryDate,
             Used = lastRefreshToken.Used,
+            JwtId = lastRefreshToken.JwtId,
             Invalidated = lastRefreshToken.Invalidated
         };
     }
 
     private async Task ClearExpiredRefreshTokens()
     {
-        _unitOfWorkService.BeginTransaction();
-
-        try
+        await _unitOfWorkService.ExplicitTransaction(async () =>
         {
-            var expiredTokens = await _repository.ListExpiredRefreshTokenIdsAsync();
-
-            if (expiredTokens is not null)
+            try
             {
-                foreach (var token in expiredTokens)
-                {
-                    await _repository.DeleteRefreshTokenAsync(token);
-                }
-            }
+                var expiredTokens = await _repository.ListExpiredRefreshTokenIdsAsync();
 
-            await _repository.SaveChangesAsync();
-            _unitOfWorkService.CommitTransaction();
-        }
-        catch (Exception)
-        {
-            _unitOfWorkService.RollbackTransaction();
-            throw;
-        }
+                if (expiredTokens is not null)
+                {
+                    foreach (var token in expiredTokens)
+                    {
+                        await _repository.DeleteRefreshTokenAsync(token);
+                    }
+                }
+
+                await _repository.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception in {nameof(RefreshTokenService)}.{nameof(ClearExpiredRefreshTokens)}: {e.Message}");
+                return false;
+            }
+        });
     }
 
     private async Task ClearUsedRefreshTokens()
     {
-        _unitOfWorkService.BeginTransaction();
-
-        try
+        await _unitOfWorkService.ExplicitTransaction(async () =>
         {
-            var usedTokens = await _repository.ListUsedRefreshTokenIdsAsync();
-
-            if (usedTokens is not null)
+            try
             {
-                foreach (var tokenId in usedTokens)
-                {
-                    await _repository.DeleteRefreshTokenAsync(tokenId);
-                }
-            }
+                var usedTokens = await _repository.ListUsedRefreshTokenIdsAsync();
 
-            await _repository.SaveChangesAsync();
-            _unitOfWorkService.CommitTransaction();
-        }
-        catch (Exception)
-        {
-            _unitOfWorkService.RollbackTransaction();
-            throw;
-        }
+                if (usedTokens is not null)
+                {
+                    foreach (var tokenId in usedTokens)
+                    {
+                        await _repository.DeleteRefreshTokenAsync(tokenId);
+                    }
+                }
+
+                await _repository.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception in {nameof(RefreshTokenService)}.{nameof(ClearUsedRefreshTokens)}: {e.Message}");
+                return false;
+            }
+        });
     }
 
     private async Task ClearOldRefreshTokens()
     {
-        _unitOfWorkService.BeginTransaction();
-
-        try
+        await _unitOfWorkService.ExplicitTransaction(async () =>
         {
-            var usersId = await _repository.ListUserIdsAsync();
-
-            if (usersId is null)
-                return;
-
-            foreach (string userId in usersId)
+            try
             {
-                var tokens = await _repository.ListRefreshTokensAsync(userId);
+                var usersId = await _repository.ListUserIdsAsync();
 
-                if (tokens is null)
-                    continue;
+                if (usersId is null)
+                    return false;
 
-                if (tokens.Length <= _jwtSettings.AllowedRefreshTokensPerUser)
-                    continue;
+                foreach (string userId in usersId)
+                {
+                    var tokens = await _repository.ListRefreshTokensAsync(userId);
 
-                tokens = tokens.OrderBy(x => x.CreationDate.Ticks).ToArray();
+                    if (tokens is null)
+                        continue;
 
-                int n = tokens.Length - _jwtSettings.AllowedRefreshTokensPerUser; // number of tokens to be deleted
+                    if (tokens.Length <= _jwtSettings.AllowedRefreshTokensPerUser)
+                        continue;
 
-                if (n < 1)
-                    continue;
+                    tokens = tokens.OrderBy(x => x.CreationDate.Ticks).ToArray();
 
-                for (int i = 0; i < n; i++)
-                    await _repository.DeleteRefreshTokenAsync(tokens[i]);
+                    int n = tokens.Length - _jwtSettings.AllowedRefreshTokensPerUser; // number of tokens to be deleted
 
-                await _repository.SaveChangesAsync();
+                    if (n < 1)
+                        continue;
+
+                    for (int i = 0; i < n; i++)
+                        await _repository.DeleteRefreshTokenAsync(tokens[i]);
+
+                    await _repository.SaveChangesAsync();
+                }
+
+                return true;
             }
-
-            _unitOfWorkService.CommitTransaction();
-        }
-        catch (Exception)
-        {
-            _unitOfWorkService.RollbackTransaction();
-            throw;
-        }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception in {nameof(RefreshTokenService)}.{nameof(ClearOldRefreshTokens)}: {e.Message}");
+                return false;
+            }
+        });
     }
 
     public void Dispose()

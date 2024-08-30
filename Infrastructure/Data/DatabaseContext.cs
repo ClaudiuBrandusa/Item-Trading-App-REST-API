@@ -94,9 +94,9 @@ public class DatabaseContext : IdentityDbContext
 
         modelBuilder.Entity<Trade>()
             .HasMany(t => t.TradeContents)
-            .WithOne()
-            .HasForeignKey(tc  => tc.TradeId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .WithOne(x => x.Trade)
+            .HasForeignKey(tc => tc.TradeId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<TradeItem>()
             .HasKey(tc => new { tc.ItemId, tc.TradeId });

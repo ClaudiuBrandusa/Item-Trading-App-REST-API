@@ -508,13 +508,15 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Aggregates.Trades.Trade", null)
+                    b.HasOne("Domain.Aggregates.Trades.Trade", "Trade")
                         .WithMany("TradeContents")
                         .HasForeignKey("TradeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Item");
+
+                    b.Navigation("Trade");
                 });
 
             modelBuilder.Entity("Domain.Entities.Trades.TradeItemHistory", b =>

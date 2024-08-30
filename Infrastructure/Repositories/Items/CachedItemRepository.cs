@@ -5,6 +5,7 @@ using Domain.Repositories.Items;
 using Application.Extensions;
 using Application.Models.Items;
 using MapsterMapper;
+using Application.Repositories;
 
 namespace Infrastructure.Repositories.Items;
 
