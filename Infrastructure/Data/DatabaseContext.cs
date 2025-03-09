@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Domain.Entities.Items;
 using Domain.Entities.Identity;
 using Domain.Entities.Inventory;
@@ -32,11 +31,6 @@ public class DatabaseContext : IdentityDbContext
     public DbSet<TradeItem> TradeContent { get; set; }
 
     public DbSet<TradeItemHistory> TradeContentHistory { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS));
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

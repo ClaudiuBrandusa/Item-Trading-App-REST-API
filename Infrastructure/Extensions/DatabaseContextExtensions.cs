@@ -96,7 +96,7 @@ public static class DatabaseContextExtensions
         return items;
     }
 
-    private static async Task<User> CreateAndSeedUser(UserManager<User> userManager, string username, string password)
+    public static async Task<User> CreateAndSeedUser(UserManager<User> userManager, string username, string password)
     {
         static string formatEmail(string id) => $"{id}@item_trading.app";
 
