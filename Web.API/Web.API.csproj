@@ -5,6 +5,7 @@
     <RootNamespace>Item_Trading_App_REST_API</RootNamespace>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+    <UserSecretsId>6f4e22c7-e383-4c3c-970a-0a4d6031a56a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
