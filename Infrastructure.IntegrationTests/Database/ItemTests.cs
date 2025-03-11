@@ -12,7 +12,7 @@ public class ItemTests : IClassFixture<DatabaseFixture>
 
     public ItemTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.ServiceProvider.GetService<IDatabaseContextWrapper>();
+        var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
         _repository = new ItemRepository(dbContextWrapper);
     }
 
