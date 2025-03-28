@@ -41,6 +41,8 @@ public class DatabaseFixture : IAsyncLifetime
 
         var dbInstaller = new DbInstaller();
         dbInstaller.InstallServices(services, Configuration);
+        var mediatorInstaller = new MediatorInstaller();
+        mediatorInstaller.InstallServices(services, Configuration);
         var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
         dbContextWrapperInstaller.InstallServices(services, Configuration);
 

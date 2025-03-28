@@ -68,6 +68,12 @@ public class Trade : AggregateRoot
         _tradeContents.Remove(tradeContent);
     }
 
+    public void SetResponse(bool response)
+    {
+        Response = response;
+        ResponseDate = DateTime.Now;
+    }
+
     public static string GenerateId() => Guid.NewGuid().ToString();
 
     protected override bool Compare(object obj)

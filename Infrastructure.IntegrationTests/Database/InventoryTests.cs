@@ -18,8 +18,6 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     private readonly IInventoryRepository _repository;
     private readonly IServiceProvider _serviceProvider;
 
-    private const string DEFAULT_USER_PASSWORD = "!Abcd12345";
-
     public InventoryTests(DatabaseFixture fixture)
     {
         var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
@@ -32,7 +30,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
 
-        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu0", "claudiu0@email.com", DEFAULT_USER_PASSWORD);
+        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu0", "claudiu0@email.com", Constants.DEFAULT_USER_PASSWORD);
         var item = await TestingScenarios.CreateItem(_serviceProvider, "Silver", "This is a precious metal");
         int addedQuantity = 5;
         var ownedItem = new OwnedItem(item.ItemId, user.Id, addedQuantity);
@@ -56,7 +54,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
 
-        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu1", "claudiu1@email.com", DEFAULT_USER_PASSWORD);
+        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu1", "claudiu1@email.com", Constants.DEFAULT_USER_PASSWORD);
         var item = await TestingScenarios.CreateItem(_serviceProvider, "Bronze", "This is an alloy");
         int addedQuantity = 5;
         int droppedQuantity = 3;
@@ -83,7 +81,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
 
-        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu2", "claudiu0@email.com", DEFAULT_USER_PASSWORD);
+        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu2", "claudiu0@email.com", Constants.DEFAULT_USER_PASSWORD);
         var item0 = await TestingScenarios.CreateItem(_serviceProvider, "Gold", "This is a precious metal");
         var item1 = await TestingScenarios.CreateItem(_serviceProvider, "Iron", "This is a metal");
         var item2 = await TestingScenarios.CreateItem(_serviceProvider, "Platinum", "This is a precious metal");
@@ -135,7 +133,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
 
         for (int i = 0; i < usersCount; i++)
         {
-            users[i] = await TestingScenarios.CreateUser(serviceProvider, $"Claudiu_{i}", $"claudiu{i}@email.com", DEFAULT_USER_PASSWORD);
+            users[i] = await TestingScenarios.CreateUser(serviceProvider, $"Claudiu_{i}", $"claudiu{i}@email.com", Constants.DEFAULT_USER_PASSWORD);
         }
 
         bool addItemsSucceeded = true;
@@ -168,7 +166,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
 
-        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu3", "claudiu3@email.com", DEFAULT_USER_PASSWORD);
+        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu3", "claudiu3@email.com", Constants.DEFAULT_USER_PASSWORD);
         var item = await TestingScenarios.CreateItem(_serviceProvider, "Wood", "This is a natural resource");
         int addedQuantity = 5;
         var ownedItem = new OwnedItem(item.ItemId, user.Id, addedQuantity);
@@ -200,7 +198,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
 
-        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu4", "claudiu4@email.com", DEFAULT_USER_PASSWORD);
+        var user = await TestingScenarios.CreateUser(_serviceProvider, "Claudiu4", "claudiu4@email.com", Constants.DEFAULT_USER_PASSWORD);
         var item = await TestingScenarios.CreateItem(_serviceProvider, "Glass", "This is a refined resource");
         int addedQuantity = 5;
         var ownedItem = new OwnedItem(item.ItemId, user.Id, addedQuantity);

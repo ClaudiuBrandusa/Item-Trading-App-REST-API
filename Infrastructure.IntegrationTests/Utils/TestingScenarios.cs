@@ -1,6 +1,7 @@
 ﻿using Domain.Aggregates.Inventory;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
+using Infrastructure.IntegrationTests.Common;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Repositories.Inventory;
 using Infrastructure.Repositories.Items;
@@ -12,6 +13,46 @@ namespace Infrastructure.IntegrationTests.Utils;
 
 public static class TestingScenarios
 {
+    public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName)
+    {
+        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var userManager = GetUserManager(serviceProvider);
+        var repository = new IdentityRepository(dbContextWrapper, userManager);
+
+        var userToBeCreated = new User
+        {
+            Id = User.GenerateId(),
+            UserName = userName,
+            Email = $"{userName}@email.com"
+        };
+
+        await repository.CreateUserAsync(userToBeCreated, Constants.DEFAULT_USER_PASSWORD);
+
+        var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
+
+        return response!;
+    }
+
+    public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName, string email)
+    {
+        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var userManager = GetUserManager(serviceProvider);
+        var repository = new IdentityRepository(dbContextWrapper, userManager);
+
+        var userToBeCreated = new User
+        {
+            Id = User.GenerateId(),
+            UserName = userName,
+            Email = email
+        };
+
+        await repository.CreateUserAsync(userToBeCreated, Constants.DEFAULT_USER_PASSWORD);
+
+        var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
+
+        return response!;
+    }
+
     public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName, string email, string password)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
@@ -30,6 +71,14 @@ public static class TestingScenarios
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
 
         return response!;
+    }
+
+    public static async Task<(User,User)> CreateSenderReceiverUsersPair(IServiceProvider serviceProvider, int index)
+    {
+        var senderUser = await CreateUser(serviceProvider, $"sender_{index}");
+        var receiverUser = await CreateUser(serviceProvider, $"receiver_{index}");
+
+        return (senderUser, receiverUser);
     }
 
     public static async Task<Item> CreateItem(IServiceProvider serviceProvider, string itemName, string itemDescription)
