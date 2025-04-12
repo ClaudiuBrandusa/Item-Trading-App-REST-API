@@ -17,6 +17,18 @@ public static class TestingScenarios
 
     #region User
 
+    public static async Task<User[]> CreateUsers(IServiceProvider serviceProvider, string userName, int startingIndex, int count)
+    {
+        var usersArray = new User[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            usersArray[i] = await CreateUser(serviceProvider, userName, startingIndex++);
+        }
+
+        return usersArray;
+    }
+
     public static Task<User> CreateUser(IServiceProvider serviceProvider, string userName, int index)
     {
         return CreateUser(serviceProvider, $"{userName}_{index}");
