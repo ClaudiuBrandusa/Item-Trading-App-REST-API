@@ -1,4 +1,5 @@
 ﻿using Domain.Aggregates.Inventory;
+using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
 using Infrastructure.IntegrationTests.Common;
@@ -109,6 +110,21 @@ public static class TestingScenarios
         var response = await repository.GetOwnedItemEntityAsync(user.Id, item.ItemId);
 
         return response!;
+    }
+
+    public static Trade CreateTrade(string senderUserId, string receiverUserId)
+    {
+        DateTime sentDate = DateTime.Now;
+        return CreateTrade(sentDate, senderUserId, receiverUserId);
+    }
+
+    public static Trade CreateTrade(DateTime sentDate, string senderUserId, string receiverUserId)
+    {
+        var trade = new Trade(sentDate);
+        trade.SetSender(senderUserId);
+        trade.SetReceiver(receiverUserId);
+
+        return trade;
     }
 
     private static IDatabaseContextWrapper GetDatabaseContextWrapper(IServiceProvider serviceProvider)

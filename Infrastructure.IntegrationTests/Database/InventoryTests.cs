@@ -6,11 +6,6 @@ using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Inventory;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.IntegrationTests.Database;
 public class InventoryTests : IClassFixture<DatabaseFixture>

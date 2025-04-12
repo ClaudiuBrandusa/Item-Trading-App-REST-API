@@ -1,10 +1,7 @@
-﻿using Infrastructure.Data;
-using Infrastructure.Installers;
+﻿using Infrastructure.Installers;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Item_Trading_App_REST_API.Installers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.MsSql;
@@ -26,6 +23,16 @@ public class DatabaseFixture : IAsyncLifetime
             .Build();
     }
 
+    protected virtual void RegisterServices(IServiceCollection services)
+    {
+        var dbInstaller = new DbInstaller();
+        dbInstaller.InstallServices(services, Configuration);
+        var mediatorInstaller = new MediatorInstaller();
+        mediatorInstaller.InstallServices(services, Configuration);
+        var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
+        dbContextWrapperInstaller.InstallServices(services, Configuration);
+    }
+
     public async Task InitializeAsync()
     {
         await _dbContainer.StartAsync();
@@ -39,12 +46,7 @@ public class DatabaseFixture : IAsyncLifetime
 
         var services = new ServiceCollection();
 
-        var dbInstaller = new DbInstaller();
-        dbInstaller.InstallServices(services, Configuration);
-        var mediatorInstaller = new MediatorInstaller();
-        mediatorInstaller.InstallServices(services, Configuration);
-        var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
-        dbContextWrapperInstaller.InstallServices(services, Configuration);
+        RegisterServices(services);
 
         ServiceProvider = services.BuildServiceProvider();
 
