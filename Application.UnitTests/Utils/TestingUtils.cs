@@ -3,8 +3,6 @@ using Application.Services.Cache;
 using Domain.Repositories;
 using Mapster;
 using MapsterMapper;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace Application_UnitTests.Utils;
 
@@ -79,20 +77,6 @@ public static class TestingUtils
                       .ReturnsAsync(collection.Count);
 
         return repositoryMock;
-    }
-
-    public static TokenValidationParameters GetTokenValidationParameters(string secret)
-    {
-        return new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            RequireExpirationTime = false,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
     }
 
     public static Mock<ICacheService> GetCacheServiceMock()

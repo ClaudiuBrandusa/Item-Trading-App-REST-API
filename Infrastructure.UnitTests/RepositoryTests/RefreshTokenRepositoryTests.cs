@@ -1,4 +1,4 @@
-﻿using Application.Services.Identity;
+﻿using Application.Utils;
 using Domain.Entities.Identity;
 using Domain.Repositories;
 using Infrastructure.Repositories.Identity;
@@ -7,8 +7,6 @@ using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace Infrastructure_UnitTests.RepositoryTests;
 
@@ -19,6 +17,7 @@ public class RefreshTokenRepositoryTests
     private readonly string DEFAULT_USER_NAME = "DefaultUsername";
     private readonly TimeSpan DEFAULT_TOKEN_LIFETIME = TimeSpan.FromSeconds(5);
     private readonly TimeSpan DEFAULT_REFRESH_TOKEN_LIFETIME = TimeSpan.FromSeconds(5);
+    private const string JWT_SECRET = "0";
 
     private IDatabaseContextWrapper _contextWrapper;
 
@@ -29,19 +28,12 @@ public class RefreshTokenRepositoryTests
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
 
-        var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(IdentityService.FormatSecretKey("0"))), SecurityAlgorithms.HmacSha256Signature);
+        var key = JwtUtils.CreateKeyByteArrayFromJwtSecret(JWT_SECRET);
+        var signingCredentials = JwtUtils.CreateSigningCredentials(key);
 
-        tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new List<Claim>
-            {
-                new(JwtRegisteredClaimNames.Sub, DEFAULT_USER_NAME),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new("id", DEFAULT_USER_ID),
-            }),
-            Expires = DateTime.UtcNow.Add(DEFAULT_TOKEN_LIFETIME),
-            SigningCredentials = signingCredentials
-        };
+        var claims = JwtUtils.CreateUserJwtClaims(DEFAULT_USER_ID, DEFAULT_USER_NAME);
+
+        tokenDescriptor = JwtUtils.CreateSecurityTokenDescriptor(claims, DateTimeUtils.DateTimeWithTimeSpanFromUtcNow(DEFAULT_TOKEN_LIFETIME), signingCredentials);
 
         _sut = new RefreshTokenRepository(_contextWrapper, userManagerMock);
     }

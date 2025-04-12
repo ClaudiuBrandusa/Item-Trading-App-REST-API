@@ -14,6 +14,14 @@ namespace Infrastructure.IntegrationTests.Utils;
 
 public static class TestingScenarios
 {
+
+    #region User
+
+    public static Task<User> CreateUser(IServiceProvider serviceProvider, string userName, int index)
+    {
+        return CreateUser(serviceProvider, $"{userName}_{index}");
+    }
+
     public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
@@ -81,6 +89,8 @@ public static class TestingScenarios
 
         return (senderUser, receiverUser);
     }
+
+    #endregion User
 
     public static async Task<Item> CreateItem(IServiceProvider serviceProvider, string itemName, string itemDescription)
     {

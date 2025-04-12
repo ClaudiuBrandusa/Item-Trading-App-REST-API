@@ -3,16 +3,17 @@ using Application.Behaviors.Identity.ListUsers;
 using Application.Behaviors.Identity.LoginUser;
 using Application.Behaviors.Identity.RefreshToken;
 using Application.Behaviors.Identity.RegisterUser;
+using Application.Extensions;
 using Application.Results.Identity;
 using Application.Results.RefreshToken;
 using Application.Services.RefreshToken;
+using Application.Utils;
 using Domain.Entities.Identity;
 using Domain.Repositories;
 using Item_Trading_App_REST_API.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace Application.Services.Identity;
 
@@ -93,7 +94,7 @@ public class IdentityService : IIdentityService, IDisposable
         if (validatedToken is null)
             return new AuthenticationResult { Errors = new[] { "Invalid token" } };
 
-        var jti = validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
+        var jti = validatedToken.GetJwtId();
         
         var storedRefreshToken = await _refreshTokenService.GetRefreshTokenAsync(model.RefreshToken);
 
@@ -190,28 +191,11 @@ public class IdentityService : IIdentityService, IDisposable
         if (user is null)
             return new AuthenticationResult { Errors = new[] { "User not found" } };
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(FormatSecretKey(_jwtSettings.Secret));
+        var tokenHandler = CreateJwtSecurityTokenHandler(user);//new JwtSecurityTokenHandler();
+        
+        var expirationTime = DateTimeUtils.DateTimeWithTimeSpanFromUtcNow(_jwtSettings.TokenLifetime);
 
-        var claims = new List<Claim>
-        {
-            new (JwtRegisteredClaimNames.Sub, await GetUsername(new GetUsernameQuery { UserId = userId })),
-            new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new ("id", userId),
-        };
-
-        var userClaims = await _repository.GetClaimsAsync(user);
-
-        claims.AddRange(userClaims);
-
-        var expirationTime = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime);
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = expirationTime,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
+        var tokenDescriptor = await CreateSecurityTokenDescriptor(user, expirationTime);//JwtUtils.CreateSecurityTokenDescriptor(claims, expirationTime, signingCredentials);
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
 
@@ -232,6 +216,30 @@ public class IdentityService : IIdentityService, IDisposable
         };
     }
 
+    private JwtSecurityTokenHandler CreateJwtSecurityTokenHandler(User user)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        
+        var key = JwtUtils.CreateKeyByteArrayFromJwtSecret(_jwtSettings.Secret);
+
+        return tokenHandler;
+    }
+
+    private async Task<SecurityTokenDescriptor> CreateSecurityTokenDescriptor(User user, DateTime expirationTime)
+    {
+        var key = JwtUtils.CreateKeyByteArrayFromJwtSecret(_jwtSettings.Secret);
+
+        var claims = JwtUtils.CreateUserJwtClaims(user);
+
+        var userClaims = await _repository.GetClaimsAsync(user);
+
+        claims.AddRange(userClaims);
+
+        var signingCredentials = JwtUtils.CreateSigningCredentials(key);
+
+        return JwtUtils.CreateSecurityTokenDescriptor(claims, expirationTime, signingCredentials);
+    }
+
     private async Task<RefreshTokenResult> GetRefreshToken(string userId, string jti)
     {
         var refreshToken = await _refreshTokenService.GetRecentRefreshTokenAsync(userId, jti);
@@ -240,18 +248,5 @@ public class IdentityService : IIdentityService, IDisposable
             return refreshToken;
 
         return await _refreshTokenService.GenerateRefreshTokenAsync(userId, jti);
-    }
-
-    public static string FormatSecretKey(string key)
-    {
-        int startIndex = string.IsNullOrEmpty(key) ? 0 : key.Length;
-
-        for (int i = startIndex; i < 32; i++)
-            key += '0';
-
-        if (key.Length > 32)
-            key = key.Substring(0, 32);
-
-        return key;
     }
 }

@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using Domain.Entities.Identity;
 using Application.Results.RefreshToken;
+using Application.Utils;
 
 namespace Application_UnitTests;
 
@@ -38,7 +39,7 @@ public class IdentityServiceTests
             AllowedRefreshTokensPerUser = 3
         };
 
-        var tokenValidationParameters = TestingUtils.GetTokenValidationParameters(IdentityService.FormatSecretKey(jwtSettings.Secret));
+        var tokenValidationParameters = JwtUtils.BuildTokenValidationParameters(jwtSettings.Secret);
 
         #region MediatorMocks
 
