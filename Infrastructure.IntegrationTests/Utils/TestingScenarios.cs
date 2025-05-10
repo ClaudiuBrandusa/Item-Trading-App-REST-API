@@ -12,6 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.IntegrationTests.Utils;
 
+/// <summary>
+/// Helps setting up entities for different testing scenarios
+/// </summary>
 public static class TestingScenarios
 {
 
