@@ -24,8 +24,10 @@ jobs:
       with:
         dotnet-version: 7.0.x
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Item-Trading-App-REST-API.sln
     - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet build Item-Trading-App-REST-API.sln --no-restore
+    - name: Unit testing the Application layer
+      run: dotnet test Application.UnitTests --no-build --verbosity normal
+    - name: Unit testing the Infrastructure layer
+      run: dotnet test Infrastructure.UnitTests --no-build --verbosity normal
