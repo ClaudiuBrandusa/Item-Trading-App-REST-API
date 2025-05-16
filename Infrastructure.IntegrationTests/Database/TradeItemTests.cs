@@ -32,7 +32,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
 
         (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 0);
         var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
-        var item = await TestingScenarios.CreateItem(_serviceProvider, "Gold", string.Empty);
+        var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Gold", string.Empty);
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, quantity);
         var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, price);
 
@@ -65,7 +65,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
 
         (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 1);
         var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
-        var item = await TestingScenarios.CreateItem(_serviceProvider, "Silver", string.Empty);
+        var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Silver", string.Empty);
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, initialQuantity);
         var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, initialPrice);
 
@@ -117,10 +117,10 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
 
         for (int i = 0; i < expectedTradeItemsAmount; i++)
         {
-            items[i] = await TestingScenarios.CreateItem(serviceProvider, itemNames[i], string.Empty);
+            items[i] = await TestingScenarios.CreateItemAsync(serviceProvider, itemNames[i], string.Empty);
             var inventoryItem = await TestingScenarios.AddItemToUser(serviceProvider, items[i], senderUser, expectedItemAmount);
             inventoryItems[i] = inventoryItem;
-            var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, expectedItemAmount, expectedPrice);
+            var tradeContent = TestingScenarios.CreateTradeItem(trade.TradeId, inventoryItem.ItemId, expectedItemAmount, expectedPrice);
             tradeContents[i] = tradeContent;
             trade.AddTradeContent(tradeContents[i]);
         }
@@ -147,9 +147,9 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
 
         (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 3);
         var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
-        var item = await TestingScenarios.CreateItem(_serviceProvider, "Iron", string.Empty);
+        var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Iron", string.Empty);
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, quantity);
-        var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, price);
+        var tradeContent = TestingScenarios.CreateTradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, price);
 
         trade.AddTradeContent(tradeContent);
 
@@ -179,9 +179,9 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
 
         (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 4);
         
-        var firstItem = await TestingScenarios.CreateItem(_serviceProvider, "Tin", string.Empty);
+        var firstItem = await TestingScenarios.CreateItemAsync(_serviceProvider, "Tin", string.Empty);
         var firstInventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, firstItem, senderUser, quantity * tradesUsingFirstItemAmount);
-        var secondItem = await TestingScenarios.CreateItem(_serviceProvider, "Copper", string.Empty);
+        var secondItem = await TestingScenarios.CreateItemAsync(_serviceProvider, "Copper", string.Empty);
         var secondInventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, secondItem, senderUser, quantity * tradesUsingSecondItemAmount);
         var tradeIdsUsingFirstItem = new string[tradesUsingFirstItemAmount];
         var tradeIdsUsingSecondItem = new string[tradesUsingSecondItemAmount];
@@ -190,7 +190,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
         {
             var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
 
-            var tradeContent = new TradeItem(trade.TradeId, firstInventoryItem.ItemId, firstInventoryItem.Quantity, price);
+            var tradeContent = TestingScenarios.CreateTradeItem(trade.TradeId, firstInventoryItem.ItemId, firstInventoryItem.Quantity, price);
 
             trade.AddTradeContent(tradeContent);
 

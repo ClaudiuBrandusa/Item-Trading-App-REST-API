@@ -4,6 +4,7 @@ using Application.Extensions;
 using MapsterMapper;
 using Domain.Entities.Trades;
 using Domain.Repositories.TradeItemsHistory;
+using Infrastructure.Data;
 
 namespace Infrastructure.Repositories.TradeItems;
 
@@ -22,6 +23,9 @@ public class TradeItemHistoryRepository : RepositoryBase, ITradeItemHistoryRepos
 
         return AddEntityAsync(entity);
     }
+
+    public Task<TradeItemHistory?> GetTradeItemHistoryAsync(string tradeItemHistoryId) =>
+        GetTradeItemHistoryQuery(context, tradeItemHistoryId);
 
     public Task<TradeItemHistory[]> ListTradeItemsHistoryAsync(string tradeId)
     {
@@ -42,4 +46,15 @@ public class TradeItemHistoryRepository : RepositoryBase, ITradeItemHistoryRepos
 
         return await context.SaveChangesAsync();
     }
+
+    #region Queries
+
+    private static readonly Func<DatabaseContext, string, Task<TradeItemHistory?>> GetTradeItemHistoryQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string tradeItemHistoryId) =>
+            context.TradeContentHistory
+                .AsNoTracking()
+                .FirstOrDefault(x => x.ItemId == tradeItemHistoryId)
+        );
+
+    #endregion Queries
 }

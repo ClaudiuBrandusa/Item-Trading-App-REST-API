@@ -2,6 +2,7 @@
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
+using Domain.Entities.Trades;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Repositories.Inventory;
@@ -107,7 +108,7 @@ public static class TestingScenarios
 
     #endregion User
 
-    public static async Task<Item> CreateItem(IServiceProvider serviceProvider, string itemName, string itemDescription)
+    public static async Task<Item> CreateItemAsync(IServiceProvider serviceProvider, string itemName, string itemDescription)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
@@ -135,6 +136,11 @@ public static class TestingScenarios
         var response = await repository.GetOwnedItemEntityAsync(user.Id, item.ItemId);
 
         return response!;
+    }
+
+    public static TradeItem CreateTradeItem(string tradeId, string itemId, int amount, int price)
+    {
+        return new TradeItem(tradeId, itemId, amount, price);
     }
 
     public static Trade CreateTrade(string senderUserId, string receiverUserId)
