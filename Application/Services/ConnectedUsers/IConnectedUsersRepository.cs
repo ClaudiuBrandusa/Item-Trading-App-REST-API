@@ -1,4 +1,6 @@
-﻿namespace Application.Services.ConnectedUsers;
+﻿using Application.Utils.Notifications;
+
+namespace Application.Services.ConnectedUsers;
 
 public interface IConnectedUsersRepository
 {
@@ -13,4 +15,6 @@ public interface IConnectedUsersRepository
     Task NotifyUsersAsync(string[] userIds, object notification);
 
     Task NotifyAllUsersExceptAsync(string userId, object notification);
+
+    Task Notify(INotifyUserStrategy notifyStrategy, object notification);
 }

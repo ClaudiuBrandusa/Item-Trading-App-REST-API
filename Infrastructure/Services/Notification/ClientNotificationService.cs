@@ -3,6 +3,8 @@ using Application.Constants;
 using Item_Trading_App_Contracts.Notifications.Content;
 using Item_Trading_App_Contracts.Notifications;
 using Application.Services.ConnectedUsers;
+using static Infrastructure.Services.ConnectedUsers.ConnectedUsersRepository;
+using Application.Utils.Notifications;
 
 namespace Infrastructure.Services.Notification;
 
@@ -16,6 +18,13 @@ public class ClientNotificationService : IClientNotificationService
     }
 
     #region Create
+
+    public Task SendCreatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
+    {
+        var notification = CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData);
+
+        return _connectedUsersRepository.Notify(nus, notification);
+    }
 
     public Task SendCreatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
@@ -48,6 +57,19 @@ public class ClientNotificationService : IClientNotificationService
     #endregion Read
 
     #region Update
+
+    public static class NotificationHelper
+    {
+        public static INotifyUserStrategy CreateSingleUserNotificationStrategy(string userId)
+        {
+            var notificationStrategy = new NotifyUserStrategyBuilder()
+                .SetNotificationTargetType(NotificationTargetType.SingleUser)
+                .SetDestination(userId)
+                .Build();
+
+            return notificationStrategy;
+        }
+    }
 
     public Task SendUpdatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
         _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));

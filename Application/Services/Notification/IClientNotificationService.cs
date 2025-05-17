@@ -1,7 +1,11 @@
-﻿namespace Application.Services.Notification;
+﻿using Application.Utils.Notifications;
+
+namespace Application.Services.Notification;
 
 public interface IClientNotificationService
 {
+    Task SendCreatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
+
     Task SendCreatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null);
 
     Task SendCreatedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null);
