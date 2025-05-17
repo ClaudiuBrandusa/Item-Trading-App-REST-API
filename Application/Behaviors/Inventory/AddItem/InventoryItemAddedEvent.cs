@@ -4,9 +4,9 @@ namespace Application.Behaviors.Inventory.AddItem;
 
 public record InventoryItemAddedEvent : INotification
 {
-    public string UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
 
-    public string ItemId { get; set; }
+    public string ItemId { get; set; } = string.Empty;
 
     public int Quantity { get; set; }
 

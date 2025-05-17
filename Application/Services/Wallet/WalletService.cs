@@ -3,8 +3,8 @@ using Application.Behaviors.Wallet.GetWallet;
 using Application.Behaviors.Wallet.GiveCash;
 using Application.Behaviors.Wallet.TakeCash;
 using Application.Behaviors.Wallet.UpdateWallet;
-using Application.Models.Wallet;
-using Domain.Identity;
+using Application.Results.Wallet;
+using Domain.Entities.Identity;
 using Domain.Repositories;
 
 namespace Application.Services.Wallet;
@@ -56,7 +56,7 @@ public class WalletService : IWalletService
         if (model.Amount < 1)
             return false;
 
-        user.Cash += model.Amount;
+        user.UpdateCashAmount(user.Cash + model.Amount);
 
         await _userRepository.UpdateUserAsync(user);
 
@@ -73,7 +73,7 @@ public class WalletService : IWalletService
         if (user.Cash - model.Amount < 0)
             return false;
 
-        user.Cash -= model.Amount;
+        user.UpdateCashAmount(user.Cash - model.Amount);
 
         await _userRepository.UpdateUserAsync(user);
 
@@ -96,7 +96,7 @@ public class WalletService : IWalletService
                 Errors = new[] { "You cannot have a negative balance" }
             };
 
-        user.Cash = model.Quantity;
+        user.UpdateCashAmount(model.Quantity);
 
         await _userRepository.UpdateUserAsync(user);
 

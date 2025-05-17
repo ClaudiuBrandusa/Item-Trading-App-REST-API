@@ -4,7 +4,7 @@ namespace Application.Extensions;
 
 public static class MapperExtensions
 {
-    public static R AdaptToType<T, R>(this IMapper mapper, T request, params (string, object)[] parameters)
+    public static ReturnType AdaptToType<InputType, ReturnType>(this IMapper mapper, InputType request, params (string, object)[] parameters)
     {
         var builder = mapper.From(request);
 
@@ -14,6 +14,6 @@ public static class MapperExtensions
                 builder = builder.AddParameters(parameter.Item1, parameter.Item2);
             }
 
-        return builder.AdaptToType<R>();
+        return builder.AdaptToType<ReturnType>();
     }
 }

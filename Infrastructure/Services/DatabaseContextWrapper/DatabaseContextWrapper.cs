@@ -22,7 +22,7 @@ public class DatabaseContextWrapper : IDatabaseContextWrapper
         return _dbContextFactory.CreateDbContextAsync();
     }
 
-    public void Dispose(DatabaseContext context)
+    public void DisposeDatabaseContext(DatabaseContext context)
     {
         context?.Dispose();
     }

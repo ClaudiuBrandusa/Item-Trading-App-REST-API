@@ -1,4 +1,4 @@
-﻿using Domain.Identity;
+﻿using Domain.Entities.Identity;
 
 namespace Domain.Repositories;
 

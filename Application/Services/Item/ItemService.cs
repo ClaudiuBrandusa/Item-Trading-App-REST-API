@@ -1,10 +1,7 @@
-﻿using Application.Models.Items;
-using Application.Services.Cache;
-using MediatR;
+﻿using MediatR;
 using MapsterMapper;
 using Application.Extensions;
 using Application.Behaviors.Item.CreateItem;
-using Application.Constants;
 using Application.Behaviors.Item.UpdateItem;
 using Application.Behaviors.Item.GetItem;
 using Application.Behaviors.Item.DeleteItem;
@@ -12,22 +9,21 @@ using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.Item.GetItemDescription;
 using Application.Behaviors.TradeItem.ItemUsedInTrade;
-using Domain.Repositories;
+using Application.Repositories;
+using Application.Results.Items;
 
 namespace Application.Services.Item;
 
 public class ItemService : IItemService, IDisposable
 {
-    private readonly IItemRepository _repository;
-    private readonly ICacheService _cacheService;
+    private readonly ICachedItemRepository _repository;
     private readonly ISender _sender;
     private readonly IPublisher _publisher;
     private readonly IMapper _mapper;
 
-    public ItemService(IItemRepository itemRepository, ICacheService cacheService, ISender sender, IPublisher publisher, IMapper mapper)
+    public ItemService(ICachedItemRepository repository, ISender sender, IPublisher publisher, IMapper mapper)
     {
-        _repository = itemRepository;
-        _cacheService = cacheService;
+        _repository = repository;
         _sender = sender;
         _publisher = publisher;
         _mapper = mapper;
@@ -41,7 +37,7 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Something went wrong" }
             };
 
-        var item = _mapper.AdaptToType<CreateItemCommand, Domain.Items.Item>(model, (nameof(Domain.Items.Item.ItemId), Guid.NewGuid().ToString()));
+        var item = _mapper.AdaptToType<CreateItemCommand, Domain.Entities.Items.Item>(model, (nameof(Domain.Entities.Items.Item.ItemId), Domain.Entities.Items.Item.GenerateId()));
 
         if (!await _repository.AddEntityAsync(item))
             return new FullItemResult
@@ -49,11 +45,8 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Unable to add this item" }
             };
 
-        await Task.WhenAll(
-            _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(item.ItemId), item),
-            _publisher.Publish(new ItemCreatedEvent { Item = item, SenderUserId = model.SenderUserId })
-        );
-
+        await _publisher.Publish(new ItemCreatedEvent { Item = item, SenderUserId = model.SenderUserId });
+        
         return new FullItemResult
         {
             ItemId = item.ItemId,
@@ -71,7 +64,7 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Something went wrong" }
             };
 
-        var item = await _repository.GetItemEntityCachedAsync(model.ItemId, false);
+        var item = await _repository.GetItemEntityAsync(model.ItemId, false);
 
         if (item is null)
             return new FullItemResult
@@ -79,8 +72,8 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Something went wrong" }
             };
 
-        item.Name = model.ItemName;
-        item.Description = model.ItemDescription;
+        item.UpdateItemName(model.ItemName);
+        item.UpdateItemDescription(model.ItemDescription);
 
         if (!await _repository.UpdateEntityAsync(item))
             return new FullItemResult
@@ -91,11 +84,8 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Unable to update item" }
             };
 
-        await Task.WhenAll(
-            _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemKey(item.ItemId), item),
-            _publisher.Publish(new ItemUpdatedEvent { Item = item, SenderUserId = model.SenderUserId })
-        );
-
+        await _publisher.Publish(new ItemUpdatedEvent { Item = item, SenderUserId = model.SenderUserId });
+        
         return new FullItemResult
         {
             ItemId = item.ItemId,
@@ -121,15 +111,13 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Unable to delete an item that is used in a trade" }
             };
 
-        var item = await _repository.GetItemEntityCachedAsync(model.ItemId, false);
+        var item = await _repository.GetItemEntityAsync(model.ItemId, false);
 
         if (item is null)
             return new DeleteItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
-        else
-            await _cacheService.ClearCacheKeyAsync(CacheKeys.Item.GetItemKey(model.ItemId));
 
         if (!await _repository.RemoveEntityAsync(item))
             return new DeleteItemResult
@@ -155,7 +143,7 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Something went wrong" }
             };
 
-        var item = await _repository.GetItemEntityCachedAsync(model.ItemId);
+        var item = await _repository.GetItemEntityAsync(model.ItemId);
 
         if (item is null)
             return new FullItemResult
@@ -175,10 +163,14 @@ public class ItemService : IItemService, IDisposable
 
     public async Task<ItemsResult> ListItemsAsync(ListItemsQuery model)
     {
-        var items = await _repository.ListItemsCachedAsync();
+        var items = await _repository.ListItemsAsync();
 
         if (!string.IsNullOrEmpty(model.SearchString))
-            items = items.Where(x => x.Name.ToLower().StartsWith(model.SearchString.ToLower())).ToArray();
+            items = items.Where(x => x.Name
+                                      .ToLower()
+                                      .StartsWith(model.SearchString
+                                                       .ToLower()))
+                .ToArray();
 
         return new ItemsResult
         {
@@ -189,14 +181,14 @@ public class ItemService : IItemService, IDisposable
 
     public async Task<string> GetItemNameAsync(GetItemNameQuery model)
     {
-        var entity = await _repository.GetItemEntityCachedAsync(model.ItemId);
+        var entity = await _repository.GetItemEntityAsync(model.ItemId);
 
         return entity?.Name ?? string.Empty;
     }
 
     public async Task<string> GetItemDescriptionAsync(GetItemDescriptionQuery model)
     {
-        var entity = await _repository.GetItemEntityCachedAsync(model.ItemId);
+        var entity = await _repository.GetItemEntityAsync(model.ItemId);
 
         return entity?.Description ?? string.Empty;
     }

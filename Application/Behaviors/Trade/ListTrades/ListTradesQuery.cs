@@ -1,11 +1,12 @@
-﻿using Application.Models.Trade;
+﻿using Application.Models.Trades;
+using Application.Results.Trades;
 using MediatR;
 
 namespace Application.Behaviors.Trade.ListTrades;
 
 public record ListTradesQuery : IRequest<TradeOffersResult>
 {
-    public string UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
 
     public string[] TradeItemIds { get; set; } = Array.Empty<string>();
 

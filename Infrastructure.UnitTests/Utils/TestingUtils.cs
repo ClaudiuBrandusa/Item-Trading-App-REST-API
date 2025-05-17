@@ -33,7 +33,7 @@ public static class TestingUtils
         databaseContextWrapperMock.Setup(x => x.ProvideDatabaseContextAsync())
             .ReturnsAsync(GetDatabaseContext(id));
 
-        databaseContextWrapperMock.Setup(x => x.Dispose(It.IsAny<DatabaseContext>()))
+        databaseContextWrapperMock.Setup(x => x.DisposeDatabaseContext(It.IsAny<DatabaseContext>()))
             .Callback(DoNothing);
 
         return databaseContextWrapperMock.Object;

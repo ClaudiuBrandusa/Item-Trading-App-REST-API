@@ -1,4 +1,4 @@
-﻿using Application.Models.Trade;
+﻿using Application.Results.Trades;
 using MediatR;
 
 namespace Application.Behaviors.Trade.RespondTrade;

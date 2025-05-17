@@ -1,6 +1,6 @@
 ﻿using MediatR;
-using Application.Models.Inventory;
 using Application.Services.Inventory;
+using Application.Results.Inventory;
 
 namespace Application.Behaviors.Inventory.DropItem;
 

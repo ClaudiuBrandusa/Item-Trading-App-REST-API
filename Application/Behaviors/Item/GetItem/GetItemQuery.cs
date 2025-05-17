@@ -1,9 +1,9 @@
-﻿using Application.Models.Items;
+﻿using Application.Results.Items;
 using MediatR;
 
 namespace Application.Behaviors.Item.GetItem;
 
 public record GetItemQuery : IRequest<FullItemResult>
 {
-    public string ItemId { get; set; }
+    public string ItemId { get; set; } = string.Empty;
 }

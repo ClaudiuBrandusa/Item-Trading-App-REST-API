@@ -1,4 +1,4 @@
-﻿using Application.Models.Base;
+﻿using Application.Models;
 using Item_Trading_App_REST_API.Extensions;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +26,7 @@ public class BaseController : Controller
     }
 
     protected ObjectResult MapResult<InputType, SucceededType, FailedType>(InputType result)
-        where InputType : BaseResult
+        where InputType : Result
         where SucceededType : class
         where FailedType : class
     {
@@ -36,7 +36,7 @@ public class BaseController : Controller
     }
 
     protected ObjectResult MapResult<InputType, SucceededType, FailedType>(InputType result, params (string, object)[] parameters)
-        where InputType : BaseResult
+        where InputType : Result
         where SucceededType : class
         where FailedType : class
     {

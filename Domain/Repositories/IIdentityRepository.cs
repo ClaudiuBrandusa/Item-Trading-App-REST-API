@@ -1,4 +1,4 @@
-﻿using Domain.Identity;
+﻿using Domain.Entities.Identity;
 using System.Security.Claims;
 
 namespace Domain.Repositories;

@@ -1,42 +1,44 @@
 ﻿using Application.Services.UnitOfWork;
-using System.Transactions;
+using Infrastructure.Common.DatabaseContextTransaction;
+using Infrastructure.Common.Transaction;
+using Infrastructure.Services.DatabaseContextWrapper;
 
 namespace Infrastructure.Services.UnitOfWork;
 
-public class UnitOfWorkService : IUnitOfWorkService, IDisposable
+public class UnitOfWorkService : IUnitOfWorkService
 {
-    private TransactionScope _transaction;
+    private readonly IDatabaseContextWrapper _databaseContextWrapper;
 
-    public void BeginTransaction()
+    public UnitOfWorkService(IDatabaseContextWrapper databaseContextWrapper)
     {
-        if (OperatingSystem.IsWindows())
-            TransactionManager.ImplicitDistributedTransactions = true;
-        _transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-        TransactionInterop.GetTransmitterPropagationToken(Transaction.Current);
+        _databaseContextWrapper = databaseContextWrapper;
     }
 
-    public void CommitTransaction()
+    public async Task ExplicitTransaction(Func<Task<bool>> action)
     {
-        if (_transaction is not null)
-            ClearTransaction();
+        var dbContext = _databaseContextWrapper.ProvideDatabaseContext();
+
+        var databaseContextTransactionWrapper = new DatabaseContextTransactionWrapper(dbContext);
+
+        var resilientTransaction = ResilientTransaction.New(databaseContextTransactionWrapper);
+
+        await resilientTransaction.ExecuteAsync(action);
+
+        _databaseContextWrapper.DisposeDatabaseContext(dbContext);
     }
 
-    public void RollbackTransaction()
+    public async Task<T?> ExplicitTransaction<T>(Func<TaskCompletionSource<T?>, Task<bool>> action) where T : class
     {
-        if (_transaction is not null)
-            ClearTransaction();
-    }
+        var dbContext = _databaseContextWrapper.ProvideDatabaseContext();
 
-    public void Dispose()
-    {
-        _transaction?.Dispose();
-        GC.SuppressFinalize(this);
-    }
+        var databaseContextTransactionWrapper = new DatabaseContextTransactionWrapper(dbContext);
 
-    private void ClearTransaction()
-    {
-        _transaction.Complete();
-        _transaction.Dispose();
-        _transaction = null;
+        var resilientTransaction = ResilientTransaction.New(databaseContextTransactionWrapper);
+
+        var result = await resilientTransaction.ExecuteAsync(action);
+
+        _databaseContextWrapper.DisposeDatabaseContext(dbContext);
+
+        return result;
     }
 }

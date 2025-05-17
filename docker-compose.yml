@@ -1,0 +1,40 @@
+version: '3.4'
+
+name: item-trading-app
+
+services:
+  web.api:
+    image: ${DOCKER_REGISTRY-}webapi
+    build:
+      context: .
+      dockerfile: Web.API/Dockerfile
+    ports:
+      - "5000:80"
+    depends_on:
+      - sqlserver
+      - redis
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:latest
+    container_name: SQLServer
+    environment:
+      SA_PASSWORD: '!Ab12345'
+      ACCEPT_EULA: 'Y'
+    ports:
+      - '1433:1433'
+    volumes:
+      - sqlserverdata:/var/opt/mssql
+
+  redis:
+   image: redis:latest
+   container_name: Redis
+   environment:
+    ALLOW_EMPTY_PASSWORD: yes
+   ports:
+      - "6379:6379"
+   volumes:
+      - redis-data:/data
+
+volumes:
+  sqlserverdata:
+  redis-data:

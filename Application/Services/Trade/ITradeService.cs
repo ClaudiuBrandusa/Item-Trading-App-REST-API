@@ -3,7 +3,7 @@ using Application.Behaviors.Trade.CreateTrade;
 using Application.Behaviors.Trade.GetTrade;
 using Application.Behaviors.Trade.ListTrades;
 using Application.Behaviors.Trade.RespondTrade;
-using Application.Models.Trade;
+using Application.Results.Trades;
 
 namespace Application.Services.Trade;
 

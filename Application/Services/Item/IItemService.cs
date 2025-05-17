@@ -5,7 +5,7 @@ using Application.Behaviors.Item.GetItemDescription;
 using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.UpdateItem;
-using Application.Models.Items;
+using Application.Results.Items;
 
 namespace Application.Services.Item;
 

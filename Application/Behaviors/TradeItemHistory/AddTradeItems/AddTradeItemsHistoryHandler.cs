@@ -1,10 +1,10 @@
-﻿using Application.Models.TradeItemHistory;
-using Application.Services.TradeItemHistory;
+﻿using Application.Results.TradeItemsHistory;
+using Application.Services.TradeItemsHistory;
 using MediatR;
 
 namespace Application.Behaviors.TradeItemHistory.AddTradeItems;
 
-public class AddTradeItemsHistoryHandler : IRequestHandler<AddTradeItemsHistoryCommand, TradeItemHistoryBaseResult>
+public class AddTradeItemsHistoryHandler : IRequestHandler<AddTradeItemsHistoryCommand, TradeItemHistoryResult>
 {
     private readonly ITradeItemHistoryService _tradeItemHistoryService;
 
@@ -13,7 +13,7 @@ public class AddTradeItemsHistoryHandler : IRequestHandler<AddTradeItemsHistoryC
         _tradeItemHistoryService = tradeItemHistoryService;
     }
 
-    public Task<TradeItemHistoryBaseResult> Handle(AddTradeItemsHistoryCommand request, CancellationToken cancellationToken)
+    public Task<TradeItemHistoryResult> Handle(AddTradeItemsHistoryCommand request, CancellationToken cancellationToken)
     {
         return _tradeItemHistoryService.AddTradeItemsAsync(request);
     }

@@ -6,10 +6,8 @@ using Application.Extensions;
 using Application.Models.Inventory;
 using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.Item.GetItem;
-using Domain.Inventory;
 using Application.Behaviors.Inventory.DropItem;
 using Application.Behaviors.Inventory.GetItem;
-using Application.Models.Items;
 using Application.Behaviors.Inventory.ListItems;
 using Application.Behaviors.Inventory.UnlockItem;
 using Application.Behaviors.Inventory.LockItem;
@@ -17,32 +15,29 @@ using Application.Behaviors.Inventory.GetLockedAmount;
 using Application.Behaviors.Inventory.RemoveItemFromUsers;
 using Application.Behaviors.Inventory.ListUsersOwningItem;
 using Application.Behaviors.Inventory.HasItem;
-using Application.Services.UnitOfWork;
-using Application.Services.Cache;
 using Application.Services.Notification;
-using Domain.Repositories;
+using Domain.Aggregates.Inventory;
+using Application.Repositories;
+using Application.Results.Items;
+using Application.Results.Inventory;
 
 namespace Application.Services.Inventory;
 
 public class InventoryService : IInventoryService, IDisposable
 {
-    private readonly IInventoryRepository _repository;
+    private readonly ICachedInventoryRepository _repository;
     private readonly IClientNotificationService _clientNotificationService;
-    private readonly ICacheService _cacheService;
     private readonly ISender _sender;
     private readonly IPublisher _publisher;
     private readonly IMapper _mapper;
-    private readonly IUnitOfWorkService _unitOfWorkService;
 
-    public InventoryService(IInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ICacheService cacheService, ISender sender, IPublisher publisher, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public InventoryService(ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IPublisher publisher, IMapper mapper)
     {
         _repository = inventoryRepository;
         _clientNotificationService = clientNotificationService;
-        _cacheService = cacheService;
         _sender = sender;
         _publisher = publisher;
         _mapper = mapper;
-        _unitOfWorkService = unitOfWork;
     }
 
     public async Task<bool> HasItemAsync(HasItemQuantityQuery model)
@@ -82,17 +77,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Item not found" }
             };
 
-        var item = await _cacheService.GetEntityAsync(
-            CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId),
-            async (args) =>
-            {
-                var entity = await _repository.GetInventoryItemEntityAsync(model.UserId, model.ItemId);
-
-                if (entity is not null)
-                    return _mapper.AdaptToType<OwnedItem, InventoryItem>(entity);
-
-                return null;
-            });
+        var item = await _repository.GetOwnedItemEntityAsync(model.UserId, model.ItemId);
 
         bool modified;
 
@@ -109,11 +94,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Something went wrong" }
             };
 
-        await _cacheService.SetCacheValueAsync(
-            CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId),
-            _mapper.AdaptToType<AddInventoryItemCommand, InventoryItem>(model));
-
-        model.Quantity -= await _repository.GetAmountOfLockedItemCachedAsync(model.UserId, model.ItemId);
+        model.Quantity -= await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
 
         var eventNotification = _mapper.AdaptToType<AddInventoryItemCommand, InventoryItemAddedEvent>(model);
 
@@ -148,7 +129,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "You cannot drop an amount of 0 from your inventory" }
             };
 
-        var item = await _repository.GetInventoryItemEntityCachedAsync(model.UserId, model.ItemId);
+        var item = await _repository.GetOwnedItemEntityAsync(model.UserId, model.ItemId);
 
         if (item == null)
             return new QuantifiedItemResult
@@ -157,7 +138,7 @@ public class InventoryService : IInventoryService, IDisposable
             };
 
         int freeItems = item.Quantity;
-        int lockedAmount = await _repository.GetAmountOfLockedItemCachedAsync(model.UserId, model.ItemId);
+        int lockedAmount = await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
 
         freeItems -= lockedAmount;
 
@@ -167,23 +148,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "You cannot drop more than you have" }
             };
 
-        model.Quantity = freeItems - model.Quantity;
-
-        bool modified;
-        var entity = _mapper.AdaptToType<DropInventoryItemCommand, OwnedItem>(model);
-
-        if (model.Quantity == 0)
-        {
-            modified = await _repository.RemoveEntityAsync(entity);
-            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId));
-            await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId));
-        }
-        else
-        {
-            modified = await _repository.UpdateEntityAsync(entity);
-            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(model.UserId, model.ItemId), item);
-            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedAmount);
-        }
+        bool modified = await _repository.DropItemAsync(model.UserId, model.ItemId, model.Quantity);
 
         if (!modified)
             return new QuantifiedItemResult
@@ -199,7 +164,7 @@ public class InventoryService : IInventoryService, IDisposable
         {
             ItemId = model.ItemId,
             ItemName = await _sender.Send(new GetItemNameQuery { ItemId = model.ItemId }),
-            Quantity = model.Quantity,
+            Quantity = freeItems - model.Quantity,
             Success = true
         };
     }
@@ -282,7 +247,7 @@ public class InventoryService : IInventoryService, IDisposable
         {
             UserId = model.UserId,
             ItemId = model.ItemId,
-            Quantity = model.Quantity,
+            Quantity = amount,
             Success = true
         };
     }
@@ -295,7 +260,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Invalid input data" }
             };
 
-        int amount = await _repository.GetAmountOfLockedItemCachedAsync(model.UserId, model.ItemId);
+        int amount = await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
 
         if (amount == 0 || model.Quantity > amount)
             return new LockItemResult
@@ -305,25 +270,13 @@ public class InventoryService : IInventoryService, IDisposable
 
         amount -= model.Quantity;
         bool modified = false;
-        var lockedItem = new LockedItem { UserId = model.UserId, ItemId = model.ItemId, Quantity = amount };
-
+        
         try
         {
-            if (amount == 0)
-            {
-                modified = await _repository.RemoveEntityAsync(lockedItem);
-                await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId));
-            }
-            else
-            {
-                lockedItem.Quantity = amount;
-                modified = await _repository.UpdateEntityAsync(lockedItem);
-                await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(model.UserId, model.ItemId), lockedItem.Quantity);
-            }
+            modified = await _repository.UnlockItemAsync(model.UserId, model.ItemId, model.Quantity);
         }
         catch (Exception)
         {
-            _unitOfWorkService.RollbackTransaction();
             modified = false;
         }
 
@@ -332,6 +285,8 @@ public class InventoryService : IInventoryService, IDisposable
             {
                 Errors = new[] { "Something went wrong" }
             };
+
+        amount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
         var eventNotification = _mapper.AdaptToType<UnlockItemCommand, InventoryItemUnlockedEvent>(model, (nameof(InventoryItemUnlockedEvent.Quantity), await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId)));
 
@@ -354,7 +309,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Invalid input data" }
             };
 
-        int lockedAmount = await _repository.GetAmountOfLockedItemCachedAsync(model.UserId, model.ItemId);
+        int lockedAmount = await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
 
         var itemName = await _sender.Send(new GetItemNameQuery { ItemId = model.ItemId });
 
@@ -403,7 +358,7 @@ public class InventoryService : IInventoryService, IDisposable
 
     private async Task<List<string>> FilterInventoryItems(string userId, string searchString)
     {
-        var inventoryItems = await _repository.ListInventoryItemsCachedAsync(userId);
+        var inventoryItems = await _repository.ListOwnedItemsAsync(userId);
 
         List<string> itemIds = new();
 
@@ -416,18 +371,18 @@ public class InventoryService : IInventoryService, IDisposable
         }
         else
         {
-            itemIds = inventoryItems.Select(x => x.Id).ToList();
+            itemIds = inventoryItems.Select(x => x.ItemId).ToList();
         }
 
         return itemIds;
     }
 
-    private async Task FilterInventoryItemBySearchString(InventoryItem inventoryItem, string searchString, List<string> itemIds)
+    private async Task FilterInventoryItemBySearchString(OwnedItem inventoryItem, string searchString, List<string> itemIds)
     {
-        string itemName = await _sender.Send(new GetItemNameQuery { ItemId = inventoryItem.Id });
+        string itemName = await _sender.Send(new GetItemNameQuery { ItemId = inventoryItem.ItemId });
 
         if (!itemName.StartsWith(searchString, StringComparison.OrdinalIgnoreCase)) return;
 
-        itemIds.Add(inventoryItem.Id);
+        itemIds.Add(inventoryItem.ItemId);
     }
 }

@@ -3,7 +3,7 @@ using Application.Behaviors.Identity.ListUsers;
 using Application.Behaviors.Identity.LoginUser;
 using Application.Behaviors.Identity.RefreshToken;
 using Application.Behaviors.Identity.RegisterUser;
-using Application.Models.Identity;
+using Application.Results.Identity;
 
 namespace Application.Services.Identity;
 

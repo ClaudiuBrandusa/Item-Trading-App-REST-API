@@ -2,5 +2,5 @@
 
 public record RedisSettings
 {
-    public string ConnectionAddress { get; set; }
+    public string ConnectionAddress { get; set; } = string.Empty;
 }

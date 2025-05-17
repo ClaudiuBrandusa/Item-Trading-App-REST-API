@@ -2,9 +2,7 @@
 
 public interface IUnitOfWorkService
 {
-    void BeginTransaction();
+    Task ExplicitTransaction(Func<Task<bool>> action);
 
-    void CommitTransaction();
-
-    void RollbackTransaction();
+    Task<T?> ExplicitTransaction<T>(Func<TaskCompletionSource<T?>, Task<bool>> action) where T : class;
 }

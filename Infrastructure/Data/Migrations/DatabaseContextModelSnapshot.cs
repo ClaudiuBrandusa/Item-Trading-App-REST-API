@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.data.migrations
+namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
     partial class DatabaseContextModelSnapshot : ModelSnapshot
@@ -22,40 +22,7 @@ namespace Infrastructure.data.migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.Item", b =>
-                {
-                    b.Property<string>("ItemId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ItemId");
-
-                    b.ToTable("Items");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.LockedItem", b =>
-                {
-                    b.Property<string>("ItemId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("ItemId", "UserId");
-
-                    b.ToTable("LockedItems");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
@@ -73,68 +40,7 @@ namespace Infrastructure.data.migrations
                     b.ToTable("OwnedItems");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.ReceivedTrade", b =>
-                {
-                    b.Property<string>("TradeId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ReceiverId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("TradeId");
-
-                    b.HasIndex("ReceiverId");
-
-                    b.ToTable("ReceivedTrades");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.RefreshToken", b =>
-                {
-                    b.Property<string>("Token")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("Invalidated")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("JwtId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Used")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Token");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.SentTrade", b =>
-                {
-                    b.Property<string>("TradeId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("SenderId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("TradeId");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("SentTrades");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.Trade", b =>
+            modelBuilder.Entity("Domain.Aggregates.Trades.Trade", b =>
                 {
                     b.Property<string>("TradeId")
                         .HasColumnType("nvarchar(450)");
@@ -153,7 +59,105 @@ namespace Infrastructure.data.migrations
                     b.ToTable("Trades");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.TradeContent", b =>
+            modelBuilder.Entity("Domain.Entities.Identity.RefreshToken", b =>
+                {
+                    b.Property<string>("Token")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Invalidated")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JwtId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Token");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Inventory.LockedItem", b =>
+                {
+                    b.Property<string>("ItemId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("ItemId", "UserId");
+
+                    b.ToTable("LockedItems");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Items.Item", b =>
+                {
+                    b.Property<string>("ItemId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ItemId");
+
+                    b.ToTable("Items");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Trades.ReceivedTrade", b =>
+                {
+                    b.Property<string>("TradeId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ReceiverId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("TradeId");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.ToTable("ReceivedTrades");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Trades.SentTrade", b =>
+                {
+                    b.Property<string>("TradeId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("TradeId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("SentTrades");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Trades.TradeItem", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
@@ -174,7 +178,7 @@ namespace Infrastructure.data.migrations
                     b.ToTable("TradeContent");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.TradeContentHistory", b =>
+            modelBuilder.Entity("Domain.Entities.Trades.TradeItemHistory", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
@@ -183,6 +187,7 @@ namespace Infrastructure.data.migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ItemName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Price")
@@ -404,7 +409,7 @@ namespace Infrastructure.data.migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.User", b =>
+            modelBuilder.Entity("Domain.Entities.Identity.User", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
 
@@ -416,26 +421,15 @@ namespace Infrastructure.data.migrations
                     b.HasDiscriminator().HasValue("User");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.LockedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
                 {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.OwnedItem", "OwnedItem")
-                        .WithOne("LockedItem")
-                        .HasForeignKey("Item_Trading_App_REST_API.Entities.LockedItem", "ItemId", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("OwnedItem");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.OwnedItem", b =>
-                {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.Item", "Item")
+                    b.HasOne("Domain.Entities.Items.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Item_Trading_App_REST_API.Entities.User", "User")
+                    b.HasOne("Domain.Entities.Identity.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -446,15 +440,39 @@ namespace Infrastructure.data.migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.ReceivedTrade", b =>
+            modelBuilder.Entity("Domain.Entities.Identity.RefreshToken", b =>
                 {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.User", "User")
+                    b.HasOne("Domain.Entities.Identity.User", "User")
                         .WithMany()
-                        .HasForeignKey("ReceiverId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasOne("Item_Trading_App_REST_API.Entities.Trade", "Trade")
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Inventory.LockedItem", b =>
+                {
+                    b.HasOne("Domain.Aggregates.Inventory.OwnedItem", "OwnedItem")
+                        .WithOne("LockedItem")
+                        .HasForeignKey("Domain.Entities.Inventory.LockedItem", "ItemId", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OwnedItem");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Trades.ReceivedTrade", b =>
+                {
+                    b.HasOne("Domain.Entities.Identity.User", "User")
                         .WithMany()
-                        .HasForeignKey("TradeId")
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Aggregates.Trades.Trade", "Trade")
+                        .WithOne("ReceivedTrade")
+                        .HasForeignKey("Domain.Entities.Trades.ReceivedTrade", "TradeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -463,24 +481,17 @@ namespace Infrastructure.data.migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.RefreshToken", b =>
+            modelBuilder.Entity("Domain.Entities.Trades.SentTrade", b =>
                 {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.User", "User")
+                    b.HasOne("Domain.Entities.Identity.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.SentTrade", b =>
-                {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("SenderId");
-
-                    b.HasOne("Item_Trading_App_REST_API.Entities.Trade", "Trade")
-                        .WithMany()
-                        .HasForeignKey("TradeId")
+                    b.HasOne("Domain.Aggregates.Trades.Trade", "Trade")
+                        .WithOne("SentTrade")
+                        .HasForeignKey("Domain.Entities.Trades.SentTrade", "TradeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -489,16 +500,16 @@ namespace Infrastructure.data.migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.TradeContent", b =>
+            modelBuilder.Entity("Domain.Entities.Trades.TradeItem", b =>
                 {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.Item", "Item")
+                    b.HasOne("Domain.Entities.Items.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Item_Trading_App_REST_API.Entities.Trade", "Trade")
-                        .WithMany()
+                    b.HasOne("Domain.Aggregates.Trades.Trade", "Trade")
+                        .WithMany("TradeContents")
                         .HasForeignKey("TradeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -508,9 +519,9 @@ namespace Infrastructure.data.migrations
                     b.Navigation("Trade");
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.TradeContentHistory", b =>
+            modelBuilder.Entity("Domain.Entities.Trades.TradeItemHistory", b =>
                 {
-                    b.HasOne("Item_Trading_App_REST_API.Entities.Trade", "Trade")
+                    b.HasOne("Domain.Aggregates.Trades.Trade", "Trade")
                         .WithMany()
                         .HasForeignKey("TradeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -570,9 +581,21 @@ namespace Infrastructure.data.migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Item_Trading_App_REST_API.Entities.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
                 {
-                    b.Navigation("LockedItem");
+                    b.Navigation("LockedItem")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Aggregates.Trades.Trade", b =>
+                {
+                    b.Navigation("ReceivedTrade")
+                        .IsRequired();
+
+                    b.Navigation("SentTrade")
+                        .IsRequired();
+
+                    b.Navigation("TradeContents");
                 });
 #pragma warning restore 612, 618
         }

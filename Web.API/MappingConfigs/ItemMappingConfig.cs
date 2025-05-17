@@ -1,7 +1,7 @@
 ﻿using Application.Behaviors.Item.CreateItem;
 using Application.Behaviors.Item.DeleteItem;
 using Application.Behaviors.Item.UpdateItem;
-using Application.Models.Items;
+using Application.Results.Items;
 using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Item;
 using Mapster;

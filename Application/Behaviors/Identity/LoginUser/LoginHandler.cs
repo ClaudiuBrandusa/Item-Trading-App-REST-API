@@ -1,4 +1,4 @@
-﻿using Application.Models.Identity;
+﻿using Application.Results.Identity;
 using Application.Services.Identity;
 using MediatR;
 

@@ -1,9 +1,9 @@
-﻿using Application.Services.TradeItem;
+﻿using Application.Services.TradeItems;
 using MediatR;
 
 namespace Application.Behaviors.TradeItem.GetTradeItems;
 
-public class GetTradeItemsHandler : IRequestHandler<GetTradeItemsQuery, Domain.TradeItems.TradeItem[]>
+public class GetTradeItemsHandler : IRequestHandler<GetTradeItemsQuery, Domain.Entities.Trades.TradeItem[]>
 {
     private readonly ITradeItemService _tradeItemService;
 
@@ -12,8 +12,8 @@ public class GetTradeItemsHandler : IRequestHandler<GetTradeItemsQuery, Domain.T
         _tradeItemService = tradeItemService;
     }
 
-    public Task<Domain.TradeItems.TradeItem[]> Handle(GetTradeItemsQuery request, CancellationToken cancellationToken)
+    public Task<Domain.Entities.Trades.TradeItem[]> Handle(GetTradeItemsQuery request, CancellationToken cancellationToken)
     {
-        return _tradeItemService.GetTradeItemsAsync(request);
+        return _tradeItemService.GetTradeItemAsync(request);
     }
 }

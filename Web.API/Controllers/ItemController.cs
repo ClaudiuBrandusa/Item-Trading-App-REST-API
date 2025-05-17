@@ -4,7 +4,7 @@ using Application.Behaviors.Item.GetItem;
 using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.UpdateItem;
 using Application.Behaviors.TradeItem.GetTradeItemIds;
-using Application.Models.Items;
+using Application.Results.Items;
 using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Base;
