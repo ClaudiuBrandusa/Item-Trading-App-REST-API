@@ -2,5 +2,5 @@
 
 public interface INotifyUserStrategy
 {
-    Task Notify(IHubClients hubClients, object notification);
+    Task Notify(IHubClientsWrapper hubClientsWrapper, object notification);
 }

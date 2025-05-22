@@ -2,9 +2,7 @@
 using Application.Services.Cache;
 using Application.Services.ConnectedUsers;
 using Application.Utils.Notifications;
-using Domain.Entities.Identity;
 using Item_Trading_App_REST_API.Hubs;
-using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Infrastructure.Services.ConnectedUsers;
@@ -14,11 +12,13 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
     private readonly ICacheService _cacheService;
     private readonly IHubContext<NotificationHubBase> hubContext;
     private readonly Dictionary<string, List<string>> currentUsersConnections = new();
+    private readonly IHubClientsWrapper hubClientsWrapper;
 
-    public ConnectedUsersRepository(ICacheService cacheService, IHubContext<NotificationHubBase> hubContext)
+    public ConnectedUsersRepository(ICacheService cacheService, IHubContext<NotificationHubBase> hubContext, IHubClientsWrapper hubClientsWrapper)
     {
         _cacheService = cacheService;
         this.hubContext = hubContext;
+        this.hubClientsWrapper = hubClientsWrapper;
     }
 
     public async Task<bool> AddConnectionIdToUser(string connectionId, string userId, string userName)
@@ -68,11 +68,11 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             this.targetUserId = targetUserId;
         }
 
-        public Task Notify(IHubClients hubClients, Dictionary<string, List<string>> currentUsersConnections, object notification)
+        public Task Notify(IHubClientsWrapper hubClientsWrapper, Dictionary<string, List<string>> currentUsersConnections, object notification)
         {
             if (!currentUsersConnections.ContainsKey(targetUserId)) return Task.CompletedTask;
             
-            return hubClients.Group(targetUserId).SendAsync("notify", notification);
+            return hubClientsWrapper.SendTo(targetUserId, "notify", notification);
         }
     }
 
@@ -85,27 +85,34 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             this.tragetUserIds = tragetUserIds;
         }
 
-        public Task Notify(object notification)
+        public Task Notify(IHubClientsWrapper hubClientsWrapper, object notification)
         {
-            NotifyUsersAsync(tragetUserIds, notification);
+            return hubClientsWrapper.SendTo(tragetUserIds, "notify", notification);
         }
     }
 
     public class NotifyAllUsersStrategy : INotifyUserStrategy
     {
-        public Task Notify(object notification)
+        public Task Notify(IHubClientsWrapper hubClientsWrapper, object notification)
         {
-            NotifyUsersAsync(currentUsersConnections.Keys.ToArray(), notification);
+            return hubClientsWrapper.SendTo(currentUsersConnections.Keys.ToArray(), "notify", notification);
         }
     }
 
     public class NotifyAllUsersExceptStrategy : INotifyUserStrategy
     {
-        public Task Notify(object notification)
-        {
-            var keys = currentUsersConnections.Keys.Where(x => !x.Equals(userId)).ToArray();
+        string exceptUserId;
 
-            return NotifyUsersAsync(keys, notification);
+        public NotifyAllUsersExceptStrategy(string exceptUserId)
+        {
+            this.exceptUserId = exceptUserId;
+        }
+
+        public Task Notify(IHubClientsWrapper hubClientsWrapper, object notification)
+        {
+            var keys = currentUsersConnections.Keys.Where(x => !x.Equals(exceptUserId)).ToArray();
+
+            return hubClientsWrapper.SendTo(keys, "notify", notification);
         }
     }
 
@@ -172,7 +179,12 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
                 return new NotifyAllUsersStrategy();
 
             if (NotificationTargetType == ConnectedUsersRepository.NotificationTargetType.AllExcept)
-                return new NotifyAllUsersExceptStrategy();
+            {
+                if (destinations.Count == 0)
+                    throw new ArgumentException("Unable to except sending to a user if there was no user id added");
+
+                return new NotifyAllUsersExceptStrategy(destinations[0]);
+            }
 
             throw new ArgumentException("Invalid data, unable to build a notification strategy due to not having enough data.");
         }
@@ -180,7 +192,7 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
 
     public Task Notify(INotifyUserStrategy notifyStrategy, object notification)
     {
-        return notifyStrategy.Notify(notification);
+        return notifyStrategy.Notify(hubClientsWrapper, notification);
     }
 
     public Task NotifyUserAsync(string userId, object notification)
