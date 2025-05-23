@@ -1,4 +1,4 @@
-﻿using Application.Utils.Notifications;
+﻿using Application.Services.Notification;
 using Item_Trading_App_REST_API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 

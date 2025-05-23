@@ -1,4 +1,4 @@
-﻿using Application.Utils.Notifications;
+﻿using Application.Services.Notification;
 using Infrastructure.Services.Notification;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

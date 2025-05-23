@@ -1,4 +1,4 @@
-﻿namespace Application.Utils.Notifications;
+﻿namespace Application.Services.Notification;
 
 public interface IHubClientsWrapper
 {

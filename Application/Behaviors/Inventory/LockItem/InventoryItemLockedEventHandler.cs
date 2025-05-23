@@ -1,6 +1,7 @@
 ﻿using Application.Constants;
 using Application.Models.Inventory;
 using Application.Services.Notification;
+using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Inventory.LockItem;
@@ -17,8 +18,8 @@ public class InventoryItemLockedEventHandler : INotificationHandler<InventoryIte
     public Task Handle(InventoryItemLockedEvent notification, CancellationToken cancellationToken)
     {
         if (notification.Notify)
-            return _clientNotificationService.SendUpdatedNotificationToUserAsync(
-                notification.UserId,
+            return _clientNotificationService.SendUpdatedNotificationAsync(
+                NotificationHelper.CreateSingleUserNotificationStrategy(notification.UserId),
                 NotificationCategoryTypes.Inventory,
                 notification.ItemId,
                 new InventoryItemQuantityNotification

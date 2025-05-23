@@ -1,6 +1,7 @@
 ﻿using Application.Behaviors.Identity.GetUsername;
 using Application.Constants;
 using Application.Services.Notification;
+using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Trade.CreateTrade;
@@ -19,15 +20,15 @@ public class TradeCreatedEventHandler : INotificationHandler<TradeCreatedEvent>
     public Task Handle(TradeCreatedEvent notification, CancellationToken cancellationToken)
     {
         return Task.WhenAll(
-            _clientNotificationService.SendCreatedNotificationToUserAsync(
-                notification.ReceiverId,
+            _clientNotificationService.SendCreatedNotificationAsync(
+                NotificationHelper.CreateSingleUserNotificationStrategy(notification.ReceiverId),
                 NotificationCategoryTypes.Trade,
                 notification.TradeId),
             Task.Run(async () =>
             {
                 var username = await _mediator.Send(new GetUsernameQuery { UserId = notification.ReceiverId });
-                await _clientNotificationService.SendMessageNotificationToUserAsync(
-                        notification.ReceiverId,
+                await _clientNotificationService.SendMessageNotificationAsync(
+                    NotificationHelper.CreateSingleUserNotificationStrategy(notification.ReceiverId),
                         $"You've received a trade from {username}",
                         DateTime.Now);
             }, CancellationToken.None));
