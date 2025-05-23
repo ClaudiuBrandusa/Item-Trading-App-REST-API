@@ -2,6 +2,7 @@
 using Application.Behaviors.Inventory.RemoveItemFromUsers;
 using Application.Constants;
 using Application.Services.Notification;
+using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Item.DeleteItem;
@@ -25,8 +26,8 @@ public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedEvent>
                 var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItemQuery { ItemId = notification.ItemId });
                 await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = notification.ItemId, UserIds = usersOwningTheItem.UserIds });
             }, cancellationToken),
-            _clientNotificationService.SendDeletedNotificationToAllUsersExceptAsync(
-                notification.UserId,
+            _clientNotificationService.SendDeletedNotificationAsync(
+                NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.UserId),
                 NotificationCategoryTypes.Item,
                 notification.ItemId)
         );

@@ -6,11 +6,9 @@ public interface IConnectedUsersRepository
 
     Task RemoveConnectionIdFromUser(string connectionId, string userId);
 
-    Task NotifyUserAsync(string userId, object notification);
+    bool UserExist(string userId);
 
-    Task NotifyUsersAsync(object notification);
+    bool UsersExist(string[] userIds);
 
-    Task NotifyUsersAsync(string[] userIds, object notification);
-
-    Task NotifyAllUsersExceptAsync(string userId, object notification);
+    string[] GetActiveUserIds();
 }

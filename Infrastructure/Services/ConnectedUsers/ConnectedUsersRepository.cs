@@ -56,23 +56,18 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
         await hubContext.Groups.RemoveFromGroupAsync(connectionId, userId);
     }
 
-    public Task NotifyUserAsync(string userId, object notification)
+    public bool UserExist(string userId)
     {
-        if (!currentUsersConnections.ContainsKey(userId)) return Task.CompletedTask;
-
-        return hubContext.Clients.Group(userId).SendAsync("notify", notification);
+        return currentUsersConnections.ContainsKey(userId);
     }
 
-    public Task NotifyUsersAsync(object notification) =>
-        NotifyUsersAsync(currentUsersConnections.Keys.ToArray(), notification);
-
-    public Task NotifyUsersAsync(string[] userIds, object notification) =>
-        hubContext.Clients.Groups(userIds).SendAsync("notify", notification);
-
-    public Task NotifyAllUsersExceptAsync(string userId, object notification)
+    public bool UsersExist(string[] userIds)
     {
-        var keys = currentUsersConnections.Keys.Where(x => !x.Equals(userId)).ToArray();
+        return userIds.All(x => currentUsersConnections.ContainsKey(x));
+    }
 
-        return NotifyUsersAsync(keys, notification);
+    public string[] GetActiveUserIds()
+    {
+        return currentUsersConnections.Keys.ToArray();
     }
 }

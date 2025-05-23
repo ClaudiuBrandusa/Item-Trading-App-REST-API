@@ -20,6 +20,7 @@ using Domain.Aggregates.Inventory;
 using Application.Repositories;
 using Application.Results.Items;
 using Application.Results.Inventory;
+using Application.Utils.Notifications;
 
 namespace Application.Services.Inventory;
 
@@ -347,7 +348,7 @@ public class InventoryService : IInventoryService, IDisposable
         };
 
         await Task.WhenAll(tasks);
-        await _clientNotificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
+        await _clientNotificationService.SendDeletedNotificationAsync(NotificationHelper.CreateMultipleUsersNotificationStrategy(model.UserIds), NotificationCategoryTypes.Inventory, model.ItemId);
     }
 
     public void Dispose()
