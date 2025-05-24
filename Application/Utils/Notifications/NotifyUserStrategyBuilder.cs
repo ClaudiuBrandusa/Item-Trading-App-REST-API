@@ -24,12 +24,22 @@ public class NotifyUserStrategyBuilder
 
     public NotifyUserStrategyBuilder SetDestination(string destination)
     {
+        if (string.IsNullOrEmpty(destination))
+        {
+            throw new ArgumentException("Can't set the notification destination as null or empty.");
+        }
+
         destinations.Add(destination);
         return this;
     }
 
     public NotifyUserStrategyBuilder SetDestinations(string[] destinations)
     {
+        if (destinations is null || destinations.Length == 0)
+        {
+            throw new ArgumentException("Can't set the notification destinations as null or empty.");
+        }
+
         this.destinations.AddRange(destinations);
         return this;
     }
