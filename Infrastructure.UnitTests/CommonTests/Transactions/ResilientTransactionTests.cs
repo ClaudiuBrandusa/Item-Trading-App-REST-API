@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using System.Reflection;
 
-namespace Infrastructure_UnitTests.CommonTests;
+namespace Infrastructure_UnitTests.CommonTests.Transactions;
 
 public class ResilientTransactionTests
 {

@@ -27,7 +27,7 @@ using Domain.Entities.Trades;
 using MapsterMapper;
 using MediatR;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.Trades;
 
 public class TradeServiceTests
 {

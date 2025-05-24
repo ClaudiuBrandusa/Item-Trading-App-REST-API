@@ -8,7 +8,7 @@ using Domain.Entities.Trades;
 using Application.Services.TradeItems;
 using Application.Repositories;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.TradeItems;
 public class TradeItemServiceTests
 {
     private readonly ITradeItemService _sut; // service under test

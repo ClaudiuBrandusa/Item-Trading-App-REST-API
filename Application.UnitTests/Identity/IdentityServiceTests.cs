@@ -14,7 +14,7 @@ using Domain.Entities.Identity;
 using Application.Results.RefreshToken;
 using Application.Utils;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.Identity;
 
 public class IdentityServiceTests
 {

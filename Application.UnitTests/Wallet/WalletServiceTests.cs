@@ -7,7 +7,7 @@ using Application.Behaviors.Wallet.UpdateWallet;
 using Domain.Repositories;
 using Domain.Entities.Identity;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.Wallet;
 
 public class WalletServiceTests
 {

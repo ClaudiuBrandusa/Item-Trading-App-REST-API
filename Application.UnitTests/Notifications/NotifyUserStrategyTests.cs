@@ -3,7 +3,7 @@ using Application.Services.Notification;
 using Application.Utils.Notifications.NotificationStrategies;
 using Domain.Entities.Identity;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.Notifications;
 
 public class NotifyUserStrategyTests
 {

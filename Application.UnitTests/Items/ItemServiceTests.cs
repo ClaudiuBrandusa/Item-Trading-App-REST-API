@@ -13,7 +13,7 @@ using Domain.Entities.Items;
 using Application.Repositories;
 using MediatR;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.Items;
 
 public class ItemServiceTests
 {

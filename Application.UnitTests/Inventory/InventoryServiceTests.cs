@@ -17,7 +17,7 @@ using Domain.Aggregates.Inventory;
 using Application.Results.Items;
 using Application.Repositories;
 
-namespace Application_UnitTests;
+namespace Application_UnitTests.Inventory;
 
 public class InventoryServiceTests
 {
