@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;
 
-namespace Item_Trading_App_REST_API.Installers;
+namespace Infrastructure.Installers;
 
 public class DbInstaller : IInstaller
 {

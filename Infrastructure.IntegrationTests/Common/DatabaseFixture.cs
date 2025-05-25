@@ -1,6 +1,4 @@
-﻿using Infrastructure.Installers;
-using Infrastructure.Services.DatabaseContextWrapper;
-using Item_Trading_App_REST_API.Installers;
+﻿using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,12 +23,8 @@ public class DatabaseFixture : IAsyncLifetime
 
     protected virtual void RegisterServices(IServiceCollection services)
     {
-        var dbInstaller = new DbInstaller();
-        dbInstaller.InstallServices(services, Configuration);
-        var mediatorInstaller = new MediatorInstaller();
-        mediatorInstaller.InstallServices(services, Configuration);
-        var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
-        dbContextWrapperInstaller.InstallServices(services, Configuration);
+        Application.DependencyInjection.AddApplication(services, Configuration);
+        DependencyInjection.AddInfrastructure(services, Configuration);
     }
 
     public async Task InitializeAsync()

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;
 using System.Reflection;
 
-namespace Item_Trading_App_REST_API.Installers;
+namespace Application.Installers;
 
 public class MediatorInstaller : IInstaller
 {

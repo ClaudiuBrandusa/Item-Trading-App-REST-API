@@ -195,8 +195,17 @@ public static class DatabaseContextExtensions
     {
         foreach(var tradeItem in trade.TradeContents)
         {
-            var lockedItem = new LockedItem(trade.SentTrade.SenderId, tradeItem.ItemId, tradeItem.Quantity);
-            await databaseContext.LockedItems.AddAsync(lockedItem);
+            LockedItem lockedItem = databaseContext.LockedItems.FirstOrDefault(x => x.UserId == trade.SentTrade.SenderId && x.ItemId == tradeItem.ItemId);
+
+            if (lockedItem is null)
+            {
+                lockedItem = new LockedItem(trade.SentTrade.SenderId, tradeItem.ItemId, tradeItem.Quantity);
+                await databaseContext.LockedItems.AddAsync(lockedItem);
+            }
+            else
+            {
+                lockedItem.AddLockedAmount(tradeItem.Quantity);
+            }
         }
     }
 

@@ -67,15 +67,6 @@ public class ResilientTransaction
     {
         commitTransaction = false;
 
-        try
-        {
-            commitTransaction = await func();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Exception catched in {nameof(ResilientTransaction)}: {ex.Message}");
-        }
-
         var strategy = _context.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -83,7 +74,7 @@ public class ResilientTransaction
 
             try
             {
-                await func();
+                commitTransaction = await func();
             }
             catch (Exception ex)
             {

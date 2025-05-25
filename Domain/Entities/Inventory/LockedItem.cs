@@ -25,6 +25,8 @@ public class LockedItem : Entity
     
     public void ChangeLockedAmount(int lockedAmount) => Quantity = lockedAmount;
 
+    public void AddLockedAmount(int lockedAmountToAdd) => Quantity += lockedAmountToAdd;
+
     protected override bool Compare(object obj)
     {
         if (obj is not LockedItem entity) return false;
