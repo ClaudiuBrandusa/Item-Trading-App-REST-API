@@ -6,12 +6,6 @@ using Infrastructure_IntegrationTests.Utils;
 using Item_Trading_App_REST_API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Infrastructure_UnitTests.RepositoryTests;
 

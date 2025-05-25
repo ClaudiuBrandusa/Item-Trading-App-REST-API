@@ -18,6 +18,7 @@ public class DatabaseFixture : IAsyncLifetime
         _dbContainer = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:latest")
             .WithPassword("YourStrong!Passw0rd")
+            .WithCleanUp(true)
             .Build();
     }
 
