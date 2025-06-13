@@ -1,13 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Domain.Entities.Items;
+﻿namespace Domain.Entities.Items;
 
 public class Item : Entity
 {
-    [Key]
     public string ItemId { get; private set; }
 
-    [Required]
     public string Name { get; private set; }
 
     public string Description { get; private set; } = string.Empty;
