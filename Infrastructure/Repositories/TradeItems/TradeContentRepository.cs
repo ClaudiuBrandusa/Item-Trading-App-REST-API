@@ -1,17 +1,13 @@
 ﻿using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
-using MapsterMapper;
 using Domain.Entities.Trades;
 using Domain.Repositories.TradeItems;
 
 namespace Infrastructure.Repositories.TradeItems;
 public class TradeContentRepository : RepositoryBase, ITradeItemRepository
 {
-    private readonly IMapper _mapper;
-
-    public TradeContentRepository(IDatabaseContextWrapper databaseContextWrapper, IMapper mapper) : base(databaseContextWrapper)
+    public TradeContentRepository(IDatabaseContextWrapper databaseContextWrapper) : base(databaseContextWrapper)
     {
-        _mapper = mapper;
     }
 
     public Task<TradeItem?> GetTradeItemAsync(string tradeId, string itemId)

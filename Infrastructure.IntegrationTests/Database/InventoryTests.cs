@@ -16,7 +16,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
     public InventoryTests(DatabaseFixture fixture)
     {
         var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        _repository = new InventoryRepository(dbContextWrapper, TestingUtils.GetMapper());
+        _repository = new InventoryRepository(dbContextWrapper);
         _serviceProvider = fixture.ServiceProvider;
     }
 
@@ -119,7 +119,7 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
         var serviceProvider = dbFixture.ServiceProvider;
         var dbContextWrapper = serviceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var repository = new InventoryRepository(dbContextWrapper, TestingUtils.GetMapper());
+        var repository = new InventoryRepository(dbContextWrapper);
 
         var item = await TestingScenarios.CreateItemAsync(serviceProvider, "Gold", "This is a precious metal");
 

@@ -17,9 +17,8 @@ public class InventoryRepositoryTests
     public InventoryRepositoryTests()
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
-        var mapper = TestingUtils.GetMapper();
-
-        _sut = new InventoryRepository(_contextWrapper, mapper);
+        
+        _sut = new InventoryRepository(_contextWrapper);
     }
 
     [Fact(DisplayName = "Create inventory item then get item by id")]

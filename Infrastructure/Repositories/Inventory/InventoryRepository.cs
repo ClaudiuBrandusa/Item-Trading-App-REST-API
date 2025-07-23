@@ -1,6 +1,5 @@
 ﻿using Infrastructure.Data;
 using Infrastructure.Services.DatabaseContextWrapper;
-using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities.Inventory;
 using Domain.Aggregates.Inventory;
@@ -10,11 +9,8 @@ namespace Infrastructure.Repositories.Inventory;
 
 public class InventoryRepository : RepositoryBase, IInventoryRepository
 {
-    private readonly IMapper _mapper;
-
-    public InventoryRepository(IDatabaseContextWrapper databaseContextWrapper, IMapper mapper) : base(databaseContextWrapper)
+    public InventoryRepository(IDatabaseContextWrapper databaseContextWrapper) : base(databaseContextWrapper)
     {
-        _mapper = mapper;
     }
 
     public async Task<bool> DropItemAsync(string userId, string itemId, int amount)

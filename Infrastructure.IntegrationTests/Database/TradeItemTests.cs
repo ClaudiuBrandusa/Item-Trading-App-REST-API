@@ -17,8 +17,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
     public TradeItemTests(DatabaseFixture databaseFixture)
     {
         var dbContextWrapper = databaseFixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var mapper = TestingUtils.GetMapper();
-        _repository = new TradeContentRepository(dbContextWrapper, mapper);
+        _repository = new TradeContentRepository(dbContextWrapper);
         _serviceProvider = databaseFixture.ServiceProvider;
     }
 
@@ -101,7 +100,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
         var serviceProvider = dbFixture.ServiceProvider;
         var dbContextWrapper = serviceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var repository = new TradeContentRepository(dbContextWrapper, TestingUtils.GetMapper());
+        var repository = new TradeContentRepository(dbContextWrapper);
 
         const int expectedTradeItemsAmount = 3;
         const int expectedItemAmount = 10;

@@ -127,7 +127,7 @@ public static class TestingScenarios
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new InventoryRepository(dbContextWrapper, TestingUtils.GetMapper());
+        var repository = new InventoryRepository(dbContextWrapper);
 
         var ownedItem = new OwnedItem(item.ItemId, user.Id, quantity);
 

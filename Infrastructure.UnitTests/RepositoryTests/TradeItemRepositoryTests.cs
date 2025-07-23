@@ -17,9 +17,8 @@ public class TradeItemRepositoryTests
     public TradeItemRepositoryTests()
     {
         _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
-        var mapper = TestingUtils.GetMapper();
-
-        _sut = new TradeContentRepository(_contextWrapper, mapper);
+        
+        _sut = new TradeContentRepository(_contextWrapper);
     }
 
     [Fact(DisplayName = "Add trade content and get the added trade content")]
