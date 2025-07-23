@@ -1,9 +1,9 @@
-﻿using Domain.Aggregates.Inventory;
+﻿using Domain.Aggregates.Inventories;
 using Domain.Entities.Identity;
-using Domain.Repositories.Inventory;
+using Domain.Repositories.Inventories;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.IntegrationTests.Utils;
-using Infrastructure.Repositories.Inventory;
+using Infrastructure.Repositories.Inventories;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.Extensions.DependencyInjection;
 

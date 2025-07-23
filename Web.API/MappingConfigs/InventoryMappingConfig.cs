@@ -1,6 +1,6 @@
-﻿using Application.Behaviors.Inventory.AddItem;
-using Application.Behaviors.Inventory.DropItem;
-using Application.Results.Inventory;
+﻿using Application.Behaviors.Inventories.AddItem;
+using Application.Behaviors.Inventories.DropItem;
+using Application.Results.Inventories;
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Inventory;
 using Mapster;

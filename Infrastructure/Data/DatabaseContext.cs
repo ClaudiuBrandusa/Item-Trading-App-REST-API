@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities.Items;
 using Domain.Entities.Identity;
-using Domain.Entities.Inventory;
+using Domain.Entities.Inventories;
 using Domain.Entities.Trades;
-using Domain.Aggregates.Inventory;
+using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 
 namespace Infrastructure.Data;

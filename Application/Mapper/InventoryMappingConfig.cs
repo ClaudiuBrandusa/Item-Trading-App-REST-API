@@ -1,14 +1,14 @@
-﻿using Application.Behaviors.Inventory.AddItem;
-using Application.Behaviors.Inventory.DropItem;
-using Application.Behaviors.Inventory.GetItem;
-using Application.Behaviors.Inventory.GetLockedAmount;
-using Application.Behaviors.Inventory.HasItem;
-using Application.Behaviors.Inventory.ListItems;
-using Application.Behaviors.Inventory.LockItem;
-using Application.Behaviors.Inventory.UnlockItem;
-using Application.Models.Inventory;
+﻿using Application.Behaviors.Inventories.AddItem;
+using Application.Behaviors.Inventories.DropItem;
+using Application.Behaviors.Inventories.GetItem;
+using Application.Behaviors.Inventories.GetLockedAmount;
+using Application.Behaviors.Inventories.HasItem;
+using Application.Behaviors.Inventories.ListItems;
+using Application.Behaviors.Inventories.LockItem;
+using Application.Behaviors.Inventories.UnlockItem;
+using Application.Models.Inventories;
 using Application.Models.TradeItems;
-using Domain.Aggregates.Inventory;
+using Domain.Aggregates.Inventories;
 using Domain.Entities.Trades;
 using Mapster;
 

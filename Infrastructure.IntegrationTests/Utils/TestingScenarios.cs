@@ -1,11 +1,11 @@
-﻿using Domain.Aggregates.Inventory;
+﻿using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.Repositories.Identity;
-using Infrastructure.Repositories.Inventory;
+using Infrastructure.Repositories.Inventories;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;

@@ -22,7 +22,7 @@ namespace Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventories.OwnedItem", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
@@ -91,7 +91,7 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Inventory.LockedItem", b =>
+            modelBuilder.Entity("Domain.Entities.Inventories.LockedItem", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
@@ -421,7 +421,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue("User");
                 });
 
-            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventories.OwnedItem", b =>
                 {
                     b.HasOne("Domain.Entities.Items.Item", "Item")
                         .WithMany()
@@ -451,11 +451,11 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Inventory.LockedItem", b =>
+            modelBuilder.Entity("Domain.Entities.Inventories.LockedItem", b =>
                 {
-                    b.HasOne("Domain.Aggregates.Inventory.OwnedItem", "OwnedItem")
+                    b.HasOne("Domain.Aggregates.Inventories.OwnedItem", "OwnedItem")
                         .WithOne("LockedItem")
-                        .HasForeignKey("Domain.Entities.Inventory.LockedItem", "ItemId", "UserId")
+                        .HasForeignKey("Domain.Entities.Inventories.LockedItem", "ItemId", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -581,7 +581,7 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventories.OwnedItem", b =>
                 {
                     b.Navigation("LockedItem")
                         .IsRequired();

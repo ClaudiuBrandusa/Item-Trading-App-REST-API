@@ -1,4 +1,4 @@
-﻿using Domain.Aggregates.Inventory;
+﻿using Domain.Aggregates.Inventories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

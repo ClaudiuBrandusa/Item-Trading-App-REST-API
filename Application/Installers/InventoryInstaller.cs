@@ -1,4 +1,4 @@
-﻿using Application.Services.Inventory;
+﻿using Application.Services.Inventories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;

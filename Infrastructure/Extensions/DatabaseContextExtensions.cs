@@ -1,8 +1,8 @@
 ﻿using Application.Services.UnitOfWork;
-using Domain.Aggregates.Inventory;
+using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
-using Domain.Entities.Inventory;
+using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Infrastructure.Data;

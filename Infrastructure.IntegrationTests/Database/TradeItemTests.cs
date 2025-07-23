@@ -1,4 +1,4 @@
-﻿using Domain.Aggregates.Inventory;
+﻿using Domain.Aggregates.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Domain.Repositories.TradeItems;

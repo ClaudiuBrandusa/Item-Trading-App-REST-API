@@ -1,12 +1,12 @@
 ﻿using Application.Repositories;
 using Domain.Repositories;
-using Domain.Repositories.Inventory;
+using Domain.Repositories.Inventories;
 using Domain.Repositories.Items;
 using Domain.Repositories.TradeItems;
 using Domain.Repositories.TradeItemsHistory;
 using Domain.Repositories.Trades;
 using Infrastructure.Repositories.Identity;
-using Infrastructure.Repositories.Inventory;
+using Infrastructure.Repositories.Inventories;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Repositories.TradeItems;
 using Infrastructure.Repositories.Trades;

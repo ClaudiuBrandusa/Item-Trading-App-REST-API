@@ -1,6 +1,6 @@
-﻿using Domain.Aggregates.Inventory;
-using Domain.Repositories.Inventory;
-using Infrastructure.Repositories.Inventory;
+﻿using Domain.Aggregates.Inventories;
+using Domain.Repositories.Inventories;
+using Infrastructure.Repositories.Inventories;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Infrastructure_IntegrationTests.Utils;
 
