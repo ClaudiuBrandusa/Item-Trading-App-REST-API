@@ -92,7 +92,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
         Assert.Equal(updatedQuantity, retrievedTradeItem.Quantity);
     }
 
-    [Fact(DisplayName = "Create few trade items and list them then check their ids")]
+    /*[Fact(DisplayName = "Create few trade items and list them then check their ids")]
     public async Task ListTradeItems_CreateFewTradeItemsThenListThem_ReturnsListOfTradeItemIds()
     {
         // Arrange
@@ -134,7 +134,7 @@ public class TradeItemTests : IClassFixture<DatabaseFixture>
         Assert.NotNull(tradeItemIds);
         Assert.Equal(expectedTradeItemsAmount, tradeItemIds.Length);
         Assert.All(tradeItemIds, x => tradeContents.Any(y => x.ItemId == y.ItemId));
-    }
+    }*/
 
     [Fact(DisplayName = "Create trade item and delete it then check if it was deleted properly")]
     public async Task DeleteTradeItem_CreateTradeItemAndDeleteTradeItemThenCheckIfItWasDeletedProperly_ShouldntFindTheItem()

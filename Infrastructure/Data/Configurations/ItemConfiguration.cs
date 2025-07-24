@@ -11,5 +11,7 @@ public class ItemConfiguration : IEntityTypeConfiguration<Item>
         builder.HasKey(x => x.ItemId);
 
         builder.Property(x => x.Name).IsRequired();
+
+        builder.ToTable(tb => tb.HasCheckConstraint("CK_Item_Name_MinLength", $"LEN(Name) >= {Item.MinimumNameLength}"));
     }
 }

@@ -4,9 +4,9 @@ using Domain.Repositories.Inventories;
 using Application.Repositories;
 using Application.Extensions;
 using MapsterMapper;
-using Domain.Aggregates.Inventories;
 using Domain.Entities.Inventories;
 using Application.Models.Inventories;
+using Domain.Aggregates.Inventories;
 
 namespace Infrastructure.Repositories.Inventories;
 
@@ -19,6 +19,33 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
     {
         _repository = repository;
         _mapper = mapper;
+    }
+
+    public async Task<Inventory?> GetInventoryAsync(string userId)
+    {
+        var entities = await _cacheService.GetEntitiesAsync(
+            CacheKeys.Inventory.GetUserInventoryKey(userId),
+            async (args) => (await _repository.GetInventoryAsync(userId)).OwnedItems.ToArray(),
+            convertEntityToCachedEntity: (InventoryItem entity) => _mapper.AdaptToType<InventoryItem, CachedOwnedItem>(entity, (nameof(CachedOwnedItem.UserId), userId)),
+            convertCachedEntityToEntity: (CachedOwnedItem cachedEntity) => _mapper.AdaptToType<CachedOwnedItem, InventoryItem>(cachedEntity),
+            true,
+            (InventoryItem item) => item.ItemId);
+
+        var inventory = new Inventory(userId);
+
+        for (int i = 0; i < entities?.Length; i++)
+        {
+            var entity = entities[i];
+
+            inventory.AddItem(entity.ItemId, entity.Quantity);
+        }
+
+        return inventory;
+    }
+
+    public async Task<bool> AddInventoryAsync(Inventory inventory)
+    {
+        return await _repository.AddInventoryAsync(inventory);
     }
 
     public async Task<bool> DropItemAsync(string userId, string itemId, int amount)
@@ -101,13 +128,19 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
     public async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
     {
-        var item = await GetOwnedItemEntityAsync(userId, itemId);
+        // get amount of free item from cache
+        int? itemQuantity = await _cacheService.GetCacheValueAsync<int?>(CacheKeys.Inventory.GetAmountKey(userId, itemId));
+
+        // if miss
+        if (itemQuantity is null)
+        {
+            // then get from repository
+            itemQuantity = await _repository.GetAmountOfFreeItemAsync(userId, itemId);
+        }
 
         int lockedItemQuantity = await GetAmountOfLockedItemAsync(userId, itemId);
 
-        if (item is null) return 0;
-
-        return item!.Quantity - lockedItemQuantity;
+        return itemQuantity.Value - lockedItemQuantity;
     }
 
     public Task<int> GetAmountOfLockedItemAsync(string userId, string itemId)
@@ -123,31 +156,6 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
             true);
     }
 
-    public Task<OwnedItem?> GetOwnedItemEntityAsync(string userId, string itemId)
-    {
-        return _cacheService.GetEntityReferenceAsync(
-            CacheKeys.Inventory.GetAmountKey(userId, itemId),
-            async (args) =>
-            {
-                return await _repository.GetOwnedItemEntityAsync(userId, itemId);
-            },
-            convertEntityToCachedEntity: (OwnedItem entity) => _mapper.AdaptToType<OwnedItem, CachedOwnedItem>(entity),
-            convertCachedEntityToEntity: (CachedOwnedItem cachedEntity) => _mapper.AdaptToType<CachedOwnedItem, OwnedItem>(cachedEntity),
-            true
-        );
-    }
-
-    public Task<OwnedItem[]> ListOwnedItemsAsync(string userId)
-    {
-        return _cacheService.GetEntitiesAsync(
-            CacheKeys.Inventory.GetUserInventoryKey(userId),
-            async (args) => await _repository.ListOwnedItemsAsync(userId),
-            convertEntityToCachedEntity: (OwnedItem entity) => _mapper.AdaptToType<OwnedItem, CachedOwnedItem>(entity),
-            convertCachedEntityToEntity: (CachedOwnedItem cachedEntity) => _mapper.AdaptToType<CachedOwnedItem, OwnedItem>(cachedEntity),
-            true,
-            (OwnedItem item) => item.ItemId);
-    }
-
     public Task<string[]> ListUsersThatOwnItemAsync(string itemId) => _repository.ListUsersThatOwnItemAsync(itemId);
 
     public Task RemoveItemCacheForUserAsync(string userId, string itemId) =>
@@ -156,10 +164,17 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
                 _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId))
             );
 
+    private async Task<bool> UpdateInventoryItemCache(InventoryItem ownedItem, string userId)
+    {
+        await SetCacheAsync((ownedItem, userId));
+
+        return true;
+    }
+
     protected override string GetCacheKey(object entity)
     {
-        if (entity is OwnedItem ownedItem)
-            return CacheKeys.Inventory.GetAmountKey(ownedItem.UserId, ownedItem.ItemId);
+        if (entity is (InventoryItem ownedItem, string userId))
+            return CacheKeys.Inventory.GetAmountKey(userId, ownedItem.ItemId);
         else if (entity is LockedItem lockedItem)
             return CacheKeys.Inventory.GetLockedAmountKey(lockedItem.UserId, lockedItem.ItemId);
 
@@ -168,8 +183,8 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
     protected override object ConvertBeforeCaching(object entity)
     {
-        if (entity is OwnedItem ownedItem)
-            return _mapper.AdaptToType<OwnedItem, CachedOwnedItem>((OwnedItem)entity);
+        if (entity is (InventoryItem ownedItem, string userId))
+            return _mapper.AdaptToType<InventoryItem, CachedOwnedItem>((InventoryItem)entity, (nameof(CachedOwnedItem.UserId), userId));
         else if (entity is LockedItem lockedItem)
             return lockedItem.Quantity;
 

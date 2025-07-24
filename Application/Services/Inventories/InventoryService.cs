@@ -21,6 +21,7 @@ using Application.Repositories;
 using Application.Results.Items;
 using Application.Results.Inventories;
 using Application.Utils.Notifications;
+using Domain.Entities.Inventories;
 
 namespace Application.Services.Inventories;
 
@@ -78,24 +79,24 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Item not found" }
             };
 
-        var item = await _repository.GetOwnedItemEntityAsync(model.UserId, model.ItemId);
-
         bool modified;
 
-        if (item is not null)
-            model.Quantity += item.Quantity;
+        var inventory = await _repository.GetInventoryAsync(model.UserId);
 
-        var entity = _mapper.AdaptToType<AddInventoryItemCommand, OwnedItem>(model);
+        if (inventory is null)
+        {
+            inventory = new Inventory(model.UserId);
+        }
 
-        modified = await _repository.AddOrUpdateEntityAsync(entity, () => item is null);
+        inventory.AddItem(model.ItemId, model.Quantity);
+
+        modified = await _repository.AddInventoryAsync(inventory);
 
         if (!modified)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
-
-        model.Quantity -= await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
 
         var eventNotification = _mapper.AdaptToType<AddInventoryItemCommand, InventoryItemAddedEvent>(model);
 
@@ -106,7 +107,7 @@ public class InventoryService : IInventoryService, IDisposable
             ItemId = model.ItemId,
             ItemName = itemData.ItemName,
             ItemDescription = itemData.ItemDescription,
-            Quantity = model.Quantity,
+            Quantity = inventory.GetItemFreeAmount(model.ItemId),
             Success = true
         };
     }
@@ -130,26 +131,27 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "You cannot drop an amount of 0 from your inventory" }
             };
 
-        var item = await _repository.GetOwnedItemEntityAsync(model.UserId, model.ItemId);
+        var inventory = await _repository.GetInventoryAsync(model.UserId);
 
-        if (item == null)
+        if (!inventory.ItemIds.Contains(model.ItemId))
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Item does not exist" }
             };
 
-        int freeItems = item.Quantity;
-        int lockedAmount = await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
-
-        freeItems -= lockedAmount;
-
-        if (freeItems < model.Quantity)
+        try
+        {
+            inventory.DropItem(model.ItemId, model.Quantity);
+        }
+        catch (ArgumentException ex)
+        {
             return new QuantifiedItemResult
             {
-                Errors = new[] { "You cannot drop more than you have" }
+                Errors = new[] { ex.Message }
             };
+        }
 
-        bool modified = await _repository.DropItemAsync(model.UserId, model.ItemId, model.Quantity);
+        bool modified = await _repository.AddInventoryAsync(inventory);
 
         if (!modified)
             return new QuantifiedItemResult
@@ -165,7 +167,7 @@ public class InventoryService : IInventoryService, IDisposable
         {
             ItemId = model.ItemId,
             ItemName = await _sender.Send(new GetItemNameQuery { ItemId = model.ItemId }),
-            Quantity = freeItems - model.Quantity,
+            Quantity = inventory.GetItemFreeAmount(model.ItemId),
             Success = true
         };
     }
@@ -359,7 +361,12 @@ public class InventoryService : IInventoryService, IDisposable
 
     private async Task<List<string>> FilterInventoryItems(string userId, string searchString)
     {
-        var inventoryItems = await _repository.ListOwnedItemsAsync(userId);
+        var inventory = await _repository.GetInventoryAsync(userId);
+
+        if (inventory is null)
+            return new();
+
+        var inventoryItems = inventory.OwnedItems;
 
         List<string> itemIds = new();
 
@@ -378,7 +385,7 @@ public class InventoryService : IInventoryService, IDisposable
         return itemIds;
     }
 
-    private async Task FilterInventoryItemBySearchString(OwnedItem inventoryItem, string searchString, List<string> itemIds)
+    private async Task FilterInventoryItemBySearchString(InventoryItem inventoryItem, string searchString, List<string> itemIds)
     {
         string itemName = await _sender.Send(new GetItemNameQuery { ItemId = inventoryItem.ItemId });
 

@@ -10,9 +10,9 @@ public class LockedItemConfiguration : IEntityTypeConfiguration<LockedItem>
     {
         builder.HasKey(li => new { li.ItemId, li.UserId });
 
-        builder.HasOne(li => li.OwnedItem)
-            .WithOne(oi => oi.LockedItem)
+        /*builder.HasOne(li => li.ItemId)
+            .WithOne(oi => oi.)
             .HasForeignKey<LockedItem>(li => new { li.ItemId, li.UserId })
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade);*/
     }
 }

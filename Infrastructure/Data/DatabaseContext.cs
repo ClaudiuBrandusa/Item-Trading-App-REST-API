@@ -4,8 +4,8 @@ using Domain.Entities.Items;
 using Domain.Entities.Identity;
 using Domain.Entities.Inventories;
 using Domain.Entities.Trades;
-using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
+using Domain.Aggregates.Inventories;
 
 namespace Infrastructure.Data;
 
@@ -17,7 +17,7 @@ public class DatabaseContext : IdentityDbContext
 
     public DbSet<Item> Items { get; set; }
 
-    public DbSet<OwnedItem> OwnedItems { get; set; }
+    public DbSet<Inventory> Inventories { get; set; }
 
     public DbSet<LockedItem> LockedItems { get; set; }
 

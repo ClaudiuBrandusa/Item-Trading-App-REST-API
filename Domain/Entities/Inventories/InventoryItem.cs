@@ -1,0 +1,64 @@
+﻿namespace Domain.Entities.Inventories;
+
+public class InventoryItem : Entity
+{
+    public string ItemId { get; private init; }
+
+    public int Quantity { get; private set; }
+
+    public int LockedAmount { get; private set; }
+
+    public int FreeAmount => Quantity - LockedAmount;
+
+    private InventoryItem() { } // EF Core
+
+    public InventoryItem(string itemId, int quantity, int lockedAmount = 0)
+    {
+        if (string.IsNullOrWhiteSpace(itemId)) throw new ArgumentException(nameof(itemId));
+        if (quantity < 0) throw new ArgumentOutOfRangeException(nameof(quantity));
+
+        ItemId = itemId;
+        Quantity = quantity;
+        LockedAmount = lockedAmount;
+    }
+
+    public void Increase(int amount)
+    {
+        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        Quantity += amount;
+    }
+
+    public void Drop(int amount)
+    {
+        if (amount <= 0 || amount > Quantity) throw new ArgumentOutOfRangeException(nameof(amount));
+        Quantity -= amount;
+    }
+
+    public void Lock(int amount)
+    {
+        bool notEnough = Quantity < amount;
+        bool invalidAmount = amount < 1;
+        bool lockedAmountWouldOverflow = amount + LockedAmount > Quantity;
+
+        if (notEnough || invalidAmount || lockedAmountWouldOverflow) throw new ArgumentOutOfRangeException(nameof(LockedAmount));
+        LockedAmount += amount;
+    }
+
+    public void Unlock(int amount)
+    {
+        bool tooMuch = LockedAmount < amount;
+        bool invalidAmount = amount < 1;
+
+        if (tooMuch || invalidAmount) throw new ArgumentOutOfRangeException(nameof(amount));
+        LockedAmount -= amount;
+    }
+
+    protected override bool Compare(object obj)
+    {
+        if (obj is not InventoryItem entity) return false;
+
+        return entity.ItemId == ItemId;
+    }
+
+    protected override object GetId() => ItemId;
+}

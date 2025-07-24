@@ -44,9 +44,13 @@ public static class DatabaseContextExtensions
                 {
                     var user = await CreateAndSeedUser(userManager, username, password);
 
+                    var inventory = new Inventory(user.Id);
+
                     // add inventory items
 
-                    await SeedUserInventoryItems(databaseContext, items, user.Id);
+                    SeedUserInventoryItems(inventory, items);
+
+                    await databaseContext.SaveChangesAsync();
                 }
 
                 // add trades
@@ -114,7 +118,7 @@ public static class DatabaseContextExtensions
         return user;
     }
 
-    private static async Task SeedUserInventoryItems(DatabaseContext databaseContext, Item[] items, string userId)
+    private static void SeedUserInventoryItems(Inventory inventory, Item[] items)
     {
         var random = new Random();
 
@@ -122,12 +126,8 @@ public static class DatabaseContextExtensions
         {
             int itemQuantity = random.Next(15, 50);
 
-            var ownedItem = new OwnedItem(items[i].ItemId, userId, itemQuantity);
-
-            await databaseContext.OwnedItems.AddAsync(ownedItem);
+            inventory.AddItem(items[i].ItemId, itemQuantity);
         }
-
-        await databaseContext.SaveChangesAsync();
     }
 
     private static async Task SeedTrades(DatabaseContext databaseContext, string firstUserId, string secondUserId, string[] availableItemIds)
@@ -193,7 +193,7 @@ public static class DatabaseContextExtensions
 
     private static async Task AddLockedItemsForTradeContent(DatabaseContext databaseContext, Trade trade)
     {
-        foreach(var tradeItem in trade.TradeContents)
+        foreach (var tradeItem in trade.TradeContents)
         {
             LockedItem lockedItem = databaseContext.LockedItems.FirstOrDefault(x => x.UserId == trade.SentTrade.SenderId && x.ItemId == tradeItem.ItemId);
 
@@ -216,4 +216,3 @@ public static class DatabaseContextExtensions
         return new TradeItem(tradeId, itemId, random.Next(2, 5), random.Next(1, 5));
     }
 }
- 

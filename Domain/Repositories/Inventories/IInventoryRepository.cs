@@ -6,6 +6,20 @@ namespace Domain.Repositories.Inventories;
 public interface IInventoryRepository : IRepository, IDisposable
 {
     /// <summary>
+    /// Returns the inventory for the given userId
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    Task<Inventory?> GetInventoryAsync(string userId);
+
+    /// <summary>
+    /// Add inventory for the user
+    /// </summary>
+    /// <param name="inventory"></param>
+    /// <returns></returns>
+    Task<bool> AddInventoryAsync(Inventory inventory);
+
+    /// <summary>
     /// Drops the <paramref name="amount"/> of item with <paramref name="itemId"/> from the user's inventory
     /// </summary>
     /// <param name="userId"></param>
@@ -22,11 +36,7 @@ public interface IInventoryRepository : IRepository, IDisposable
     /// <param name="userId"></param>
     /// <param name="itemId"></param>
     /// <returns>Inventory item with <paramref name="itemId"/> of the user with the given <paramref name="userId"/></returns>
-    Task<OwnedItem?> GetOwnedItemEntityAsync(string userId, string itemId);
-
-    /// <param name="userId"></param>
-    /// <returns>List with the items from the inventory of the user with the given <paramref name="userId"/></returns>
-    Task<OwnedItem[]> ListOwnedItemsAsync(string userId);
+    Task<InventoryItem?> GetOwnedItemEntityAsync(string userId, string itemId);
 
     /// <param name="itemId"></param>
     /// <returns>List of users that own the item with <paramref name="itemId"/></returns>

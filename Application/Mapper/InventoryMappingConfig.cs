@@ -8,7 +8,7 @@ using Application.Behaviors.Inventories.LockItem;
 using Application.Behaviors.Inventories.UnlockItem;
 using Application.Models.Inventories;
 using Application.Models.TradeItems;
-using Domain.Aggregates.Inventories;
+using Domain.Entities.Inventories;
 using Domain.Entities.Trades;
 using Mapster;
 
@@ -37,33 +37,19 @@ public class InventoryMappingConfig : IRegister
         config.ForType<string, ListInventoryItemsQuery>()
             .MapWith(str => new ListInventoryItemsQuery { SearchString = str, UserId = MapContext.Current!.Parameters[nameof(ListInventoryItemsQuery.UserId)].ToString() ?? string.Empty });
 
-        config.ForType<AddInventoryItemCommand, OwnedItem>()
-            .MapWith((AddInventoryItemCommand command) => new OwnedItem(
-                command.ItemId,
-                command.UserId,
-                command.Quantity
-            ));
-
-        config.ForType<DropInventoryItemCommand, OwnedItem>()
-            .MapWith((DropInventoryItemCommand command) => new OwnedItem(
-                command.ItemId,
-                command.UserId,
-                command.Quantity
-            ));
-
-        config.ForType<OwnedItem, CachedOwnedItem>()
-            .MapWith((OwnedItem ownedItem) => new CachedOwnedItem
+        config.ForType<InventoryItem, CachedOwnedItem>()
+            .MapWith((InventoryItem ownedItem) => new CachedOwnedItem
             {
                 ItemId = ownedItem.ItemId,
-                UserId = ownedItem.UserId,
+                UserId = MapContext.Current!.Parameters[nameof(CachedOwnedItem.UserId)]!.ToString(),
                 Quantity = ownedItem.Quantity
             });
 
-        config.ForType<CachedOwnedItem, OwnedItem>()
-            .MapWith((CachedOwnedItem cachedOwnedItem) => new OwnedItem(
+        config.ForType<CachedOwnedItem, InventoryItem>()
+            .MapWith((CachedOwnedItem cachedOwnedItem) => new InventoryItem(
                 cachedOwnedItem.ItemId,
-                cachedOwnedItem.UserId,
-                cachedOwnedItem.Quantity
+                cachedOwnedItem.Quantity,
+                0
             ));
 
         config.ForType<TradeItemDTO, LockItemCommand>()

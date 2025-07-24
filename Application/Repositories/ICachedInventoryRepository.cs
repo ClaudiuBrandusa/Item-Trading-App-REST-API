@@ -5,6 +5,20 @@ namespace Application.Repositories;
 public interface ICachedInventoryRepository : ICachedRepository, IDisposable
 {
     /// <summary>
+    /// Retrieves the user's inventory
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns>User's inventory</returns>
+    Task<Inventory?> GetInventoryAsync(string userId);
+
+    /// <summary>
+    /// Adds a new inventory instance to the database
+    /// </summary>
+    /// <param name="inventory"></param>
+    /// <returns>Operation result</returns>
+    Task<bool> AddInventoryAsync(Inventory inventory);
+
+    /// <summary>
     /// Drops the <paramref name="amount"/> of item with <paramref name="itemId"/> from the user's inventory
     /// </summary>
     /// <param name="userId"></param>
@@ -40,24 +54,9 @@ public interface ICachedInventoryRepository : ICachedRepository, IDisposable
     /// Will cache the result
     /// </summary>
     /// <param name="userId"></param>
-    /// <returns>List with the items from the inventory of the user with the given <paramref name="userId"/></returns>
-    Task<OwnedItem[]> ListOwnedItemsAsync(string userId);
-
-    /// <summary>
-    /// Will cache the result
-    /// </summary>
-    /// <param name="userId"></param>
     /// <param name="itemId"></param>
     /// <returns>The amount of an item with <paramref name="itemId"/> that is locked in the inventory of the user with <paramref name="userId"/></returns>
     Task<int> GetAmountOfLockedItemAsync(string userId, string itemId);
-
-    /// <summary>
-    /// Will cache the result
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
-    /// <returns>Inventory item with <paramref name="itemId"/> of the user with the given <paramref name="userId"/></returns>
-    Task<OwnedItem?> GetOwnedItemEntityAsync(string userId, string itemId);
 
     /// <param name="itemId"></param>
     /// <returns>List of users that own the item with <paramref name="itemId"/></returns>

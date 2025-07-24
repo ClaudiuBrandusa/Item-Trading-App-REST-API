@@ -24,14 +24,11 @@ public class InventoryServiceTests
     private readonly IInventoryService _sut; // service under test
     private readonly string DEFAULT_USER_ID = User.GenerateId();
     private readonly string DEFAULT_ITEM_ID = Item.GenerateId();
-    private readonly List<OwnedItem> collection;
-    private readonly List<LockedItem> lockedItems;
+    private readonly Dictionary<string, Inventory> inventories = new();
 
     public InventoryServiceTests()
     {
-        collection = new List<OwnedItem>();
-        lockedItems = new List<LockedItem>();
-        var inventoryRepositoryMock = TestingUtils.CreateRepositoryMock<OwnedItem, ICachedInventoryRepository>(collection);
+        var inventoryRepositoryMock = TestingUtils.CreateRepositoryMock<Inventory, ICachedInventoryRepository>(inventories.Values.ToList());
         var senderMock = new Mock<ISender>();
         var publisherMock = new Mock<IPublisher>();
         var mapper = TestingUtils.GetMapper();
@@ -54,102 +51,106 @@ public class InventoryServiceTests
                 return "Item";
             });
 
-        inventoryRepositoryMock.Setup(repo => repo.GetOwnedItemEntityAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string userId, string itemId) =>
+        inventoryRepositoryMock.Setup(x => x.GetInventoryAsync(It.IsAny<string>()))
+            .ReturnsAsync((string userId) =>
             {
-                var item = GetOwnedItem(userId, itemId);
-
-                return item;
+                return GetInventory(userId);
             });
 
-        inventoryRepositoryMock.Setup(repo => repo.GetAmountOfLockedItemAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string userId, string itemId) =>
+        inventoryRepositoryMock.Setup(x => x.AddInventoryAsync(It.IsAny<Inventory>()))
+            .ReturnsAsync((Inventory inventory) =>
             {
-                var lockedItem = GetLockedItem(userId, itemId);
-
-                return lockedItem?.Quantity ?? 0;
-            });
-
-        inventoryRepositoryMock.Setup(repo => repo.GetAmountOfFreeItemAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string userId, string itemId) =>
-            {
-                var item = GetOwnedItem(userId, itemId);
-                var lockedItem = GetLockedItem(userId, itemId);
-
-                if (item is null) return 0;
-
-                if (lockedItem is null) return item.Quantity;
-
-                return item.Quantity - lockedItem.Quantity;
-            });
-
-        inventoryRepositoryMock.Setup(repo => repo.LockItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync((string userId, string itemId, int quantity) =>
-            {
-                var lockedItem = GetLockedItem(userId, itemId);
-
-                if (lockedItem is not null)
+                if (!inventories.ContainsKey(inventory.UserId))
                 {
-                    lockedItem.ChangeLockedAmount(lockedItem.Quantity + quantity);
+                    inventories.Add(inventory.UserId, inventory);
                 }
                 else
                 {
-                    lockedItems.Add(new LockedItem(userId, itemId, quantity));
+                    inventories[inventory.UserId] = inventory;
                 }
 
                 return true;
             });
 
-        inventoryRepositoryMock.Setup(repo => repo.RemoveEntityAsync(It.IsAny<LockedItem>()))
-            .ReturnsAsync((LockedItem item) =>
+        inventoryRepositoryMock.Setup(repo => repo.GetAmountOfLockedItemAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((string userId, string itemId) =>
             {
-                return RemoveLockedItem(item.UserId, item.ItemId);
+                var inventory = GetInventory(userId);
+
+                if (inventory is null || !inventory.ItemIds.Contains(itemId))
+                {
+                    return 0;
+                }
+
+                return inventory.GetLockedItemAmount(itemId);
             });
 
-        inventoryRepositoryMock.Setup(repo => repo.UpdateEntityAsync(It.IsAny<LockedItem>()))
-            .ReturnsAsync((LockedItem item) =>
+        inventoryRepositoryMock.Setup(repo => repo.GetAmountOfFreeItemAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((string userId, string itemId) =>
             {
-                return UpdateLockedItem(item.UserId, item.ItemId, item.Quantity);
+                var inventory = GetInventory(userId);
+
+                if (inventory is null)
+                {
+                    return 0;
+                }
+
+                return inventory.GetItemFreeAmount(itemId);
+            });
+
+        inventoryRepositoryMock.Setup(repo => repo.LockItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync((string userId, string itemId, int quantity) =>
+            {
+                var inventory = GetInventory(userId);
+                
+                if (inventory is null || !inventory.ItemIds.Contains(itemId))
+                {
+                    return false;
+                }
+                else
+                {
+                    var item = inventory.GetItem(itemId);
+
+                    item.Lock(quantity);
+                }
+
+                return true;
             });
 
         inventoryRepositoryMock.Setup(repo => repo.DropItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
             .ReturnsAsync((string userId, string itemId, int amount) =>
             {
-                int freeAmount = GetFreeItemAmount(userId, itemId);
+                var inventory = GetInventory(userId);
 
-                if (freeAmount < amount) return false;
-
-                freeAmount -= amount;
-
-                if (freeAmount == 0)
+                if (inventory is null || !inventory.ItemIds.Contains(itemId))
                 {
-                    RemoveLockedItem(userId, itemId);
-                    return true;
+                    return false;
                 }
                 else
                 {
-                    return UpdateLockedItem(userId, itemId, amount);
+                    inventory.DropItem(itemId, amount);
                 }
+
+                return true;
             });
 
         inventoryRepositoryMock.Setup(repo => repo.UnlockItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
             .ReturnsAsync((string userId, string itemId, int quantity) =>
             {
-                var lockedItem = GetLockedItem(userId, itemId);
+                var inventory = GetInventory(userId);
 
-                int remainedLockedAmount = lockedItem!.Quantity - quantity;
-
-                if (remainedLockedAmount < 0)
-                    return false;
-
-                if (remainedLockedAmount == 0)
+                if (inventory is null || !inventory.ItemIds.Contains(itemId))
                 {
-                    return RemoveLockedItem(userId, itemId);
+                    return false;
                 }
                 else
                 {
-                    return UpdateLockedItem(userId, itemId, remainedLockedAmount);
+                    var item = inventory.GetItem(itemId);
+
+                    item.Unlock(quantity);
                 }
+
+                return true;
             });
 
         #endregion MediatorMocks
@@ -899,57 +900,7 @@ public class InventoryServiceTests
 
     #region Utils
 
-    private OwnedItem? GetOwnedItem(string userId, string itemId) => collection.FirstOrDefault(x => x.UserId == userId && x.ItemId == itemId);
+    private Inventory? GetInventory(string userId) => inventories.ContainsKey(userId) ? inventories[userId] : null;
 
-    private LockedItem? GetLockedItem(string userId, string itemId) => lockedItems.FirstOrDefault(x => x.UserId == userId && x.ItemId == itemId);
-
-    private int GetFreeItemAmount(string userId, string itemId)
-    {
-        var ownedItem = GetOwnedItem(userId, itemId);
-        var lockedItem = GetLockedItem(userId, itemId);
-
-        return ownedItem.Quantity - (lockedItem?.Quantity ?? 0);
-    }
-
-    private bool UpdateLockedItem(string userId, string itemId, int amount)
-    {
-        var entity = GetLockedItem(userId, itemId);
-
-        if (entity is null)
-        {
-            entity = new LockedItem(userId, itemId, amount);
-            lockedItems.Add(entity);
-
-            return true;
-        }
-        else
-        {
-            entity.ChangeLockedAmount(amount);
-        }
-
-        int index = lockedItems.IndexOf(entity);
-
-        if (index == -1) return false;
-
-        lockedItems[index] = entity;
-
-        return true;
-    }
-
-    private bool RemoveLockedItem(string userId, string itemId)
-    {
-        var entity = GetLockedItem(userId, itemId);
-
-        if (entity is null) return false;
-
-        int index = lockedItems.IndexOf(entity);
-
-        if (index == -1) return false;
-
-        lockedItems.RemoveAt(index);
-
-        return true;
-    }
-    
     #endregion Utils
 }

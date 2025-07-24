@@ -1,6 +1,4 @@
-﻿using Domain.Aggregates.Inventories;
-
-namespace Domain.Entities.Inventories;
+﻿namespace Domain.Entities.Inventories;
 
 public class LockedItem : Entity
 {
@@ -9,8 +7,6 @@ public class LockedItem : Entity
     public string ItemId { get; private set; }
 
     public int Quantity { get; private set; }
-
-    public OwnedItem OwnedItem { get; private set; }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private LockedItem() { }
@@ -22,7 +18,7 @@ public class LockedItem : Entity
         ItemId = itemId;
         Quantity = quantity;
     }
-    
+
     public void ChangeLockedAmount(int lockedAmount) => Quantity = lockedAmount;
 
     public void AddLockedAmount(int lockedAmountToAdd) => Quantity += lockedAmountToAdd;
