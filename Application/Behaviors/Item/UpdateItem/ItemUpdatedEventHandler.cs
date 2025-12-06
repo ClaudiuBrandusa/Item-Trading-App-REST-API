@@ -1,6 +1,6 @@
 ﻿using Application.Constants;
+using Application.Helpers;
 using Application.Services.Notification;
-using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Item.UpdateItem;
@@ -16,8 +16,10 @@ public class ItemUpdatedEventHandler : INotificationHandler<ItemUpdatedEvent>
 
     public Task Handle(ItemUpdatedEvent notification, CancellationToken cancellationToken)
     {
+        var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.SenderUserId);
+
         return _clientNotificationService.SendUpdatedNotificationAsync(
-                NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.SenderUserId),
+                notificationStrategy,
                 NotificationCategoryTypes.Item,
                 notification.Item.ItemId);
     }

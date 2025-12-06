@@ -1,6 +1,6 @@
-﻿using Application.Services.ConnectedUsers;
+﻿using Application.Helpers;
+using Application.Services.ConnectedUsers;
 using Application.Services.Notification;
-using Application.Utils.Notifications;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Item_Trading_App_REST_API.Hubs;
@@ -22,8 +22,13 @@ public abstract class NotificationHubBase : Hub
         var name = GetCurrentUserName();
 
         if (!await _connectedUsersRepository.AddConnectionIdToUser(Context.ConnectionId, userId, name))
-            await _clientNotificationService.SendMessageNotificationAsync(NotificationHelper.CreateAllUsersExceptNotificationStrategy(userId), $"User {name} has connected!", DateTime.Now);
-        await _clientNotificationService.SendMessageNotificationAsync(NotificationHelper.CreateSingleUserNotificationStrategy(userId), "Welcome!", DateTime.Now);
+        {
+            var nus = NotificationHelper.CreateAllUsersExceptNotificationStrategy(userId);
+            await _clientNotificationService.SendMessageNotificationAsync(nus, $"User {name} has connected!", DateTime.Now);
+        }
+
+        var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(userId);
+        await _clientNotificationService.SendMessageNotificationAsync(notificationStrategy, "Welcome!", DateTime.Now);
 
         await base.OnConnectedAsync();
     }

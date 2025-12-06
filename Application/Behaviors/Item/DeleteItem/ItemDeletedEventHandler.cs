@@ -1,8 +1,8 @@
 ﻿using Application.Behaviors.Inventory.ListUsersOwningItem;
 using Application.Behaviors.Inventory.RemoveItemFromUsers;
 using Application.Constants;
+using Application.Helpers;
 using Application.Services.Notification;
-using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Item.DeleteItem;
@@ -20,6 +20,8 @@ public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedEvent>
 
     public Task Handle(ItemDeletedEvent notification, CancellationToken cancellationToken)
     {
+        var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.UserId);
+
         return Task.WhenAll(
             Task.Run(async () =>
             {
@@ -27,7 +29,7 @@ public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedEvent>
                 await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = notification.ItemId, UserIds = usersOwningTheItem.UserIds });
             }, cancellationToken),
             _clientNotificationService.SendDeletedNotificationAsync(
-                NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.UserId),
+                notificationStrategy,
                 NotificationCategoryTypes.Item,
                 notification.ItemId)
         );

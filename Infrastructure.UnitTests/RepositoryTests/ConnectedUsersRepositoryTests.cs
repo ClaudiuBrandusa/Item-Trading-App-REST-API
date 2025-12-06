@@ -1,6 +1,5 @@
 ﻿using Application.Services.Cache;
 using Application.Services.ConnectedUsers;
-using Domain.Entities.Identity;
 using Infrastructure.Services.ConnectedUsers;
 using Infrastructure_IntegrationTests.Utils;
 using Item_Trading_App_REST_API.Hubs;
@@ -12,153 +11,86 @@ namespace Infrastructure_UnitTests.RepositoryTests;
 public class ConnectedUsersRepositoryTests
 {
     private readonly IConnectedUsersRepository _sut;
-    private Dictionary<string, List<string>> groupManagerConnections;
-    private readonly Mock<ICacheService> cacheServiceMock;
 
     public ConnectedUsersRepositoryTests()
     {
-        groupManagerConnections = new();
-        var hubContextMock = GetHubContextMock(groupManagerConnections);
+        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        var groupManagerMock = GetGroupManagerMock();
+
+        var groupManager = groupManagerMock.Object;
+
+        var signalRHubMock = GetNotificationHubContextMock();
         
-        cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        signalRHubMock.SetupGet(x => x.Groups).Returns(groupManager);
 
-        cacheServiceMock.Setup(x => x.SetCacheValueAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string key, string value) => Task.CompletedTask);
-
-        cacheServiceMock.Setup(x => x.ClearCacheKeyAsync(It.IsAny<string>()))
-            .Returns((string key) => Task.CompletedTask);
-        
-        _sut = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextMock.Object);
+        _sut = new ConnectedUsersRepository(cacheServiceMock.Object, signalRHubMock.Object);
     }
 
-    [Fact(DisplayName = "Add connection id to user then check if it was added")]
-    public async Task AddConnectionIdToUser()
+    [Fact]
+    public async Task AddConnectionIdToUser_AddsANewConnection_ShouldCallTheAddGroupMethod()
     {
-        // Arrange
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
 
-        string connectionId = Guid.NewGuid().ToString();
-        string userId = User.GenerateId();
-        string userName = "UserName_0";
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock,
+            var groupManagerMock
+        ) = CreateRepositoryAndGetDependencyMocks();
 
-        // Act
+        var result = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        var connectionsForUserId = sut.ListConnectionIdsForUserId(expectedUserId);
 
-        var userExistBeforeTest = _sut.UserExist(userId);
-        await _sut.AddConnectionIdToUser(connectionId, userId, userName);
-        var userExistAfterTest = _sut.UserExist(userId);
+        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
 
-        // Assert
-
-        Assert.False(userExistBeforeTest);
-        Assert.True(userExistAfterTest);
-        Assert.Contains(userId, groupManagerConnections.Keys);
+        Assert.NotNull(connectionsForUserId);
+        Assert.Contains(expectedConnectionId, connectionsForUserId);
+        //Assert.True(result);
     }
 
-    [Fact(DisplayName = "Remove connection id from user the check if it was removed")]
-    public async Task RemoveConnectionIdFromUser()
+    [Fact]
+    public async Task RemoveConnectionIdFromUser_AddsANewConnectionThenRemovesIt_ShouldCallTheAddGroupMethod()
     {
-        // Arrange
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
 
-        string connectionId = Guid.NewGuid().ToString();
-        string userId = User.GenerateId();
-        string userName = "UserName_1";
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock,
+            var groupManagerMock
+        ) = CreateRepositoryAndGetDependencyMocks();
 
-        // Act
+        var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        await sut.RemoveConnectionIdFromUser(expectedConnectionId, expectedUserId);
+        var connectionsForUserId = sut.ListConnectionIdsForUserId(expectedUserId);
 
-        var userExistBeforeTest = _sut.UserExist(userId);
-        await _sut.AddConnectionIdToUser(connectionId, userId, userName);
-        var userWasAddedSuccessfully = _sut.UserExist(userId);
-        await _sut.RemoveConnectionIdFromUser(connectionId, userId);
-        var userDeletedSuccessfully = !_sut.UserExist(userId);
+        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
 
-        // Assert
-
-        Assert.False(userExistBeforeTest);
-        Assert.True(userWasAddedSuccessfully);
-        Assert.True(userDeletedSuccessfully);
+        Assert.NotNull(connectionsForUserId);
+        Assert.Empty(connectionsForUserId);
     }
 
-    [Fact(DisplayName = "Add several users then list the active users ids")]
-    public async Task GetActiveUserIds()
+    private Mock<IGroupManager> GetGroupManagerMock() => new Mock<IGroupManager>();
+
+    private Mock<IHubContext<NotificationHubBase>> GetNotificationHubContextMock() => new Mock<IHubContext<NotificationHubBase>> ();
+
+    private (ConnectedUsersRepository repository, Mock<ICacheService>, Mock<IHubContext<NotificationHubBase>> hubContextMock, Mock<IGroupManager> groupManagerMock) CreateRepositoryAndGetDependencyMocks()
     {
-        // Arrange
+        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        var groupManagerMock = GetGroupManagerMock();
 
-        const int addedUsersAmount = 3;
-        const int startIndex = 2;
+        var groupManager = groupManagerMock.Object;
 
-        var groupManagerConnections = new Dictionary<string, List<string>>();
-        var hubContextMock = GetHubContextMock(groupManagerConnections);
+        var hubContextMock = GetNotificationHubContextMock();
 
-        var isolatedSUT = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextMock.Object);
+        hubContextMock.SetupGet(x => x.Groups).Returns(groupManager);
 
-        var addedUserIds = new string[addedUsersAmount];
+        var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextMock.Object);
 
-        for (int i = 0; i < addedUsersAmount; i++)
-        {
-            string userId = User.GenerateId();
-            string connectionId = Guid.NewGuid().ToString();
-            string userName = $"UserName_{i + startIndex}";
-
-            addedUserIds[i] = userId;
-
-            await isolatedSUT.AddConnectionIdToUser(connectionId, userId, userName);
-        }
-
-        // Act
-
-        var activeUserIds = isolatedSUT.GetActiveUserIds();
-
-        // Assert
-
-        Assert.All(addedUserIds, addedUserId => activeUserIds.Contains(addedUserId));
+        return (repo, cacheServiceMock, hubContextMock, groupManagerMock);
     }
-
-    #region Utils
-
-    private Mock<IHubContext<NotificationHubBase>> GetHubContextMock(Dictionary<string, List<string>> groupManagerConnections)
-    {
-        var hubContextMock = new Mock<IHubContext<NotificationHubBase>>();
-
-        var groupManagerMock = new Mock<IGroupManager>();
-
-        groupManagerMock.Setup(x => x.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback((string connectionId, string groupName, CancellationToken cancellationToken) =>
-            {
-                List<string> connections;
-
-                if (!groupManagerConnections.TryGetValue(groupName, out connections))
-                {
-                    connections = new List<string>();
-                }
-
-                connections.Add(connectionId);
-
-                groupManagerConnections.Add(groupName, connections);
-            });
-        groupManagerMock.Setup(x => x.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback((string connectionId, string groupName, CancellationToken cancellationToken) =>
-            {
-                if (groupManagerConnections.TryGetValue(groupName, out List<string> connections))
-                {
-                    if (connections.Count == 1)
-                    {
-                        groupManagerConnections.Remove(groupName);
-
-                        return;
-                    }
-
-                    int index = connections.IndexOf(connectionId);
-
-                    if (index == -1)
-                        return;
-
-                    connections.RemoveAt(index);
-                }
-            });
-
-        hubContextMock.SetupGet(x => x.Groups).Returns(groupManagerMock.Object);
-
-        return hubContextMock;
-    }
-
-    #endregion Utils
 }

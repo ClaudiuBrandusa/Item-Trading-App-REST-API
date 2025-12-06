@@ -1,70 +1,60 @@
-﻿using Application.Utils.Notifications;
-using Application.Utils.Notifications.NotificationStrategies;
-using Domain.Entities.Identity;
+﻿using Application.Helpers;
+using Application.Utils.Notifications.Strategies;
 
 namespace Application_UnitTests.Notifications;
 
 public class NotificationHelperTests
 {
-    [Fact(DisplayName = "Create single user notification strategy using the notification helper")]
-    public void CreateSingleUserNotificationStrategy()
+    [Fact]
+    public void CreateSingleUserNotificationStrategy_ShouldReturnStrategyWithSingleUserTarget()
     {
         // Arrange
-
-        string userId = User.GenerateId();
+        var userId = "testUserId";
 
         // Act
-
-        var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(userId);
+        var strategy = NotificationHelper.CreateSingleUserNotificationStrategy(userId);
 
         // Assert
-
-        Assert.IsType<NotifySingleUserStrategy>(notificationStrategy);
+        Assert.NotNull(strategy);
+        Assert.IsAssignableFrom<NotifySingleUserStrategy>(strategy);
     }
 
-    [Fact(DisplayName = "Create multiple users notification strategy using the notification helper")]
-    public void CreateMultipleUsersNotificationStrategy()
+    [Fact]
+    public void CreateAllUsersNotificationStrategy_ShouldReturnStrategyWithAllUsersTarget()
     {
-        // Arrange
-
-        string[] userIds = new string[] { User.GenerateId(), User.GenerateId() };
-
         // Act
-
-        var notificationStrategy = NotificationHelper.CreateMultipleUsersNotificationStrategy(userIds);
+        var strategy = NotificationHelper.CreateAllUsersNotificationStrategy();
 
         // Assert
-
-        Assert.IsType<NotifyMultipleUsersStrategy>(notificationStrategy);
+        Assert.NotNull(strategy);
+        Assert.IsAssignableFrom<NotifyAllUsersStrategy>(strategy);
     }
 
-    [Fact(DisplayName = "Create all users notification strategy using the notification helper")]
-    public void CreateAllUsersNotificationStrategy()
+    [Fact]
+    public void CreateAllUsersExceptNotificationStrategy_ShouldReturnStrategyWithAllExceptTarget()
     {
         // Arrange
-        
-        // Act
+        var userId = "testUserId";
 
-        var notificationStrategy = NotificationHelper.CreateAllUsersNotificationStrategy();
+        // Act
+        var strategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(userId);
 
         // Assert
-
-        Assert.IsType<NotifyAllUsersStrategy>(notificationStrategy);
+        Assert.NotNull(strategy);
+        Assert.IsAssignableFrom<NotifyAllUsersExceptStrategy>(strategy);
     }
 
-    [Fact(DisplayName = "Create all users notification strategy using the notification helper")]
-    public void CreateAllUsersExceptNotificationStrategy()
+    [Fact]
+    public void CreateMultipleUsersNotificationStrategy_WithEmptyArray_ShouldReturnStrategy()
     {
         // Arrange
-
-        string userId = User.GenerateId();
+        var userIds = new string[] { "A", "B", "C" };
 
         // Act
-
-        var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(userId);
+        var strategy = NotificationHelper.CreateMultipleUsersNotificationStrategy(userIds);
 
         // Assert
-
-        Assert.IsType<NotifyAllUsersExceptStrategy>(notificationStrategy);
+        Assert.NotNull(strategy);
+        Assert.IsAssignableFrom<NotifyMultipleUsersStrategy>(strategy);
     }
 }

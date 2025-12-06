@@ -3,7 +3,6 @@ using Application.Constants;
 using Item_Trading_App_Contracts.Notifications.Content;
 using Item_Trading_App_Contracts.Notifications;
 using Application.Services.ConnectedUsers;
-using static Infrastructure.Services.ConnectedUsers.ConnectedUsersRepository;
 using Application.Utils.Notifications;
 
 namespace Infrastructure.Services.Notification;
@@ -17,91 +16,33 @@ public class ClientNotificationService : IClientNotificationService
         _connectedUsersRepository = connectedUsersRepository;
     }
 
-    #region Create
-
     public Task SendCreatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
         var notification = CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData);
 
-        return _connectedUsersRepository.Notify(nus, notification);
+        return nus.Notify(notification, _connectedUsersRepository);
     }
 
-    public Task SendCreatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
-
-    public Task SendCreatedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
-
-    public Task SendCreatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
-
-    public Task SendCreatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData));
-
-    #endregion Create
-
-    #region Read
-
-    public Task SendMessageNotificationToUserAsync(string userId, string content, DateTime dateTime) =>
-        _connectedUsersRepository.NotifyUserAsync(userId, CreateMessageNotification(content, dateTime));
-
-    public Task SendMessageNotificationToAllUsersAsync(string content, DateTime dateTime) =>
-        _connectedUsersRepository.NotifyUsersAsync(CreateMessageNotification(content, dateTime));
-
-    public Task SendMessageNotificationToUsersAsync(string[] userIds, string content, DateTime dateTime) =>
-        _connectedUsersRepository.NotifyUsersAsync(userIds, CreateMessageNotification(content, dateTime));
-
-    public Task SendMessageNotificationToAllUsersExceptAsync(string userId, string content, DateTime dateTime) =>
-        _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateMessageNotification(content, dateTime));
-
-    #endregion Read
-
-    #region Update
-
-    public static class NotificationHelper
+    public Task SendMessageNotificationAsync(INotifyUserStrategy nus, string content, DateTime dateTime)
     {
-        public static INotifyUserStrategy CreateSingleUserNotificationStrategy(string userId)
-        {
-            var notificationStrategy = new NotifyUserStrategyBuilder()
-                .SetNotificationTargetType(NotificationTargetType.SingleUser)
-                .SetDestination(userId)
-                .Build();
+        var notification = CreateMessageNotification(content, dateTime);
 
-            return notificationStrategy;
-        }
+        return nus.Notify(notification, _connectedUsersRepository);
     }
 
-    public Task SendUpdatedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
+    public Task SendUpdatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
+    {
+        var notification = CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData);
 
-    public Task SendUpdatedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
+        return nus.Notify(notification, _connectedUsersRepository);
+    }
 
-    public Task SendUpdatedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
+    public Task SendDeletedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
+    {
+        var notification = CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData);
 
-    public Task SendUpdatedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData));
-
-    #endregion Update
-
-    #region Delete
-
-    public Task SendDeletedNotificationToUserAsync(string userId, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUserAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
-
-    public Task SendDeletedNotificationToAllUsersAsync(string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUsersAsync(CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
-
-    public Task SendDeletedNotificationToUsersAsync(string[] userIds, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyUsersAsync(userIds, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
-
-    public Task SendDeletedNotificationToAllUsersExceptAsync(string userId, string categoryType, string id, object? customData = null) =>
-        _connectedUsersRepository.NotifyAllUsersExceptAsync(userId, CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData));
-
-    #endregion Delete
-
-    #region private
+        return nus.Notify(notification, _connectedUsersRepository);
+    }
 
     private static Notification<MessageContent> CreateMessageNotification(string content, DateTime dateTime)
     {
@@ -116,12 +57,14 @@ public class ClientNotificationService : IClientNotificationService
         };
     }
 
-    private static object CreateModifiedNotificationObject(string notificationType, string categoryType, string id, object customData)
+    private static Notification<ModifiedContent> CreateModifiedNotificationObject(string notificationType, string categoryType, string id)
     {
-        if (customData is null)
-            return CreateModifiedNotification(notificationType, categoryType, id);
-        else
-            return CreateModifiedNotification(notificationType, categoryType, id, customData);
+        return CreateModifiedNotification(notificationType, categoryType, id);
+    }
+
+    private static Notification<ModifiedContentWithCustomData> CreateModifiedNotificationObject(string notificationType, string categoryType, string id, object customData)
+    {
+        return CreateModifiedNotification(notificationType, categoryType, id, customData);
     }
 
     private static Notification<ModifiedContent> CreateModifiedNotification(string notificationType, string categoryType, string id)
@@ -150,6 +93,4 @@ public class ClientNotificationService : IClientNotificationService
             }
         };
     }
-
-    #endregion private
 }
