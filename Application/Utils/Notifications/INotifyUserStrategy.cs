@@ -1,6 +1,10 @@
-﻿namespace Application.Utils.Notifications;
+﻿using Application.Services.ConnectedUsers;
+using Item_Trading_App_Contracts.Notifications;
+using Item_Trading_App_Contracts.Notifications.Content;
+
+namespace Application.Utils.Notifications;
 
 public interface INotifyUserStrategy
 {
-    Task Notify(IHubClients hubClients, object notification);
+    Task Notify<T>(Notification<T> notification, IConnectedUsersRepository connectedUsersRepository) where T : NotificationContent;
 }

@@ -1,25 +1,27 @@
-﻿using MapsterMapper;
-using MediatR;
-using Application.Behaviors.Inventory.AddItem;
-using Application.Constants;
-using Application.Extensions;
-using Application.Models.Inventory;
-using Application.Behaviors.Item.GetItemName;
-using Application.Behaviors.Item.GetItem;
+﻿using Application.Behaviors.Inventory.AddItem;
 using Application.Behaviors.Inventory.DropItem;
 using Application.Behaviors.Inventory.GetItem;
-using Application.Behaviors.Inventory.ListItems;
-using Application.Behaviors.Inventory.UnlockItem;
-using Application.Behaviors.Inventory.LockItem;
 using Application.Behaviors.Inventory.GetLockedAmount;
-using Application.Behaviors.Inventory.RemoveItemFromUsers;
-using Application.Behaviors.Inventory.ListUsersOwningItem;
 using Application.Behaviors.Inventory.HasItem;
+using Application.Behaviors.Inventory.ListItems;
+using Application.Behaviors.Inventory.ListUsersOwningItem;
+using Application.Behaviors.Inventory.LockItem;
+using Application.Behaviors.Inventory.RemoveItemFromUsers;
+using Application.Behaviors.Inventory.UnlockItem;
+using Application.Behaviors.Item.GetItem;
+using Application.Behaviors.Item.GetItemName;
+using Application.Constants;
+using Application.Extensions;
+using Application.Helpers;
+using Application.Models.Inventory;
+using Application.Repositories;
+using Application.Results.Inventory;
+using Application.Results.Items;
 using Application.Services.Notification;
 using Domain.Aggregates.Inventory;
-using Application.Repositories;
-using Application.Results.Items;
-using Application.Results.Inventory;
+using Item_Trading_App_Contracts.Notifications;
+using MapsterMapper;
+using MediatR;
 
 namespace Application.Services.Inventory;
 
@@ -347,7 +349,10 @@ public class InventoryService : IInventoryService, IDisposable
         };
 
         await Task.WhenAll(tasks);
-        await _clientNotificationService.SendDeletedNotificationToUsersAsync(model.UserIds, NotificationCategoryTypes.Inventory, model.ItemId);
+
+        var notificationStrategy = NotificationHelper.CreateMultipleUsersNotificationStrategy(model.UserIds);
+
+        await _clientNotificationService.SendDeletedNotificationAsync(notificationStrategy, NotificationCategoryTypes.Inventory, model.ItemId);
     }
 
     public void Dispose()

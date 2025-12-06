@@ -1,4 +1,5 @@
 ﻿using Application.Constants;
+using Application.Helpers;
 using Application.Models.Trades;
 using Application.Services.Notification;
 using MediatR;
@@ -16,8 +17,10 @@ public class TradeRespondedEventHandler : INotificationHandler<TradeRespondedEve
 
     public Task Handle(TradeRespondedEvent notification, CancellationToken cancellationToken)
     {
-        return _clientNotificationService.SendUpdatedNotificationToUserAsync(
-            notification.SenderId,
+        var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(notification.SenderId);
+
+        return _clientNotificationService.SendUpdatedNotificationAsync(
+            notificationStrategy,
             NotificationCategoryTypes.Trade,
             notification.TradeId,
             new RespondedTradeNotification
