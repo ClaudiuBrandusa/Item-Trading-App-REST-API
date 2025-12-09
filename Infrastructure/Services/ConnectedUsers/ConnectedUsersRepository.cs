@@ -8,13 +8,13 @@ namespace Infrastructure.Services.ConnectedUsers;
 public class ConnectedUsersRepository : IConnectedUsersRepository
 {
     private readonly ICacheService _cacheService;
-    private readonly IHubContextWrapper hubContextWrapper; 
+    private readonly IHubContextWrapper _hubContextWrapper; 
     private readonly Dictionary<string, List<string>> currentUsersConnections = new();
 
     public ConnectedUsersRepository(ICacheService cacheService, IHubContextWrapper hubContextWrapper)
     {
         _cacheService = cacheService;
-        this.hubContextWrapper = hubContextWrapper;
+        _hubContextWrapper = hubContextWrapper;
     }
 
     public string[] ListUserIds()
@@ -47,7 +47,7 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             await _cacheService.SetCacheValueAsync(CacheKeys.Identity.GetActiveUserKey(userId), userName);
         }
 
-        await hubContextWrapper.AddToGroupAsync(connectionId, userId, CancellationToken.None);
+        await _hubContextWrapper.AddToGroupAsync(connectionId, userId, CancellationToken.None);
         return isFirstConnection;
     }
 
@@ -67,21 +67,21 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             // if this point was reached, then something went wrong
         }
 
-        await hubContextWrapper.RemoveFromGroupAsync(connectionId, userId);
+        await _hubContextWrapper.RemoveFromGroupAsync(connectionId, userId);
     }
 
     public Task NotifyUserAsync(string userId, object notification)
     {
         if (!currentUsersConnections.ContainsKey(userId)) return Task.CompletedTask;
 
-        return hubContextWrapper.NotifyUserAsync(userId, notification);
+        return _hubContextWrapper.NotifyUserAsync(userId, notification);
     }
 
     public Task NotifyUsersAsync(object notification) =>
         NotifyUsersAsync(currentUsersConnections.Keys.ToArray(), notification);
 
     public Task NotifyUsersAsync(string[] userIds, object notification) =>
-        hubContextWrapper.NotifyUsersAsync(userIds, notification);
+        _hubContextWrapper.NotifyUsersAsync(userIds, notification);
 
     public Task NotifyAllUsersExceptAsync(string userId, object notification)
     {
