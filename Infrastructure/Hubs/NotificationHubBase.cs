@@ -32,13 +32,14 @@ public abstract class NotificationHubBase : Hub
 
         await base.OnConnectedAsync();
     }
+
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = GetCurrentUserId();
         
         _connectedUsersRepository.RemoveConnectionIdFromUser(Context.ConnectionId, userId);
         return base.OnDisconnectedAsync(exception);
-}
+    }
 
     protected abstract string GetCurrentUserId();
 
