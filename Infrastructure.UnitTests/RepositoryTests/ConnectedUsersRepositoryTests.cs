@@ -1,7 +1,7 @@
 ﻿using Application.Services.Cache;
 using Infrastructure.Services.ConnectedUsers;
+using Infrastructure.Wrappers.Hubs;
 using Infrastructure_IntegrationTests.Utils;
-using Item_Trading_App_REST_API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 
@@ -19,15 +19,13 @@ public class ConnectedUsersRepositoryTests
         (
             var sut,
             var cacheServiceMock,
-            var hubContextMock,
-            var groupManagerMock,
-            _
+            var hubContextMock
         ) = CreateRepositoryAndGetDependencyMocks();
 
         var result = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
         var connectionsForUserId = sut.ListConnectionIdsForUserId(expectedUserId);
 
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
 
         Assert.NotNull(connectionsForUserId);
         Assert.Contains(expectedConnectionId, connectionsForUserId);
@@ -43,16 +41,15 @@ public class ConnectedUsersRepositoryTests
         (
             var sut,
             var cacheServiceMock,
-            var hubContextMock,
-            var groupManagerMock,
-            _
+            var hubContextMock
         ) = CreateRepositoryAndGetDependencyMocks();
 
         var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
         await sut.RemoveConnectionIdFromUser(expectedConnectionId, expectedUserId);
         var connectionsForUserId = sut.ListConnectionIdsForUserId(expectedUserId);
 
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.RemoveFromGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
 
         Assert.NotNull(connectionsForUserId);
         Assert.Empty(connectionsForUserId);
@@ -68,24 +65,16 @@ public class ConnectedUsersRepositoryTests
         (
             var sut,
             var cacheServiceMock,
-            var hubContextMock,
-            var groupManagerMock,
-            var hubClientsMock
+            var hubContextMock
         ) = CreateRepositoryAndGetDependencyMocks();
 
         var notificationMock = new { };
 
-        var clientProxyMock = new Mock<IClientProxy>();
-        var clientProxy = clientProxyMock.Object;
-
-        hubClientsMock.Setup(x => x.Group(expectedUserId))
-            .Returns(clientProxy);
-
         var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
         await sut.NotifyUserAsync(expectedUserId, notificationMock);
-
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
-        hubClientsMock.Verify(x => x.Group(expectedUserId), Times.Once);
+        
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUserAsync(expectedUserId, notificationMock), Times.Once);
     }
 
     [Fact]
@@ -99,24 +88,15 @@ public class ConnectedUsersRepositoryTests
         (
             var sut,
             var cacheServiceMock,
-            var hubContextMock,
-            var groupManagerMock,
-            var hubClientsMock
+            var hubContextMock
         ) = CreateRepositoryAndGetDependencyMocks();
 
         var notificationMock = new { };
 
-        var clientProxyMock = new Mock<IClientProxy>();
-        var clientProxy = clientProxyMock.Object;
-
-        hubClientsMock.Setup(x => x.Groups(expectedUserIds))
-            .Returns(clientProxy);
-
         var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
         await sut.NotifyUsersAsync(notificationMock);
 
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
-        hubClientsMock.Verify(x => x.Groups(expectedUserIds), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
     }
 
     [Fact]
@@ -130,9 +110,7 @@ public class ConnectedUsersRepositoryTests
         (
             var sut,
             var cacheServiceMock,
-            var hubContextMock,
-            var groupManagerMock,
-            var hubClientsMock
+            var hubContextMock
         ) = CreateRepositoryAndGetDependencyMocks();
 
         var notificationMock = new { };
@@ -140,14 +118,11 @@ public class ConnectedUsersRepositoryTests
         var clientProxyMock = new Mock<IClientProxy>();
         var clientProxy = clientProxyMock.Object;
 
-        hubClientsMock.Setup(x => x.Groups(expectedUserIds))
-            .Returns(clientProxy);
-
         var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
         await sut.NotifyUsersAsync(expectedUserIds, notificationMock);
 
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
-        hubClientsMock.Verify(x => x.Groups(expectedUserIds), Times.Once);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
     }
 
     [Fact]
@@ -162,52 +137,28 @@ public class ConnectedUsersRepositoryTests
         (
             var sut,
             var cacheServiceMock,
-            var hubContextMock,
-            var groupManagerMock,
-            var hubClientsMock
+            var hubContextMock
         ) = CreateRepositoryAndGetDependencyMocks();
 
         var notificationMock = new { };
-
-        var clientProxyMock = new Mock<IClientProxy>();
-        var clientProxy = clientProxyMock.Object;
-
-        hubClientsMock.Setup(x => x.Groups(expectedUserIds))
-            .Returns(clientProxy);
 
         await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
         await sut.AddConnectionIdToUser(expectedConnectionId, exceptedUserId, expectedUserName);
         await sut.NotifyAllUsersExceptAsync(exceptedUserId, notificationMock);
 
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
-        groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, exceptedUserId, CancellationToken.None), Times.Once);
-        hubClientsMock.Verify(x => x.Groups(expectedUserIds), Times.Once);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, exceptedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
     }
 
-    private Mock<IGroupManager> GetGroupManagerMock() => new Mock<IGroupManager>();
-
-    private Mock<IHubClients> GetHubClientsMock() => new Mock<IHubClients>();
-
-    private Mock<IHubContext<NotificationHubBase>> GetNotificationHubContextMock() => new Mock<IHubContext<NotificationHubBase>>();
-
-    private (ConnectedUsersRepository repository, Mock<ICacheService>, Mock<IHubContext<NotificationHubBase>> hubContextMock, Mock<IGroupManager> groupManagerMock, Mock<IHubClients> hubClientsMock) CreateRepositoryAndGetDependencyMocks()
+    private (ConnectedUsersRepository repository, Mock<ICacheService>, Mock<IHubContextWrapper> hubContextWrapperMock) CreateRepositoryAndGetDependencyMocks()
     {
         var cacheServiceMock = TestingUtils.GetCacheServiceMock();
-        var groupManagerMock = GetGroupManagerMock();
+        
+        var hubContextWrapperMock = new Mock<IHubContextWrapper>();
 
-        var groupManager = groupManagerMock.Object;
+        var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextWrapperMock.Object);
 
-        var hubClientsMock = GetHubClientsMock();
-
-        var hubClients = hubClientsMock.Object;
-
-        var hubContextMock = GetNotificationHubContextMock();
-
-        hubContextMock.SetupGet(x => x.Groups).Returns(groupManager);
-        hubContextMock.SetupGet(x => x.Clients).Returns(hubClients);
-
-        var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextMock.Object);
-
-        return (repo, cacheServiceMock, hubContextMock, groupManagerMock, hubClientsMock);
+        return (repo, cacheServiceMock, hubContextWrapperMock);
     }
 }

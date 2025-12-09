@@ -1,17 +1,21 @@
 ﻿using Application.Constants;
 using Application.Services.Cache;
 using Application.Services.ConnectedUsers;
-using Infrastructure.Extensions;
-using Item_Trading_App_REST_API.Hubs;
-using Microsoft.AspNetCore.SignalR;
+using Infrastructure.Wrappers.Hubs;
 
 namespace Infrastructure.Services.ConnectedUsers;
 
 public class ConnectedUsersRepository : IConnectedUsersRepository
 {
     private readonly ICacheService _cacheService;
-    private readonly IHubContext<NotificationHubBase> hubContext;
+    private readonly IHubContextWrapper hubContextWrapper; 
     private readonly Dictionary<string, List<string>> currentUsersConnections = new();
+
+    public ConnectedUsersRepository(ICacheService cacheService, IHubContextWrapper hubContextWrapper)
+    {
+        _cacheService = cacheService;
+        this.hubContextWrapper = hubContextWrapper;
+    }
 
     public string[] ListUserIds()
     {
@@ -26,12 +30,6 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
         }
 
         return Array.Empty<string>();
-    }
-
-    public ConnectedUsersRepository(ICacheService cacheService, IHubContext<NotificationHubBase> hubContext)
-    {
-        _cacheService = cacheService;
-        this.hubContext = hubContext;
     }
 
     public async Task<bool> AddConnectionIdToUser(string connectionId, string userId, string userName)
@@ -49,7 +47,7 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             await _cacheService.SetCacheValueAsync(CacheKeys.Identity.GetActiveUserKey(userId), userName);
         }
 
-        await hubContext.Groups.AddToGroupAsync(connectionId, userId, CancellationToken.None);
+        await hubContextWrapper.AddToGroupAsync(connectionId, userId, CancellationToken.None);
         return isFirstConnection;
     }
 
@@ -69,21 +67,21 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             // if this point was reached, then something went wrong
         }
 
-        await hubContext.Groups.RemoveFromGroupAsync(connectionId, userId);
+        await hubContextWrapper.RemoveFromGroupAsync(connectionId, userId);
     }
 
     public Task NotifyUserAsync(string userId, object notification)
     {
         if (!currentUsersConnections.ContainsKey(userId)) return Task.CompletedTask;
 
-        return hubContext.NotifyUserAsync(userId, notification);
+        return hubContextWrapper.NotifyUserAsync(userId, notification);
     }
 
     public Task NotifyUsersAsync(object notification) =>
         NotifyUsersAsync(currentUsersConnections.Keys.ToArray(), notification);
 
     public Task NotifyUsersAsync(string[] userIds, object notification) =>
-        hubContext.NotifyUsersAsync(userIds, notification);
+        hubContextWrapper.NotifyUsersAsync(userIds, notification);
 
     public Task NotifyAllUsersExceptAsync(string userId, object notification)
     {
