@@ -13,6 +13,6 @@ public class SignalRInstaller : IInstaller
     {
         services.AddSignalR();
         services.AddSingleton<NotificationHubBase, NotificationHub>();
-        services.AddTransient<IHubContextWrapper, HubContextWrapper>();
+        services.AddSingleton<IHubContextWrapper, HubContextWrapper>();
     }
 }

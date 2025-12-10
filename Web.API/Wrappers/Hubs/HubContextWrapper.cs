@@ -8,9 +8,9 @@ namespace Item_Trading_App_REST_API.Wrappers.Hubs;
 
 public class HubContextWrapper : IHubContextWrapper
 {
-    private readonly IHubContext<NotificationHubBase> _hubContext;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public HubContextWrapper(IHubContext<NotificationHubBase> hubContext)
+    public HubContextWrapper(IHubContext<NotificationHub> hubContext)
     {
         _hubContext = hubContext;
     }
