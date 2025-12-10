@@ -124,7 +124,7 @@ public class HubContextWrapperTests
         hubClientsMock.Verify(x => x.Groups(expectedGroupNames), Times.Once);
     }
 
-    private (HubContextWrapper, Mock<IHubContext<NotificationHubBase>>, Mock<IHubClients>, Mock<IGroupManager>) CreateServiceWithDependencies()
+    private (HubContextWrapper, Mock<IHubContext<NotificationHub>>, Mock<IHubClients>, Mock<IGroupManager>) CreateServiceWithDependencies()
     {
         var hubClientsMock = new Mock<IHubClients>();
         
@@ -134,7 +134,7 @@ public class HubContextWrapperTests
 
         var groupManager = groupManagerMock.Object;
 
-        var hubContextMock = new Mock<IHubContext<NotificationHubBase>>();
+        var hubContextMock = new Mock<IHubContext<NotificationHub>>();
 
         hubContextMock.SetupGet(x => x.Clients)
             .Returns(hubClients);
