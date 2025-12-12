@@ -1,6 +1,7 @@
 ﻿using Infrastructure.Wrappers.Hubs;
 using Item_Trading_App_REST_API.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,18 +36,18 @@ public class HubContextWrapper : IHubContextWrapper
         return _hubContext.Groups.RemoveFromGroupAsync(connectionId, groupName, cancellationToken);
     }
 
-    public Task NotifyUserAsync(string userId, object notification)
+    public async Task NotifyUserAsync(string userId, object notification)
     {
         var client = GetClientProxy(userId);
 
-        return client.SendAsync("notify", notification);
+        await client.SendAsync("notify", Serialize(notification));
     }
 
-    public Task NotifyUsersAsync(string[] userIds, object notification)
+    public async Task NotifyUsersAsync(string[] userIds, object notification)
     {
         var clients = GetClientsProxy(userIds);
 
-        return clients.SendAsync("notify", notification);
+        await clients.SendAsync("notify", Serialize(notification));
     }
 
     private IClientProxy GetClientProxy(string clientId) =>
@@ -54,4 +55,7 @@ public class HubContextWrapper : IHubContextWrapper
 
     private IClientProxy GetClientsProxy(string[] clientIds) =>
         _hubContext.Clients.Groups(clientIds);
+
+    private string Serialize(object notification) =>
+        JsonSerializer.Serialize(notification, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 }
