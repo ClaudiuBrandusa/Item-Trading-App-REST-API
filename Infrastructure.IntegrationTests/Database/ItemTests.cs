@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Items;
 using Domain.Repositories.Items;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.Extensions.DependencyInjection;

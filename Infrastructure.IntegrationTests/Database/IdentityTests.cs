@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Identity;
 using Domain.Repositories;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;

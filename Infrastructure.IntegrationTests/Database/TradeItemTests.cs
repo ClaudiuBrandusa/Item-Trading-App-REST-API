@@ -2,7 +2,7 @@
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Domain.Repositories.TradeItems;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.TradeItems;
 using Infrastructure.Services.DatabaseContextWrapper;
