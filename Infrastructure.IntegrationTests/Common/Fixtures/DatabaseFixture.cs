@@ -1,4 +1,5 @@
 ﻿using Infrastructure.Installers;
+using Infrastructure.IntegrationTests.Common.Mocks;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Item_Trading_App_REST_API.Installers;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.MsSql;
 
-namespace Infrastructure.IntegrationTests.Common;
+namespace Infrastructure.IntegrationTests.Common.Fixtures;
 public class DatabaseFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _dbContainer;

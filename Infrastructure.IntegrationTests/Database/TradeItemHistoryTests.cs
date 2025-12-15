@@ -1,5 +1,5 @@
 ﻿using Domain.Repositories.TradeItemsHistory;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.TradeItems;
 using Infrastructure.Services.DatabaseContextWrapper;

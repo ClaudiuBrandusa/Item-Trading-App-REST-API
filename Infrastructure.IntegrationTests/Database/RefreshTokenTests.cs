@@ -1,7 +1,7 @@
 ﻿using Application.Utils;
 using Domain.Entities.Identity;
 using Domain.Repositories;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
