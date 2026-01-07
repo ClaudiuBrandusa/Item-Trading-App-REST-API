@@ -9,6 +9,13 @@ namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class ConnectedUsersRepositoryTests
 {
+    private readonly ConnectedUsersRepository _sut;
+
+    public ConnectedUsersRepositoryTests()
+    {
+        _sut = CreateRepository();
+    }
+
     [Fact]
     public async Task AddConnectionIdToUser_AddsANewConnection_ShouldCallTheAddGroupMethod()
     {
@@ -151,6 +158,120 @@ public class ConnectedUsersRepositoryTests
         hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
     }
 
+    [Fact]
+    public async Task AddConnectionIdToUser_AddTwoUsersAtTheSameTime_ShouldBeFine()
+    {
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var exceptedUserId = "userId1";
+        var expectedUserName = "userName";
+        var expectedUserIds = new string[] { expectedUserId };
+
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
+
+        var notificationMock = new { };
+
+        await Task.WhenAll(
+            sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName),
+            sut.AddConnectionIdToUser(expectedConnectionId, exceptedUserId, expectedUserName)
+        );
+
+        await sut.NotifyAllUsersExceptAsync(exceptedUserId, notificationMock);
+    }
+
+    [Fact]
+    public async Task AddConnectionIdToUser_AddConnectionIdsInParallel_ShouldExecuteCorrectly()
+    {
+        var sut = _sut;
+
+        var expectedUsersCount = 200_000;
+
+        var tasks = new Task[expectedUsersCount];
+
+        Parallel.For(0, expectedUsersCount, (index) =>
+        {
+            tasks[index] = Task.Run(async () =>
+            {
+                var connectionId = Guid.NewGuid().ToString();
+                var userId = Guid.NewGuid().ToString();
+                var userName = Guid.NewGuid().ToString();
+
+                await sut.AddConnectionIdToUser(connectionId, userId, userName);
+            });
+        });
+
+        await Task.WhenAll(tasks);
+
+        var userIds = sut.ListUserIds();
+        var distinctUserIds = userIds.Distinct().ToArray();
+
+        Assert.NotEmpty(distinctUserIds);
+        Assert.Equal(userIds.Length, distinctUserIds.Length); // no duplicates
+        Assert.Equal(expectedUsersCount, distinctUserIds.Length);
+        Assert.All(userIds, userId =>
+        {
+            Assert.NotEmpty(userId);
+
+            var connectionIds = sut.ListConnectionIdsForUserId(userId);
+
+            Assert.Single(connectionIds);
+            Assert.NotEmpty(connectionIds[0]);
+        });
+    }
+
+    [Fact]
+    public async Task AddConnectionIdToUser_AddMultipleConnectionIdsInParallel_ShouldExecuteCorrectly()
+    {
+        var sut = _sut;
+
+        var expectedUsersCount = 1000;
+
+        var tasks = new Task[expectedUsersCount];
+
+        Parallel.For(0, expectedUsersCount, (index) =>
+        {
+            tasks[index] = Task.Run(async () =>
+            {
+                var connectionId0 = Guid.NewGuid().ToString();
+                var connectionId1 = Guid.NewGuid().ToString();
+                var connectionId2 = Guid.NewGuid().ToString();
+                var userId = Guid.NewGuid().ToString();
+                var userName = Guid.NewGuid().ToString();
+
+                await Task.WhenAll(
+                    sut.AddConnectionIdToUser(connectionId0, userId, userName),
+                    sut.AddConnectionIdToUser(connectionId1, userId, userName),
+                    sut.AddConnectionIdToUser(connectionId2, userId, userName)
+                );
+            });
+        });
+
+        await Task.WhenAll(tasks);
+
+        var userIds = sut.ListUserIds();
+        var distinctUserIds = userIds.Distinct().ToArray();
+
+        Assert.NotEmpty(distinctUserIds);
+        Assert.Equal(userIds.Length, distinctUserIds.Length); // no duplicates
+        Assert.Equal(expectedUsersCount, distinctUserIds.Length);
+        Assert.All(userIds, userId =>
+        {
+            Assert.NotEmpty(userId);
+
+            var connectionIds = sut.ListConnectionIdsForUserId(userId);
+
+            Assert.Equal(3, connectionIds.Length);
+            Assert.NotEmpty(connectionIds[0]);
+            Assert.NotEmpty(connectionIds[1]);
+            Assert.NotEmpty(connectionIds[2]);
+            Assert.Distinct(connectionIds);
+        });
+    }
+
     private (ConnectedUsersRepository repository, Mock<ICacheService>, Mock<IHubContextWrapper> hubContextWrapperMock) CreateRepositoryAndGetDependencyMocks()
     {
         var cacheServiceMock = TestingUtils.GetCacheServiceMock();
@@ -160,5 +281,16 @@ public class ConnectedUsersRepositoryTests
         var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextWrapperMock.Object);
 
         return (repo, cacheServiceMock, hubContextWrapperMock);
+    }
+
+    private ConnectedUsersRepository CreateRepository()
+    {
+        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+
+        var hubContextWrapperMock = new Mock<IHubContextWrapper>();
+
+        var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextWrapperMock.Object);
+
+        return repo;
     }
 }
