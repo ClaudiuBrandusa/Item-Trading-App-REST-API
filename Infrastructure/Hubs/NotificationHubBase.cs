@@ -30,8 +30,7 @@ public abstract class NotificationHubBase : Hub
         var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(userId);
         await _clientNotificationService.SendMessageNotificationAsync(notificationStrategy, "Welcome!", DateTime.Now);
 
-        await Task.Run(() => Clients.Caller.SendAsync("connected"));
-        
+        await Clients.Caller.SendAsync("connected");
         await base.OnConnectedAsync();
     }
 
