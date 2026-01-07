@@ -1,8 +1,9 @@
 using Application.Services.ConnectedUsers;
-using Infrastructure.Wrappers.Hubs;
-using Microsoft.AspNetCore.Http.Connections;
+using Item_Trading_App_Contracts.Notifications;
+using Item_Trading_App_Contracts.Notifications.Content;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Web.API.IntegrationTests.Common.Factories;
 
 namespace Web.API.IntegrationTests.SignalR;
@@ -21,23 +22,13 @@ public class NotificationHubTests : IClassFixture<TestAppFactory>
     {
         var userId = "user-123";
 
-        var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource<string>();
 
-        var connection = CreateHubConnection(userId);
+        var connection = Utils.CreateHubConnection(_factory, userId);
 
         connection.On<string>("notify", msg =>
         {
             tcs.TrySetResult(msg);
-        });
-
-        connection.On<dynamic>("notify", msg =>
-        {
-            tcs.TrySetResult(msg);
-        });
-
-        connection.On("notify", () =>
-        {
-            tcs.TrySetResult(null);
         });
 
         await connection.StartAsync();
@@ -54,14 +45,13 @@ public class NotificationHubTests : IClassFixture<TestAppFactory>
     }
 
     [Fact]
-    public async Task NotifyUser_NotifyThroughHubContext_ShouldReceiveTheCorrectNotification()
+    public async Task NotifyUserAsync_ExtractNotificationFromHub_ShouldContainNotification()
     {
         var userId = "user-123";
-        var expectedNotification = "notification content";
 
-        var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource<string>();
 
-        var connection = CreateHubConnection(userId);
+        var connection = Utils.CreateHubConnection(_factory, userId);
 
         connection.On<string>("notify", msg =>
         {
@@ -70,30 +60,16 @@ public class NotificationHubTests : IClassFixture<TestAppFactory>
 
         await connection.StartAsync();
 
-        var service = _factory.Services.GetRequiredService<IHubContextWrapper>();
-
-        await service.NotifyUserAsync(userId, expectedNotification);
-
         var received = await tcs.Task;
-
-        Assert.Equal(expectedNotification, received);
+        Assert.NotEmpty(received);
+        var notification = JsonSerializer.Deserialize<Notification<MessageContent>>(received, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        Assert.NotNull(notification);
+        Assert.NotEmpty(notification.Type);
+        var notificationContent = notification.Content;
+        Assert.NotNull(notificationContent);
+        Assert.NotNull(notificationContent.Content);
+        Assert.NotEqual(default, notificationContent.CreatedDateTime);
 
         await connection.DisposeAsync();
-    }
-
-    private HubConnection CreateHubConnection(string userId)
-    {
-        return new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notification", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler();
-
-                options.Transports = HttpTransportType.LongPolling;
-
-                options.Headers["x-user-id"] = userId;
-                options.Headers["x-test-user"] = "root";
-                options.Headers["x-test-role"] = "Admin";
-            })
-            .Build();
     }
 }
