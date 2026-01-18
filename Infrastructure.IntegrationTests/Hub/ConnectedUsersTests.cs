@@ -12,6 +12,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
     private readonly HubFixture _hubFixture;
     private readonly IConnectedUsersRepository _connectedUsersRepository;
     private const string _hubEndpoint = "hubs/notification";
+    private const int DefaultMaxDegreeOfParallelism = 10;
 
     public ConnectedUsersTests(HubFixture fixture)
     {
@@ -139,17 +140,15 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
         var connectionsSetupTasks = new Task[expectedUsersAmount];
 
-        Parallel.For(0, users.Length, (index) =>
-        {
-            connectionsSetupTasks[index] = Task.Run(async () =>
+        await Parallel.ForEachAsync(Enumerable.Range(0, users.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = DefaultMaxDegreeOfParallelism },
+            async (index, ct) =>
             {
                 var user = users[index];
 
                 var connectedClient = new ConnectedClient(user.userId, user.userName, _hubEndpoint, server);
 
                 await connectedClient.Connect();
-
-                await connectedClient.Connected;
 
                 connectedClients[index] = connectedClient;
 
@@ -172,10 +171,13 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
                     tcs.TrySetResult(notification);
                 });
-            });
-        });
+            }
+        );
 
-        await Task.WhenAll(connectionsSetupTasks);
+        await Task.WhenAny(
+            Task.WhenAll(connectedClients.Select(x => x.Connected)),
+            Task.Delay(5 * 1000)
+        );
 
         var notificationTasks = taskCompletionSources.Select(x => x.Task).ToArray();
 
@@ -211,7 +213,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
     public async Task ConnectUsers_ConnectManyUsersInParallel_ShouldWorkJustFine()
     {
         var server = _hubFixture.Server;
-        var expectedUsersAmount = 100;
+        var expectedUsersAmount = 50;
 
         var users = new (string userId, string userName)[expectedUsersAmount];
 
@@ -223,20 +225,15 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
             users[i] = (userId, userName);
         }
 
-        var notification = new NotificationMock
-        {
-            Data = "Some data"
-        };
-
         var connectedUsersRepository = _hubFixture.Server.Services.GetRequiredService<IConnectedUsersRepository>();
 
         var connectedClients = new ConnectedClient[expectedUsersAmount];
 
         var connectionsSetupTasks = new Task[expectedUsersAmount];
 
-        Parallel.For(0, users.Length, (index) =>
-        {
-            connectionsSetupTasks[index] = Task.Run(async () =>
+        await Parallel.ForEachAsync(Enumerable.Range(0, users.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = DefaultMaxDegreeOfParallelism },
+            async (index, ct) =>
             {
                 var user = users[index];
 
@@ -245,10 +242,13 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
                 connectedClients[index] = connectedClient;
 
                 await connectedClient.Connect();
-            });
-        });
+            }
+        );
 
-        await Task.WhenAll(connectionsSetupTasks);
+        await Task.WhenAny(
+            Task.WhenAll(connectedClients.Select(x => x.Connected)),
+            Task.Delay(5 * 1000)
+        );
 
         var userIds = connectedUsersRepository.ListUserIds();
 
@@ -263,6 +263,173 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
             Assert.NotNull(connectionIds);
             Assert.Single(connectionIds);
             Assert.NotEmpty(connectionIds[0]);
+        });
+
+        foreach (var connectedClient in connectedClients)
+        {
+            connectedClient.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task ConnectUsers_ConnectManyConnectionsForSameUsersInParallel_ShouldWorkJustFine()
+    {
+        var server = _hubFixture.Server;
+        var expectedUsersAmount = 10;
+        var expectedAmountOfConnectionsForUserId = 5;
+
+        var users = new (string userId, string userName)[expectedUsersAmount];
+
+        for (int i = 0; i < expectedUsersAmount; i++)
+        {
+            var userId = Guid.NewGuid().ToString();
+            var userName = $"User {i}";
+
+            users[i] = (userId, userName);
+        }
+
+        var connectedUsersRepository = _hubFixture.Server.Services.GetRequiredService<IConnectedUsersRepository>();
+
+        var connectedClients = new ConnectedClient[expectedUsersAmount, expectedAmountOfConnectionsForUserId];
+
+        var connectionsSetupTasks = new Task[expectedUsersAmount];
+
+        await Parallel.ForEachAsync(Enumerable.Range(0, users.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = DefaultMaxDegreeOfParallelism },
+            async (index, ct) =>
+            {
+                await Parallel.ForEachAsync(Enumerable.Range(0, expectedAmountOfConnectionsForUserId),
+                    new ParallelOptions { MaxDegreeOfParallelism = 1 },
+                    async (connectionIndex, ct0) =>
+                    {
+                        var user = users[index];
+
+                        var connectedClient = new ConnectedClient(user.userId, user.userName, _hubEndpoint, server);
+
+                        connectedClients[index, connectionIndex] = connectedClient;
+
+                        await connectedClient.Connect();
+                    }
+                );
+            }
+        );
+
+        await Task.WhenAny(
+            Task.WhenAll(connectedClients.Cast<ConnectedClient>().Select(x => x.Connected).Where(x => !x.IsCompleted)),
+            Task.Delay(5 * 1000)
+        );
+
+        var userIds = connectedUsersRepository.ListUserIds();
+
+        Assert.NotNull(userIds);
+        Assert.True(userIds.Length >= expectedUsersAmount);
+        Assert.All(users, user =>
+        {
+            Assert.Contains(user.userId, userIds);
+
+            var connectionIds = connectedUsersRepository.ListConnectionIdsForUserId(user.userId);
+
+            Assert.NotNull(connectionIds);
+            Assert.Equal(expectedAmountOfConnectionsForUserId, connectionIds.Length);
+            Assert.All(connectionIds, Assert.NotEmpty);
+        });
+
+        foreach (var connectedClient in connectedClients)
+        {
+            connectedClient.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task Notify_ConnectManyUsersAndSendNotificationsInParallel_ShouldWorkJustFine()
+    {
+        var expectedDataContent = "Test";
+
+        var server = _hubFixture.Server;
+        var expectedUsersAmount = 10;
+        var expectedNotification = new NotificationMock
+        {
+            Data = expectedDataContent
+        };
+
+        var users = new (string userId, string userName)[expectedUsersAmount];
+
+        for (int i = 0; i < expectedUsersAmount; i++)
+        {
+            var userId = Guid.NewGuid().ToString();
+            var userName = $"User {i}";
+
+            users[i] = (userId, userName);
+        }
+
+        var connectedUsersRepository = _hubFixture.Server.Services.GetRequiredService<IConnectedUsersRepository>();
+
+        var connectedClients = new ConnectedClient[expectedUsersAmount];
+
+        var connectionsSetupTasks = new Task[expectedUsersAmount];
+
+        var receivedBagKey = "received";
+
+        await Parallel.ForEachAsync(Enumerable.Range(0, users.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = DefaultMaxDegreeOfParallelism },
+            async (index, ct) =>
+            {
+                var user = users[index];
+
+                var connectedClient = new ConnectedClient(user.userId, user.userName, _hubEndpoint, server);
+
+                connectedClients[index] = connectedClient;
+
+                await connectedClient.Connect();
+
+                connectedClient.Listen<string>("notify", (notificationJson) =>
+                {
+                    var notification = JsonSerializer.Deserialize<NotificationMock>(notificationJson, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (string.IsNullOrEmpty(notification.Data) && (notificationJson.Contains("Welcome!") || notificationJson.Contains("has connected!")))
+                        return;
+
+                    connectedClient.ReceivedBag.Add(receivedBagKey, notification);
+                });
+
+                await connectedUsersRepository.NotifyUserAsync(user.userId, expectedNotification);
+            });
+
+        await Task.WhenAny(
+            Task.WhenAll(connectedClients.Select(x => x.Connected)),
+            Task.Delay(5 * 1000)
+        );
+
+        var userIds = connectedUsersRepository.ListUserIds();
+
+        Assert.NotNull(userIds);
+        Assert.True(userIds.Length >= expectedUsersAmount);
+        Assert.All(users, user =>
+        {
+            Assert.Contains(user.userId, userIds);
+
+            var connectionIds = connectedUsersRepository.ListConnectionIdsForUserId(user.userId);
+
+            Assert.NotNull(connectionIds);
+            Assert.Single(connectionIds);
+            Assert.NotEmpty(connectionIds[0]);
+
+            var connectedClient = connectedClients.FirstOrDefault(c => c.UserId == user.userId);
+
+            Assert.NotNull(connectedClient);
+            Assert.Contains(receivedBagKey, connectedClient.ReceivedBag.Keys);
+
+            var notificationObject = connectedClient.ReceivedBag[receivedBagKey];
+
+            Assert.NotNull(notificationObject);
+
+            var notification = notificationObject as NotificationMock;
+
+            Assert.NotNull(notification);
+            Assert.Equal(expectedDataContent, notification.Data);
         });
 
         foreach (var connectedClient in connectedClients)

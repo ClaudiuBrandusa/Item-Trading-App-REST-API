@@ -9,7 +9,7 @@ public class ConnectedClient : IDisposable
 {
     public HubConnection Connection { get; set; }
 
-    private TaskCompletionSource ConnectedTaskCompletionSource = new();
+    private TaskCompletionSource ConnectedTaskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public Task Connected { get; init; }
 
@@ -17,10 +17,14 @@ public class ConnectedClient : IDisposable
 
     public string UserName { get; set; }
 
+    public Dictionary<string, object> ReceivedBag { get; set; } = new();
+
     private IDisposable? _connectedListener;
 
     public ConnectedClient(string userId, string userName, string hubEndpoint, TestServer server)
     {
+        UserId = userId;
+        UserName = userName;
         Connected = ConnectedTaskCompletionSource.Task;
         Connection = CreateHubConnection(userId, userName, hubEndpoint, server);
     }
@@ -32,6 +36,19 @@ public class ConnectedClient : IDisposable
         {
             ConnectedTaskCompletionSource.TrySetResult();
         });
+
+        Connection.Closed += (exception) =>
+        {
+            if (!ConnectedTaskCompletionSource.Task.IsCompleted)
+            {
+                if (exception is not null)
+                    ConnectedTaskCompletionSource.TrySetException(exception);
+                else
+                    ConnectedTaskCompletionSource.TrySetCanceled();
+            }
+
+            return Task.CompletedTask;
+        };
     }
 
     public IDisposable Listen<T>(string key, Action<T> action)
@@ -58,7 +75,7 @@ public class ConnectedClient : IDisposable
                 options.HttpMessageHandlerFactory = _ => server.CreateHandler();
                 options.SkipNegotiation = false;
                 options.Transports = HttpTransportType.LongPolling;
-                options.CloseTimeout = TimeSpan.FromMinutes(10);
+                options.CloseTimeout = TimeSpan.FromSeconds(10);
 
                 options.Headers["x-user-id"] = userId;
                 options.Headers["x-test-user"] = userName;

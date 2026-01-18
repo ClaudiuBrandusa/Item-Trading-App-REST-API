@@ -9,7 +9,6 @@ using Infrastructure.Wrappers.Hubs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,94 +23,6 @@ public class HubFixture : IAsyncLifetime
 
     public TestServer Server { get; private set; } = null!;
     public IHost Host { get; private set; } = null!;
-
-    public async Task InitializeAsyncOLD()
-    {
-        /*var builder = new HostBuilder()
-            .ConfigureServices(s =>
-            {
-                s.AddRouting();
-                s.AddSignalR(o => o.EnableDetailedErrors = true);
-                // register hub deps here
-            })
-            .Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(e => e.MapHub<ChatHub>("/hubs/chat"));
-            });*/
-
-        var host = await new HostBuilder()
-            .ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-                logging.AddConsole();
-                logging.SetMinimumLevel(LogLevel.Trace);
-            })
-            .ConfigureWebHost(web =>
-            {
-                web.UseTestServer();
-
-                web.ConfigureServices(services =>
-                {
-                    services.AddRouting();
-                    services.AddSignalR(o => o.EnableDetailedErrors = true);
-
-                    // hub deps here
-                    // services.AddSingleton<IMyService, MyService>();
-                });
-
-                web.Configure(app =>
-                {
-                    app.UseRouting();
-                    app.UseEndpoints(endpoints =>
-                    {
-                        endpoints.MapHub<NotificationHubImpl>(hubEndpoint);
-                    });
-                });
-            }).StartAsync();
-            /*.ConfigureServices(services =>
-            {
-                services.AddRouting();
-                services.AddSignalR(o => o.EnableDetailedErrors = true);
-
-                // Register ONLY what your Hub depends on:
-                // services.AddSingleton<IMyService, MyService>();
-                // or fakes/mocks for integration-ish tests
-            })*/
-            /*.Configure(app =>
-            {
-                app.UseRouting();
-                app.UseEndpoints(endpoints =>
-                {
-                    endpoints.MapHub<NotificationHubImpl>(hubEndpoint);
-                });
-            });*/
-        //});
-            /*.ConfigureWebHost(web =>
-            {
-                web.UseTestServer()
-                   .ConfigureServices(services =>
-                   {
-                       services.AddRouting();
-                       services.AddSignalR(o => o.EnableDetailedErrors = true);
-
-                       // Register ONLY what your Hub depends on:
-                       // services.AddSingleton<IMyService, MyService>();
-                       // or fakes/mocks for integration-ish tests
-                   })
-                   .Configure(app =>
-                   {
-                       app.UseRouting();
-                       app.UseEndpoints(endpoints =>
-                       {
-                           endpoints.MapHub<NotificationHubImpl>(hubEndpoint);
-                       });
-                   });
-            })*/
-            //.StartAsync();
-
-        Server = host.GetTestServer();
-    }
 
     public async Task InitializeAsync()
     {
