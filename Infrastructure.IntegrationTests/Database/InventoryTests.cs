@@ -2,6 +2,7 @@
 using Domain.Entities.Items;
 using Domain.Repositories.Inventories;
 using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Inventories;
 using Infrastructure.Services.DatabaseContextWrapper;

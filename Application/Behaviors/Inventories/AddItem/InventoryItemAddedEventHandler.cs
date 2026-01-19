@@ -1,7 +1,7 @@
 ﻿using Application.Constants;
+using Application.Helpers;
 using Application.Models.Inventories;
 using Application.Services.Notification;
-using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Inventories.AddItem;

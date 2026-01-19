@@ -1,51 +1,64 @@
 ﻿using Application.Constants;
 using Application.Services.Cache;
 using Application.Services.ConnectedUsers;
-using Item_Trading_App_REST_API.Hubs;
-using Microsoft.AspNetCore.SignalR;
+using Infrastructure.Wrappers.Hubs;
+using System.Collections.Concurrent;
 
 namespace Infrastructure.Services.ConnectedUsers;
 
 public class ConnectedUsersRepository : IConnectedUsersRepository
 {
     private readonly ICacheService _cacheService;
-    private readonly IHubContext<NotificationHubBase> hubContext;
-    private readonly Dictionary<string, List<string>> currentUsersConnections = new();
+    private readonly IHubContextWrapper _hubContextWrapper; 
+    private readonly ConcurrentDictionary<string, HashSet<string>> currentUsersConnections = new();
+    private readonly ConcurrentDictionary<string, object> _locks = new();
 
-    public ConnectedUsersRepository(ICacheService cacheService, IHubContext<NotificationHubBase> hubContext)
+    public ConnectedUsersRepository(ICacheService cacheService, IHubContextWrapper hubContextWrapper)
     {
         _cacheService = cacheService;
-        this.hubContext = hubContext;
+        _hubContextWrapper = hubContextWrapper;
+    }
+
+    public string[] ListUserIds()
+    {
+        return GetKeysArray();
+    }
+
+    public string[] ListConnectionIdsForUserId(string userId)
+    {
+        return GetArrayForKey(userId);
     }
 
     public async Task<bool> AddConnectionIdToUser(string connectionId, string userId, string userName)
     {
         bool isFirstConnection = false;
 
-        if (currentUsersConnections.ContainsKey(userId))
+        if (Contains(userId))
         {
-            currentUsersConnections[userId].Add(connectionId);
+            Add(userId, connectionId);
+                
             isFirstConnection = true;
         }
         else
         {
-            currentUsersConnections.Add(userId, new List<string>() { connectionId });
+            Add(userId, connectionId);
+                
             await _cacheService.SetCacheValueAsync(CacheKeys.Identity.GetActiveUserKey(userId), userName);
         }
 
-        await hubContext.Groups.AddToGroupAsync(connectionId, userId);
+        await _hubContextWrapper.AddToGroupAsync(connectionId, userId, CancellationToken.None);
         return isFirstConnection;
     }
 
     public async Task RemoveConnectionIdFromUser(string connectionId, string userId)
     {
-        if (currentUsersConnections.ContainsKey(userId))
+        if (Contains(userId))
         {
-            currentUsersConnections[userId].Remove(connectionId);
-            if (currentUsersConnections[userId].Count == 0)
+            Remove(userId, connectionId, out var empty);
+            if (empty)
             {
                 await _cacheService.ClearCacheKeyAsync(CacheKeys.Identity.GetActiveUserKey(userId));
-                currentUsersConnections.Remove(userId);
+                currentUsersConnections.TryRemove(userId, out _);
             }
         }
         else
@@ -53,21 +66,114 @@ public class ConnectedUsersRepository : IConnectedUsersRepository
             // if this point was reached, then something went wrong
         }
 
-        await hubContext.Groups.RemoveFromGroupAsync(connectionId, userId);
+        await _hubContextWrapper.RemoveFromGroupAsync(connectionId, userId);
     }
 
-    public bool UserExist(string userId)
+    public async Task NotifyUserAsync(string userId, object notification)
+    {
+        if (!Contains(userId))
+        {
+            return;
+        }
+
+        await _hubContextWrapper.NotifyUserAsync(userId, notification);
+    }
+
+    public async Task NotifyUsersAsync(object notification)
+    {
+        await NotifyUsersAsync(GetKeysArray(), notification);
+    }
+
+    public async Task NotifyUsersAsync(string[] userIds, object notification)
+    {
+        await _hubContextWrapper.NotifyUsersAsync(userIds, notification);
+    }
+
+    public async Task NotifyAllUsersExceptAsync(string userId, object notification)
+    {
+        var keys = GetKeysArray().Where(x => !x.Equals(userId)).ToArray();
+
+        await NotifyUsersAsync(keys, notification);
+    }
+
+    private string[] GetKeysArray()
+    {
+        return SnapshotKeys();
+    }
+    
+    private string[] GetArrayForKey(string userId)
+    {
+        return Snapshot(userId);
+    }
+
+    private bool UserIdExists(string userId)
     {
         return currentUsersConnections.ContainsKey(userId);
     }
 
-    public bool UsersExist(string[] userIds)
+    private object GetKeyLock(string key) => _locks.GetOrAdd(key, _ => new object());
+
+    private bool Add(string key, string value)
     {
-        return userIds.All(x => currentUsersConnections.ContainsKey(x));
+        lock (GetKeyLock(key))
+        {
+            var set = currentUsersConnections.GetOrAdd(key, _ => new HashSet<string>(StringComparer.Ordinal));
+
+            return set.Add(value);
+        }
     }
 
-    public string[] GetActiveUserIds()
+    private bool Remove(string key, string value, out bool empty)
+    {
+        lock (GetKeyLock(key))
+        {
+            empty = false;
+
+            if (!currentUsersConnections.TryGetValue(key, out var set))
+                return false;
+
+            var removed = set.Remove(value);
+
+            // optional cleanup when empty
+            if (removed && set.Count == 0)
+            {
+                empty = true;
+                currentUsersConnections.TryRemove(key, out _);
+                _locks.TryRemove(key, out _);
+            }
+
+            return removed;
+        }
+    }
+
+    private bool Contains(string key, string value)
+    {
+        lock (GetKeyLock(key))
+        {
+            return currentUsersConnections.TryGetValue(key, out var set) && set.Contains(value);
+        }
+    }
+
+    private bool Contains(string key)
+    {
+        lock (GetKeyLock(key))
+        {
+            return currentUsersConnections.TryGetValue(key, out var set) && set != null;
+        }
+    }
+
+    private string[] SnapshotKeys()
     {
         return currentUsersConnections.Keys.ToArray();
+    }
+
+    private string[] Snapshot(string key)
+    {
+        lock (GetKeyLock(key))
+        {
+            return currentUsersConnections.TryGetValue(key, out var set)
+                ? set.ToArray()
+                : Array.Empty<string>();
+        }
     }
 }

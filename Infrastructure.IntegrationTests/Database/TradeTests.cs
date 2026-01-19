@@ -3,7 +3,7 @@ using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Domain.Repositories.Trades;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Trades;
 using Infrastructure.Services.DatabaseContextWrapper;

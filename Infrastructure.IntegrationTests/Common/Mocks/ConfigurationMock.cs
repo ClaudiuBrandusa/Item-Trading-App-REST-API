@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Moq;
 
-namespace Infrastructure.IntegrationTests.Common;
+namespace Infrastructure.IntegrationTests.Common.Mocks;
 
 public class ConfigurationMock
 {

@@ -3,53 +3,45 @@ using Application.Constants;
 using Item_Trading_App_Contracts.Notifications.Content;
 using Item_Trading_App_Contracts.Notifications;
 using Application.Services.ConnectedUsers;
+using Application.Utils.Notifications;
 
 namespace Infrastructure.Services.Notification;
 
 public class ClientNotificationService : IClientNotificationService
 {
     private readonly IConnectedUsersRepository _connectedUsersRepository;
-    private readonly IHubClientsWrapper _hubClientsWrapper;
 
-    public ClientNotificationService(IConnectedUsersRepository connectedUsersRepository, IHubClientsWrapper hubClientsWrapper)
+    public ClientNotificationService(IConnectedUsersRepository connectedUsersRepository)
     {
         _connectedUsersRepository = connectedUsersRepository;
-        _hubClientsWrapper = hubClientsWrapper;
     }
 
     public Task SendCreatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
         var notification = CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData);
 
-        return Notify(nus, notification);
+        return nus.Notify(notification, _connectedUsersRepository);
     }
 
     public Task SendMessageNotificationAsync(INotifyUserStrategy nus, string content, DateTime dateTime)
     {
         var notification = CreateMessageNotification(content, dateTime);
 
-        return Notify(nus, notification);
+        return nus.Notify(notification, _connectedUsersRepository);
     }
 
     public Task SendUpdatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
         var notification = CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData);
 
-        return Notify(nus, notification);
+        return nus.Notify(notification, _connectedUsersRepository);
     }
 
     public Task SendDeletedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
         var notification = CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData);
 
-        return Notify(nus, notification);
-    }
-
-    #region private
-
-    private Task Notify(INotifyUserStrategy notifyStrategy, object notification)
-    {
-        return notifyStrategy.Notify(_hubClientsWrapper, _connectedUsersRepository, notification);
+        return nus.Notify(notification, _connectedUsersRepository);
     }
 
     private static Notification<MessageContent> CreateMessageNotification(string content, DateTime dateTime)
@@ -65,12 +57,14 @@ public class ClientNotificationService : IClientNotificationService
         };
     }
 
-    private static object CreateModifiedNotificationObject(string notificationType, string categoryType, string id, object customData)
+    private static Notification<ModifiedContent> CreateModifiedNotificationObject(string notificationType, string categoryType, string id)
     {
-        if (customData is null)
-            return CreateModifiedNotification(notificationType, categoryType, id);
-        else
-            return CreateModifiedNotification(notificationType, categoryType, id, customData);
+        return CreateModifiedNotification(notificationType, categoryType, id);
+    }
+
+    private static Notification<ModifiedContentWithCustomData> CreateModifiedNotificationObject(string notificationType, string categoryType, string id, object customData)
+    {
+        return CreateModifiedNotification(notificationType, categoryType, id, customData);
     }
 
     private static Notification<ModifiedContent> CreateModifiedNotification(string notificationType, string categoryType, string id)
@@ -99,6 +93,4 @@ public class ClientNotificationService : IClientNotificationService
             }
         };
     }
-
-    #endregion private
 }

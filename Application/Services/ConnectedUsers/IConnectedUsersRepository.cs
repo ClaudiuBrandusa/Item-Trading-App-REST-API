@@ -2,13 +2,19 @@
 
 public interface IConnectedUsersRepository
 {
+    string[] ListUserIds();
+
+    string[] ListConnectionIdsForUserId(string userId);
+
     Task<bool> AddConnectionIdToUser(string connectionId, string userId, string userName);
 
     Task RemoveConnectionIdFromUser(string connectionId, string userId);
 
-    bool UserExist(string userId);
+    Task NotifyUserAsync(string userId, object notification);
 
-    bool UsersExist(string[] userIds);
+    Task NotifyUsersAsync(object notification);
 
-    string[] GetActiveUserIds();
+    Task NotifyUsersAsync(string[] userIds, object notification);
+
+    Task NotifyAllUsersExceptAsync(string userId, object notification);
 }

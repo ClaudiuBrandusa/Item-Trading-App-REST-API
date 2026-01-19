@@ -1,10 +1,13 @@
-﻿using Infrastructure.Services.DatabaseContextWrapper;
+﻿using Application.Installers;
+using Infrastructure.Installers;
+using Infrastructure.IntegrationTests.Common.Mocks;
+using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.MsSql;
 
-namespace Infrastructure.IntegrationTests.Common;
+namespace Infrastructure.IntegrationTests.Common.Fixtures;
 public class DatabaseFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _dbContainer;
@@ -18,14 +21,19 @@ public class DatabaseFixture : IAsyncLifetime
         _dbContainer = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:latest")
             .WithPassword("YourStrong!Passw0rd")
-            .WithCleanUp(true)
             .Build();
     }
 
     protected virtual void RegisterServices(IServiceCollection services)
     {
-        Application.DependencyInjection.AddApplication(services, Configuration);
-        DependencyInjection.AddInfrastructure(services, Configuration);
+        var dbInstaller = new DbInstaller();
+        dbInstaller.InstallServices(services, Configuration);
+        var unitOfWorkInstaller = new UnitOfWorkInstaller();
+        unitOfWorkInstaller.InstallServices(services, Configuration);
+        var mediatorInstaller = new MediatorInstaller();
+        mediatorInstaller.InstallServices(services, Configuration);
+        var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
+        dbContextWrapperInstaller.InstallServices(services, Configuration);
     }
 
     public async Task InitializeAsync()

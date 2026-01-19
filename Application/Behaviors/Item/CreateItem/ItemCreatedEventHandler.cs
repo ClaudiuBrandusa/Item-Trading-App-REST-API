@@ -1,6 +1,6 @@
 ﻿using Application.Constants;
+using Application.Helpers;
 using Application.Services.Notification;
-using Application.Utils.Notifications;
 using MediatR;
 
 namespace Application.Behaviors.Item.CreateItem;
@@ -16,8 +16,10 @@ public class ItemCreatedEventHandler : INotificationHandler<ItemCreatedEvent>
 
     public Task Handle(ItemCreatedEvent notification, CancellationToken cancellationToken)
     {
+        var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.SenderUserId);
+
         return _clientNotificationService.SendCreatedNotificationAsync(
-                NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.SenderUserId),
+                notificationStrategy,
                 NotificationCategoryTypes.Item,
                 notification.Item.ItemId);
     }

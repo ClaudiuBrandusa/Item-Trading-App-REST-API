@@ -1,9 +1,7 @@
 ﻿using Application.Services.Cache;
-using Application.Services.ConnectedUsers;
-using Domain.Entities.Identity;
 using Infrastructure.Services.ConnectedUsers;
+using Infrastructure.Wrappers.Hubs;
 using Infrastructure_IntegrationTests.Utils;
-using Item_Trading_App_REST_API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 
@@ -11,154 +9,288 @@ namespace Infrastructure_UnitTests.RepositoryTests;
 
 public class ConnectedUsersRepositoryTests
 {
-    private readonly IConnectedUsersRepository _sut;
-    private Dictionary<string, List<string>> groupManagerConnections;
-    private readonly Mock<ICacheService> cacheServiceMock;
+    private readonly ConnectedUsersRepository _sut;
 
     public ConnectedUsersRepositoryTests()
     {
-        groupManagerConnections = new();
-        var hubContextMock = GetHubContextMock(groupManagerConnections);
+        _sut = CreateRepository();
+    }
+
+    [Fact]
+    public async Task AddConnectionIdToUser_AddsANewConnection_ShouldCallTheAddGroupMethod()
+    {
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
+
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
+
+        var result = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        var connectionsForUserId = sut.ListConnectionIdsForUserId(expectedUserId);
+
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+
+        Assert.NotNull(connectionsForUserId);
+        Assert.Contains(expectedConnectionId, connectionsForUserId);
+    }
+
+    [Fact]
+    public async Task RemoveConnectionIdFromUser_AddsANewConnectionThenRemovesIt_ShouldCallTheAddGroupMethod()
+    {
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
+
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
+
+        var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        await sut.RemoveConnectionIdFromUser(expectedConnectionId, expectedUserId);
+        var connectionsForUserId = sut.ListConnectionIdsForUserId(expectedUserId);
+
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.RemoveFromGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+
+        Assert.NotNull(connectionsForUserId);
+        Assert.Empty(connectionsForUserId);
+    }
+
+    [Fact]
+    public async Task NotifyUser_AddsANewConnectionNotifiesTheUser_ShouldNotifyTheUser()
+    {
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
+
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
+
+        var notificationMock = new { };
+
+        var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        await sut.NotifyUserAsync(expectedUserId, notificationMock);
         
-        cacheServiceMock = TestingUtils.GetCacheServiceMock();
-
-        cacheServiceMock.Setup(x => x.SetCacheValueAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string key, string value) => Task.CompletedTask);
-
-        cacheServiceMock.Setup(x => x.ClearCacheKeyAsync(It.IsAny<string>()))
-            .Returns((string key) => Task.CompletedTask);
-        
-        _sut = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextMock.Object);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUserAsync(expectedUserId, notificationMock), Times.Once);
     }
 
-    [Fact(DisplayName = "Add connection id to user then check if it was added")]
-    public async Task AddConnectionIdToUser()
+    [Fact]
+    public async Task NotifyUsers_AddsANewConnectionNotifiesAllUsers_ShouldNotifyTheUser()
     {
-        // Arrange
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
+        var expectedUserIds = new string[] { expectedUserId };
 
-        string connectionId = Guid.NewGuid().ToString();
-        string userId = User.GenerateId();
-        string userName = "UserName_0";
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
 
-        // Act
+        var notificationMock = new { };
 
-        var userExistBeforeTest = _sut.UserExist(userId);
-        await _sut.AddConnectionIdToUser(connectionId, userId, userName);
-        var userExistAfterTest = _sut.UserExist(userId);
+        var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        await sut.NotifyUsersAsync(notificationMock);
 
-        // Assert
-
-        Assert.False(userExistBeforeTest);
-        Assert.True(userExistAfterTest);
-        Assert.Contains(userId, groupManagerConnections.Keys);
+        hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
     }
 
-    [Fact(DisplayName = "Remove connection id from user the check if it was removed")]
-    public async Task RemoveConnectionIdFromUser()
+    [Fact]
+    public async Task NotifyUsers_AddsANewConnectionNotifiesMultipleUsers_ShouldNotifyTheUser()
     {
-        // Arrange
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var expectedUserName = "userName";
+        var expectedUserIds = new string[] { expectedUserId };
 
-        string connectionId = Guid.NewGuid().ToString();
-        string userId = User.GenerateId();
-        string userName = "UserName_1";
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
 
-        // Act
+        var notificationMock = new { };
 
-        var userExistBeforeTest = _sut.UserExist(userId);
-        await _sut.AddConnectionIdToUser(connectionId, userId, userName);
-        var userWasAddedSuccessfully = _sut.UserExist(userId);
-        await _sut.RemoveConnectionIdFromUser(connectionId, userId);
-        var userDeletedSuccessfully = !_sut.UserExist(userId);
+        var clientProxyMock = new Mock<IClientProxy>();
+        var clientProxy = clientProxyMock.Object;
 
-        // Assert
+        var addConnectionResult = await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        await sut.NotifyUsersAsync(expectedUserIds, notificationMock);
 
-        Assert.False(userExistBeforeTest);
-        Assert.True(userWasAddedSuccessfully);
-        Assert.True(userDeletedSuccessfully);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
     }
 
-    [Fact(DisplayName = "Add several users then list the active users ids")]
-    public async Task GetActiveUserIds()
+    [Fact]
+    public async Task NotifyAllUsersExcept_AddsANewConnectionNotifiesTheUser_ShouldNotifyTheUser()
     {
-        // Arrange
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var exceptedUserId = "userId1";
+        var expectedUserName = "userName";
+        var expectedUserIds = new string[] { expectedUserId };
 
-        const int addedUsersAmount = 3;
-        const int startIndex = 2;
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
 
-        var groupManagerConnections = new Dictionary<string, List<string>>();
-        var hubContextMock = GetHubContextMock(groupManagerConnections);
+        var notificationMock = new { };
 
-        var isolatedSUT = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextMock.Object);
+        await sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName);
+        await sut.AddConnectionIdToUser(expectedConnectionId, exceptedUserId, expectedUserName);
+        await sut.NotifyAllUsersExceptAsync(exceptedUserId, notificationMock);
 
-        var addedUserIds = new string[addedUsersAmount];
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, exceptedUserId, CancellationToken.None), Times.Once);
+        hubContextMock.Verify(x => x.NotifyUsersAsync(expectedUserIds, notificationMock), Times.Once);
+    }
 
-        for (int i = 0; i < addedUsersAmount; i++)
+    [Fact]
+    public async Task AddConnectionIdToUser_AddTwoUsersAtTheSameTime_ShouldBeFine()
+    {
+        var expectedConnectionId = "connectionId";
+        var expectedUserId = "userId";
+        var exceptedUserId = "userId1";
+        var expectedUserName = "userName";
+        var expectedUserIds = new string[] { expectedUserId };
+
+        (
+            var sut,
+            var cacheServiceMock,
+            var hubContextMock
+        ) = CreateRepositoryAndGetDependencyMocks();
+
+        var notificationMock = new { };
+
+        await Task.WhenAll(
+            sut.AddConnectionIdToUser(expectedConnectionId, expectedUserId, expectedUserName),
+            sut.AddConnectionIdToUser(expectedConnectionId, exceptedUserId, expectedUserName)
+        );
+
+        await sut.NotifyAllUsersExceptAsync(exceptedUserId, notificationMock);
+    }
+
+    [Fact]
+    public async Task AddConnectionIdToUser_AddConnectionIdsInParallel_ShouldExecuteCorrectly()
+    {
+        var sut = _sut;
+
+        var expectedUsersCount = 200_000;
+
+        var tasks = new Task[expectedUsersCount];
+
+        Parallel.For(0, expectedUsersCount, (index) =>
         {
-            string userId = User.GenerateId();
-            string connectionId = Guid.NewGuid().ToString();
-            string userName = $"UserName_{i + startIndex}";
+            tasks[index] = Task.Run(async () =>
+            {
+                var connectionId = Guid.NewGuid().ToString();
+                var userId = Guid.NewGuid().ToString();
+                var userName = Guid.NewGuid().ToString();
 
-            addedUserIds[i] = userId;
+                await sut.AddConnectionIdToUser(connectionId, userId, userName);
+            });
+        });
 
-            await isolatedSUT.AddConnectionIdToUser(connectionId, userId, userName);
-        }
+        await Task.WhenAll(tasks);
 
-        // Act
+        var userIds = sut.ListUserIds();
+        var distinctUserIds = userIds.Distinct().ToArray();
 
-        var activeUserIds = isolatedSUT.GetActiveUserIds();
+        Assert.NotEmpty(distinctUserIds);
+        Assert.Equal(userIds.Length, distinctUserIds.Length); // no duplicates
+        Assert.Equal(expectedUsersCount, distinctUserIds.Length);
+        Assert.All(userIds, userId =>
+        {
+            Assert.NotEmpty(userId);
 
-        // Assert
+            var connectionIds = sut.ListConnectionIdsForUserId(userId);
 
-        Assert.All(addedUserIds, addedUserId => activeUserIds.Contains(addedUserId));
+            Assert.Single(connectionIds);
+            Assert.NotEmpty(connectionIds[0]);
+        });
     }
 
-    #region Utils
-
-    private Mock<IHubContext<NotificationHubBase>> GetHubContextMock(Dictionary<string, List<string>> groupManagerConnections)
+    [Fact]
+    public async Task AddConnectionIdToUser_AddMultipleConnectionIdsInParallel_ShouldExecuteCorrectly()
     {
-        var hubContextMock = new Mock<IHubContext<NotificationHubBase>>();
+        var sut = _sut;
 
-        var groupManagerMock = new Mock<IGroupManager>();
+        var expectedUsersCount = 1000;
 
-        groupManagerMock.Setup(x => x.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback((string connectionId, string groupName, CancellationToken cancellationToken) =>
+        var tasks = new Task[expectedUsersCount];
+
+        Parallel.For(0, expectedUsersCount, (index) =>
+        {
+            tasks[index] = Task.Run(async () =>
             {
-                List<string> connections;
+                var connectionId0 = Guid.NewGuid().ToString();
+                var connectionId1 = Guid.NewGuid().ToString();
+                var connectionId2 = Guid.NewGuid().ToString();
+                var userId = Guid.NewGuid().ToString();
+                var userName = Guid.NewGuid().ToString();
 
-                if (!groupManagerConnections.TryGetValue(groupName, out connections))
-                {
-                    connections = new List<string>();
-                }
-
-                connections.Add(connectionId);
-
-                groupManagerConnections.Add(groupName, connections);
+                await Task.WhenAll(
+                    sut.AddConnectionIdToUser(connectionId0, userId, userName),
+                    sut.AddConnectionIdToUser(connectionId1, userId, userName),
+                    sut.AddConnectionIdToUser(connectionId2, userId, userName)
+                );
             });
-        groupManagerMock.Setup(x => x.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback((string connectionId, string groupName, CancellationToken cancellationToken) =>
-            {
-                if (groupManagerConnections.TryGetValue(groupName, out List<string> connections))
-                {
-                    if (connections.Count == 1)
-                    {
-                        groupManagerConnections.Remove(groupName);
+        });
 
-                        return;
-                    }
+        await Task.WhenAll(tasks);
 
-                    int index = connections.IndexOf(connectionId);
+        var userIds = sut.ListUserIds();
+        var distinctUserIds = userIds.Distinct().ToArray();
 
-                    if (index == -1)
-                        return;
+        Assert.NotEmpty(distinctUserIds);
+        Assert.Equal(userIds.Length, distinctUserIds.Length); // no duplicates
+        Assert.Equal(expectedUsersCount, distinctUserIds.Length);
+        Assert.All(userIds, userId =>
+        {
+            Assert.NotEmpty(userId);
 
-                    connections.RemoveAt(index);
-                }
-            });
+            var connectionIds = sut.ListConnectionIdsForUserId(userId);
 
-        hubContextMock.SetupGet(x => x.Groups).Returns(groupManagerMock.Object);
-
-        return hubContextMock;
+            Assert.Equal(3, connectionIds.Length);
+            Assert.NotEmpty(connectionIds[0]);
+            Assert.NotEmpty(connectionIds[1]);
+            Assert.NotEmpty(connectionIds[2]);
+            Assert.Distinct(connectionIds);
+        });
     }
 
-    #endregion Utils
+    private (ConnectedUsersRepository repository, Mock<ICacheService>, Mock<IHubContextWrapper> hubContextWrapperMock) CreateRepositoryAndGetDependencyMocks()
+    {
+        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        
+        var hubContextWrapperMock = new Mock<IHubContextWrapper>();
+
+        var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextWrapperMock.Object);
+
+        return (repo, cacheServiceMock, hubContextWrapperMock);
+    }
+
+    private ConnectedUsersRepository CreateRepository()
+    {
+        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+
+        var hubContextWrapperMock = new Mock<IHubContextWrapper>();
+
+        var repo = new ConnectedUsersRepository(cacheServiceMock.Object, hubContextWrapperMock.Object);
+
+        return repo;
+    }
 }
