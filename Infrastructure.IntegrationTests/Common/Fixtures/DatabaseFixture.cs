@@ -1,7 +1,7 @@
-﻿using Infrastructure.Installers;
+﻿using Application.Installers;
+using Infrastructure.Installers;
 using Infrastructure.IntegrationTests.Common.Mocks;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Item_Trading_App_REST_API.Installers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +28,8 @@ public class DatabaseFixture : IAsyncLifetime
     {
         var dbInstaller = new DbInstaller();
         dbInstaller.InstallServices(services, Configuration);
+        var unitOfWorkInstaller = new UnitOfWorkInstaller();
+        unitOfWorkInstaller.InstallServices(services, Configuration);
         var mediatorInstaller = new MediatorInstaller();
         mediatorInstaller.InstallServices(services, Configuration);
         var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();

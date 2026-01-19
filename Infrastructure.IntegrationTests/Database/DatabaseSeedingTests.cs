@@ -1,5 +1,5 @@
 ﻿using Infrastructure.Extensions;
-using Infrastructure.IntegrationTests.Common;
+using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.Extensions.DependencyInjection;
 
