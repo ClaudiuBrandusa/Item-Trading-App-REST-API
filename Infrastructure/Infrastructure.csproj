@@ -37,9 +37,4 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Builders\" />
-    <Folder Include="Data\Migrations\" />
-  </ItemGroup>
-
 </Project>

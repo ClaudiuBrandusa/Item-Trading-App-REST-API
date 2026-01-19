@@ -1,4 +1,5 @@
 ﻿using Domain.Aggregates.Trades;
+using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Domain.Repositories.Trades;
@@ -209,16 +210,18 @@ public class TradeTests : IClassFixture<DatabaseFixture>
         int expectedTradesCount = 3;
 
         (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 5);
-        
+
         var itemNames = new string[] { "Aluminum", "Cobalt", "Zinc" };
         var items = new Item[expectedTradesCount];
         var expectedItemQuantities = new int[expectedTradesCount];
+
+        var inventoryItems = new InventoryItem[expectedTradesCount];
 
         for (int i = 0; i < expectedTradesCount; i++)
         {
             items[i] = await TestingScenarios.CreateItemAsync(_serviceProvider, itemNames[i], string.Empty);
             int amount = 5;
-            await TestingScenarios.AddItemToUser(_serviceProvider, items[i], senderUser, amount);
+            inventoryItems[i] = await TestingScenarios.AddItemToUser(_serviceProvider, items[i], senderUser, amount);
             expectedItemQuantities[i] = amount;
         }
 

@@ -1,11 +1,12 @@
-﻿using Domain.Aggregates.Inventory;
+﻿using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
+using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.Repositories.Identity;
-using Infrastructure.Repositories.Inventory;
+using Infrastructure.Repositories.Inventories;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;
@@ -55,6 +56,8 @@ public static class TestingScenarios
 
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
 
+        repository.Dispose();
+
         return response!;
     }
 
@@ -74,6 +77,8 @@ public static class TestingScenarios
         await repository.CreateUserAsync(userToBeCreated, Constants.DEFAULT_USER_PASSWORD);
 
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
+
+        repository.Dispose();
 
         return response!;
     }
@@ -95,10 +100,12 @@ public static class TestingScenarios
 
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
 
+        repository.Dispose();
+
         return response!;
     }
 
-    public static async Task<(User,User)> CreateSenderReceiverUsersPair(IServiceProvider serviceProvider, int index)
+    public static async Task<(User, User)> CreateSenderReceiverUsersPair(IServiceProvider serviceProvider, int index)
     {
         var senderUser = await CreateUser(serviceProvider, $"sender_{index}");
         var receiverUser = await CreateUser(serviceProvider, $"receiver_{index}");
@@ -120,20 +127,52 @@ public static class TestingScenarios
 
         var response = await repository.GetItemEntityAsync(itemToBeCreated.ItemId);
 
+        repository.Dispose();
+
         return response!;
     }
 
-    public static async Task<OwnedItem> AddItemToUser(IServiceProvider serviceProvider, Item item, User user, int quantity)
+    public static Task<Item> CreateItemAsync(IServiceProvider serviceProvider, string itemName)
+    {
+        return CreateItemAsync(serviceProvider, itemName, string.Empty);
+    }
+
+    /// <summary>
+    /// Returns the user's inventory. Ensures that the user has a created inventory.
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    public static async Task<Inventory> GetInventory(IServiceProvider serviceProvider, string userId)
+    {
+        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var repository = new InventoryRepository(dbContextWrapper);
+        
+        var inventory = await repository.GetInventoryAsync(userId);
+
+        if (inventory is null)
+            inventory = new Inventory(userId);
+
+        repository.Dispose();
+
+        return inventory;
+    }
+
+    public static async Task<InventoryItem> AddItemToUser(IServiceProvider serviceProvider, Item item, User user, int quantity)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new InventoryRepository(dbContextWrapper, TestingUtils.GetMapper());
+        var repository = new InventoryRepository(dbContextWrapper);
 
-        var ownedItem = new OwnedItem(item.ItemId, user.Id, quantity);
+        var inventory = await GetInventory(serviceProvider, user.Id);
 
-        await repository.AddEntityAsync(ownedItem);
+        inventory.AddItem(item.ItemId, quantity);
+
+        bool operationResult = await repository.AddInventoryAsync(inventory);
 
         var response = await repository.GetOwnedItemEntityAsync(user.Id, item.ItemId);
+
+        repository.Dispose();
 
         return response!;
     }

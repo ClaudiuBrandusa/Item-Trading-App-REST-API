@@ -1,4 +1,4 @@
-using Application.Behaviors.Inventory.ListUsersOwningItem;
+using Application.Behaviors.Inventories.ListUsersOwningItem;
 using Application.Behaviors.Item.CreateItem;
 using Application.Behaviors.Item.DeleteItem;
 using Application.Behaviors.Item.GetItem;
@@ -6,7 +6,7 @@ using Application.Behaviors.Item.GetItemDescription;
 using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.UpdateItem;
-using Application.Models.Inventory;
+using Application.Models.Inventories;
 using Application.Services.Item;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;

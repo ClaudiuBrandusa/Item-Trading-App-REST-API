@@ -22,22 +22,14 @@ namespace Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventories.Inventory", b =>
                 {
-                    b.Property<string>("ItemId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
+                    b.HasKey("UserId");
 
-                    b.HasKey("ItemId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("OwnedItems");
+                    b.ToTable("Inventories", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Aggregates.Trades.Trade", b =>
@@ -91,7 +83,7 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Inventory.LockedItem", b =>
+            modelBuilder.Entity("Domain.Entities.Inventories.LockedItem", b =>
                 {
                     b.Property<string>("ItemId")
                         .HasColumnType("nvarchar(450)");
@@ -122,7 +114,10 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("ItemId");
 
-                    b.ToTable("Items");
+                    b.ToTable("Items", t =>
+                        {
+                            t.HasCheckConstraint("CK_Item_Name_MinLength", "LEN(Name) >= 3");
+                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Trades.ReceivedTrade", b =>
@@ -421,23 +416,45 @@ namespace Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue("User");
                 });
 
-            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
+            modelBuilder.Entity("Domain.Aggregates.Inventories.Inventory", b =>
                 {
-                    b.HasOne("Domain.Entities.Items.Item", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Identity.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                    b.HasOne("Domain.Entities.Identity.User", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Aggregates.Inventories.Inventory", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Item");
+                    b.OwnsMany("Domain.Entities.Inventories.InventoryItem", "OwnedItems", b1 =>
+                        {
+                            b1.Property<string>("UserId")
+                                .HasColumnType("nvarchar(450)");
 
-                    b.Navigation("User");
+                            b1.Property<string>("ItemId")
+                                .HasColumnType("nvarchar(450)");
+
+                            b1.Property<int>("LockedAmount")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Quantity")
+                                .HasColumnType("int");
+
+                            b1.HasKey("UserId", "ItemId");
+
+                            b1.HasIndex("ItemId");
+
+                            b1.ToTable("InventoryItems", (string)null);
+
+                            b1.HasOne("Domain.Entities.Items.Item", null)
+                                .WithMany()
+                                .HasForeignKey("ItemId")
+                                .OnDelete(DeleteBehavior.Cascade)
+                                .IsRequired();
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.Navigation("OwnedItems");
                 });
 
             modelBuilder.Entity("Domain.Entities.Identity.RefreshToken", b =>
@@ -449,17 +466,6 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Inventory.LockedItem", b =>
-                {
-                    b.HasOne("Domain.Aggregates.Inventory.OwnedItem", "OwnedItem")
-                        .WithOne("LockedItem")
-                        .HasForeignKey("Domain.Entities.Inventory.LockedItem", "ItemId", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("OwnedItem");
                 });
 
             modelBuilder.Entity("Domain.Entities.Trades.ReceivedTrade", b =>
@@ -578,12 +584,6 @@ namespace Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Domain.Aggregates.Inventory.OwnedItem", b =>
-                {
-                    b.Navigation("LockedItem")
                         .IsRequired();
                 });
 

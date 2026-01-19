@@ -1,9 +1,9 @@
-﻿using Application.Behaviors.Inventory.AddItem;
-using Application.Behaviors.Inventory.DropItem;
-using Application.Behaviors.Inventory.GetItem;
-using Application.Behaviors.Inventory.GetLockedAmount;
-using Application.Behaviors.Inventory.ListItems;
-using Application.Results.Inventory;
+﻿using Application.Behaviors.Inventories.AddItem;
+using Application.Behaviors.Inventories.DropItem;
+using Application.Behaviors.Inventories.GetItem;
+using Application.Behaviors.Inventories.GetLockedAmount;
+using Application.Behaviors.Inventories.ListItems;
+using Application.Results.Inventories;
 using Application.Results.Items;
 using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Inventory;

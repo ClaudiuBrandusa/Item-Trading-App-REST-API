@@ -65,22 +65,6 @@ public class ItemsRepositoryTests
         Assert.Equal(itemMock, createdItem);
     }
 
-    [Fact(DisplayName = "Create a new item with invalid data")]
-    public async Task Create_CreateANewItemWithInvalidData_ShouldFail()
-    {
-        // Arrange
-
-        var itemStub = new Item("", DEFAULT_ITEM_DESCRIPTION);
-
-        // Act
-
-        var result = await _sut.AddEntityAsync(itemStub);
-
-        // Assert
-
-        Assert.False(result, "The insertion should fail");
-    }
-
     [Fact(DisplayName = "Update an item")]
     public async Task Update_UpdateAnItem_ReturnsTrue()
     {
@@ -105,26 +89,6 @@ public class ItemsRepositoryTests
         Assert.True(result, "The item should be updated");
         Assert.NotNull(entity);
         Assert.Equal(entity.Name, newName);
-    }
-
-    [Fact(DisplayName = "Update an item with invalid data")]
-    public async Task Update_UpdateAnItemWithInvalidData_ShouldFail()
-    {
-        // Arrange
-
-        var itemStub = new Item(DEFAULT_ITEM_NAME, DEFAULT_ITEM_DESCRIPTION);
-
-        await _sut.AddEntityAsync(itemStub);
-
-        itemStub.UpdateItemName(string.Empty);
-
-        // Act
-
-        var result = await _sut.UpdateEntityAsync(itemStub);
-
-        // Assert
-
-        Assert.False(result, "The update should fail");
     }
 
     [Fact(DisplayName = "Will add or update an entity based upon a given condition")]

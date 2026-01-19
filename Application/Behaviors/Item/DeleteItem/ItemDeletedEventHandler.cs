@@ -1,5 +1,5 @@
-﻿using Application.Behaviors.Inventory.ListUsersOwningItem;
-using Application.Behaviors.Inventory.RemoveItemFromUsers;
+﻿using Application.Behaviors.Inventories.ListUsersOwningItem;
+using Application.Behaviors.Inventories.RemoveItemFromUsers;
 using Application.Constants;
 using Application.Helpers;
 using Application.Services.Notification;
