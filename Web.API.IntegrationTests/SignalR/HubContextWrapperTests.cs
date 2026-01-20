@@ -6,11 +6,11 @@ using Web.API.IntegrationTests.Common.Factories;
 
 namespace Web.API.IntegrationTests.SignalR;
 
-public class HubContextWrapperTests : IClassFixture<TestAppFactory>
+public class HubContextWrapperTests : IClassFixture<DbOnlyTestAppFactory>
 {
-    private readonly TestAppFactory _factory;
+    private readonly DbOnlyTestAppFactory _factory;
 
-    public HubContextWrapperTests(TestAppFactory factory)
+    public HubContextWrapperTests(DbOnlyTestAppFactory factory)
     {
         _factory = factory;
     }

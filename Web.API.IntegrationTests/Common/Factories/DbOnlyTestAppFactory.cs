@@ -1,4 +1,4 @@
-﻿using DotNet.Testcontainers.Builders;
+﻿using Application.Services.Cache;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -6,42 +6,27 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
 using Testcontainers.MsSql;
-using Testcontainers.Redis;
 using Web.API.IntegrationTests.Common.Auth;
 
 namespace Web.API.IntegrationTests.Common.Factories;
 
-public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class DbOnlyTestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly MsSqlContainer _dbContainer = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:latest")
             .WithPassword("YourStrong!Passw0rd")
             .Build();
 
-    private readonly RedisContainer _cacheContainer = new RedisBuilder()
-        .WithImage("redis:latest")
-        .WithPortBinding(6379)
-        .WithWaitStrategy(Wait.ForUnixContainer()
-            .UntilExternalTcpPortIsAvailable(6379))
-        .WithEnvironment(new Dictionary<string, string>
-        {
-            { "ALLOW_EMPTY_PASSWORD", "yes" }
-        }.AsReadOnly())
-        .Build();
-
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(
-            _dbContainer.StartAsync(),
-            _cacheContainer.StartAsync()
-        );
+        await _dbContainer.StartAsync();
 
         using var conn = new SqlConnection(_dbContainer.GetConnectionString());
-
+        
         await conn.OpenAsync();
     }
 
@@ -54,6 +39,12 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<ICacheService>();
+
+            var cacheServiceMock = new Mock<ICacheService>();
+
+            services.AddSingleton<ICacheService>((_) => cacheServiceMock.Object);
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
@@ -65,20 +56,12 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.RemoveAll<IDbContextFactory<DatabaseContext>>();
             services.RemoveAll<DbContextOptions<DatabaseContext>>();
-
+            
             services.AddDbContextFactory<DatabaseContext>(options =>
             options
                 .UseSqlServer(_dbContainer.GetConnectionString())
                 .ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS))
             );
-        }).ConfigureAppConfiguration((context, builder) =>
-        {
-            var overrides = new Dictionary<string, string?>()
-            {
-                ["RedisSettings:ConnectionAddress"] = _cacheContainer.GetConnectionString()
-            };
-
-            builder.AddInMemoryCollection(overrides);
         });
     }
 }

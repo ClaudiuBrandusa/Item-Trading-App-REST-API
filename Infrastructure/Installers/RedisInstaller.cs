@@ -12,11 +12,13 @@ public class RedisInstaller : IInstaller
 {
     public void InstallServices(IServiceCollection services, IConfiguration configuration)
     {
-        var redisSettings = new RedisSettings();
-        configuration.Bind(nameof(RedisSettings), redisSettings);
-
         services.AddSingleton<IConnectionMultiplexer>(x =>
-            ConnectionMultiplexer.Connect(redisSettings.ConnectionAddress));
+        {
+            var config = x.GetRequiredService<IConfiguration>();
+            var redisSettings = new RedisSettings();
+            config.Bind(nameof(RedisSettings), redisSettings);
+            return ConnectionMultiplexer.Connect(redisSettings.ConnectionAddress);
+        });
 
         services.AddSingleton<ICacheService, RedisCacheService>();
     }

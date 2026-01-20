@@ -8,11 +8,11 @@ using Web.API.IntegrationTests.Common.Factories;
 
 namespace Web.API.IntegrationTests.SignalR;
 
-public class NotificationHubTests : IClassFixture<TestAppFactory>
+public class NotificationHubTests : IClassFixture<DbOnlyTestAppFactory>
 {
-    private readonly TestAppFactory _factory;
+    private readonly DbOnlyTestAppFactory _factory;
 
-    public NotificationHubTests(TestAppFactory factory)
+    public NotificationHubTests(DbOnlyTestAppFactory factory)
     {
         _factory = factory;
     }
