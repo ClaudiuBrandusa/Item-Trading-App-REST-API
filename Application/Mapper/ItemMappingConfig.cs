@@ -25,13 +25,13 @@ public class ItemMappingConfig : IRegister
 
         config.ForType<CachedItem, Item>()
             .MapWith((CachedItem cachedEntity) => new Item(
-                cachedEntity.Id,
+                cachedEntity.ItemId,
                 cachedEntity.Name,
                 cachedEntity.Description
             ));
 
         config.ForType<Item, CachedItem>()
-            .Map(dest => dest.Id, src => src.ItemId)
+            .Map(dest => dest.ItemId, src => src.ItemId)
             .Map(dest => dest.Name, src => src.Name)
             .Map(dest => dest.Description, src => src.Description);
     }

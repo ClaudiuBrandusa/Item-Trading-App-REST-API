@@ -15,6 +15,9 @@ public class NotifySingleUserStrategy : INotifyUserStrategy
 
     public async Task Notify<T>(Notification<T> notification, IConnectedUsersRepository connectedUsersRepository) where T : NotificationContent
     {
+        if (string.IsNullOrEmpty(targetUserId))
+            return;
+
         await connectedUsersRepository.NotifyUserAsync(targetUserId, notification);
     }
 }

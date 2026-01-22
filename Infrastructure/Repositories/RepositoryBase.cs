@@ -19,6 +19,7 @@ public abstract class RepositoryBase : IRepository, IDisposable
 
     public async Task<bool> AddEntityAsync<T>(T entity) where T : class
     {
+        var context = DatabaseContextWrapper.ProvideDatabaseContext();
         try
         {
             if (!IsEntityValid(entity)) return false;
@@ -29,6 +30,14 @@ public abstract class RepositoryBase : IRepository, IDisposable
         }
         catch (InvalidOperationException)
         {
+        }
+        catch (Exception ex)
+        {
+            
+        }
+        finally
+        {
+            DatabaseContextWrapper.DisposeDatabaseContext(context);
         }
 
         return false;

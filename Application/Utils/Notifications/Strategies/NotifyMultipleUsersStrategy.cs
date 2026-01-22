@@ -6,15 +6,18 @@ namespace Application.Utils.Notifications.Strategies;
 
 public class NotifyMultipleUsersStrategy : INotifyUserStrategy
 {
-    private string[] tragetUserIds;
+    private string[] targetUserIds;
 
     public NotifyMultipleUsersStrategy(string[] tragetUserIds)
     {
-        this.tragetUserIds = tragetUserIds;
+        this.targetUserIds = tragetUserIds;
     }
 
-    public Task Notify<T>(Notification<T> notification, IConnectedUsersRepository connectedUsersRepository) where T : NotificationContent
+    public async Task Notify<T>(Notification<T> notification, IConnectedUsersRepository connectedUsersRepository) where T : NotificationContent
     {
-        return connectedUsersRepository.NotifyUsersAsync(tragetUserIds, notification);
+        if (targetUserIds.Length == 0)
+            return;
+
+        await connectedUsersRepository.NotifyUsersAsync(targetUserIds, notification);
     }
 }

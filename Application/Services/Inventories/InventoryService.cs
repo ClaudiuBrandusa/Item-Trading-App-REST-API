@@ -351,6 +351,9 @@ public class InventoryService : IInventoryService, IDisposable
 
         await Task.WhenAll(tasks);
 
+        if (model.UserIds.Length == 0)
+            return;
+
         var notificationStrategy = NotificationHelper.CreateMultipleUsersNotificationStrategy(model.UserIds);
 
         await _clientNotificationService.SendDeletedNotificationAsync(notificationStrategy, NotificationCategoryTypes.Inventory, model.ItemId);

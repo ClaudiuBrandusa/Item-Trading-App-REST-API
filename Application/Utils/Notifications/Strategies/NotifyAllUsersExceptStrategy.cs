@@ -17,6 +17,9 @@ public class NotifyAllUsersExceptStrategy : INotifyUserStrategy
     {
         var userIds = connectedUsersRepository.ListUserIds().Where(x => x != _exceptedUserId).ToArray();
         
+        if (userIds.Length == 0)
+            return;
+
         await connectedUsersRepository.NotifyUsersAsync(userIds, notification);
     }
 }
