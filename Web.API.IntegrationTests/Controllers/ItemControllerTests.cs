@@ -29,8 +29,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Create(request);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<CreateItemSuccessResponse>(objectResult);
+        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
+        var response = Utils.AssertOkObjectResultSuccessResponse<CreateItemSuccessResponse>(objectResult);
         Assert.NotNull(response);
         Assert.NotEmpty(response.ItemId);
         Assert.Equal(request.ItemName, response.ItemName);
@@ -74,8 +74,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.List(searchString);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var itemsResponse = AssertOkObjectResultSuccessResponse<ItemsResponse>(objectResult);
+        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
+        var itemsResponse = Utils.AssertOkObjectResultSuccessResponse<ItemsResponse>(objectResult);
         
         var createdItemIds = createdItemResponses.Select(x => x.ItemId).ToArray();
 
@@ -108,8 +108,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Get(itemId);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var itemResponse = AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
+        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
+        var itemResponse = Utils.AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
         Assert.NotNull(itemResponse);
         Assert.Equal(itemId, itemResponse.Id);
         Assert.Equal(request.ItemName, itemResponse.Name);
@@ -145,8 +145,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Update(updateRequest);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var updateItemResponse = AssertOkObjectResultSuccessResponse<UpdateItemSuccessResponse>(objectResult);
+        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
+        var updateItemResponse = Utils.AssertOkObjectResultSuccessResponse<UpdateItemSuccessResponse>(objectResult);
         Assert.NotNull(updateItemResponse);
         Assert.Equal(itemId, updateItemResponse.ItemId);
         Assert.Equal(expectedUpdatedName, updateItemResponse.ItemName);
@@ -177,8 +177,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Delete(deleteItemRequest);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var deleteItemResponse = AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
+        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
+        var deleteItemResponse = Utils.AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
         
         Assert.NotNull(deleteItemResponse);
         Assert.Equal(itemId, deleteItemResponse.ItemId);
@@ -194,20 +194,5 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         controllerPack.SetUser(user);
 
         return controllerPack;
-    }
-
-    private OkObjectResult? AssertActionResultAsOkObjectResult(IActionResult? actionResult)
-    {
-        Assert.NotNull(actionResult);
-        Assert.IsAssignableFrom<OkObjectResult>(actionResult);
-        return (OkObjectResult)actionResult;
-    }
-
-    private T? AssertOkObjectResultSuccessResponse<T>(OkObjectResult? okObjectResult) where T : class
-    {
-        Assert.NotNull(okObjectResult);
-        Assert.Equal(200, okObjectResult.StatusCode);
-        Assert.IsAssignableFrom<T>(okObjectResult.Value);
-        return okObjectResult.Value as T;
     }
 }

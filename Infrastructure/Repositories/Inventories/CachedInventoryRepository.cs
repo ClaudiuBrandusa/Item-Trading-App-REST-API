@@ -25,7 +25,12 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
     {
         var entities = await _cacheService.GetEntitiesAsync(
             CacheKeys.Inventory.GetUserInventoryKey(userId),
-            async (args) => (await _repository.GetInventoryAsync(userId)).OwnedItems.ToArray(),
+            async (args) =>
+            {
+                var inventory = await _repository.GetInventoryAsync(userId);
+
+                return inventory?.OwnedItems.ToArray() ?? Array.Empty<InventoryItem>();
+            },
             convertEntityToCachedEntity: (InventoryItem entity) => _mapper.AdaptToType<InventoryItem, CachedOwnedItem>(entity, (nameof(CachedOwnedItem.UserId), userId)),
             convertCachedEntityToEntity: (CachedOwnedItem cachedEntity) => _mapper.AdaptToType<CachedOwnedItem, InventoryItem>(cachedEntity),
             true,
