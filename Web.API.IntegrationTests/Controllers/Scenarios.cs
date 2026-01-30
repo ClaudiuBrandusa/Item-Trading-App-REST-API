@@ -1,5 +1,9 @@
+using Application.Behaviors.Inventories.LockItem;
+using Item_Trading_App_Contracts.Requests.Inventory;
+using Item_Trading_App_Contracts.Responses.Inventory;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_REST_API.Controllers;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.API.IntegrationTests.Controllers;
@@ -25,9 +29,29 @@ public static class Scenarios
         return (createdItemObjectResult!.Value! as CreateItemSuccessResponse)!;
     }
 
-    public static async Task AddItemToInventory()
+    public static async Task<AddItemSuccessResponse> AddItemToInventory(InventoryController controller, string itemId, int quantity)
     {
-        
+        var request = new AddItemRequest { ItemId = itemId, Quantity = quantity };
+
+        var addedItemResult = await controller.Add(request);
+
+        var addedItemObjectResult = addedItemResult as OkObjectResult;
+        return (addedItemObjectResult!.Value! as AddItemSuccessResponse)!;
+    }
+
+    public static async Task<bool> LockItemAmount(IMediator mediator, string userId, string itemId, int amount)
+    {
+        var command = new LockItemCommand
+        {
+            UserId = userId,
+            ItemId = itemId,
+            Quantity = amount,
+            Notify = false
+        };
+
+        var lockItemResult = await mediator.Send(command);
+
+        return lockItemResult.Success;
     }
 
     public static async Task CreateTrade()

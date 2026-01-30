@@ -8,8 +8,10 @@ using Application.Behaviors.Inventories.LockItem;
 using Application.Behaviors.Inventories.UnlockItem;
 using Application.Models.Inventories;
 using Application.Models.TradeItems;
+using Application.Results.Inventories;
 using Domain.Entities.Inventories;
 using Domain.Entities.Trades;
+using Item_Trading_App_Contracts.Responses.Inventory;
 using Mapster;
 
 namespace Application.Mapper;
@@ -55,6 +57,9 @@ public class InventoryMappingConfig : IRegister
         config.ForType<TradeItemDTO, LockItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(LockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(LockItemCommand.Notify)]);
+
+        config.ForType<LockedItemAmountResult, GetLockedAmountSuccessResponse>()
+            .Map(dest => dest.LockedAmount, src => src.Amount);
 
         config.ForType<TradeItemDTO, HasItemQuantityQuery>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(LockItemCommand.UserId)])

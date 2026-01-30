@@ -31,8 +31,6 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
                 return inventory?.OwnedItems.ToArray() ?? Array.Empty<InventoryItem>();
             },
-            convertEntityToCachedEntity: (InventoryItem entity) => _mapper.AdaptToType<InventoryItem, CachedOwnedItem>(entity, (nameof(CachedOwnedItem.UserId), userId)),
-            convertCachedEntityToEntity: (CachedOwnedItem cachedEntity) => _mapper.AdaptToType<CachedOwnedItem, InventoryItem>(cachedEntity),
             true,
             (InventoryItem item) => item.ItemId);
 
@@ -50,7 +48,24 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
     public async Task<bool> AddInventoryAsync(Inventory inventory)
     {
-        return await _repository.AddInventoryAsync(inventory);
+        var result = await _repository.AddInventoryAsync(inventory);
+
+        if (!result)
+            return false;
+
+        if (result)
+        {
+            var userId = inventory.UserId;
+            var inventoryItems = inventory.OwnedItems.ToArray();
+
+            foreach (var inventoryItem in inventoryItems)
+            {
+                await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(userId, inventoryItem.ItemId), inventoryItem);
+                await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, inventoryItem.ItemId), await GetAmountOfLockedItemAsync(userId, inventoryItem.ItemId));
+            }
+        }
+
+        return result;
     }
 
     public async Task<bool> DropItemAsync(string userId, string itemId, int amount)
@@ -66,6 +81,9 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
         freeItemAmount -= amount;
 
+        var lockedItem = await _repository.GetLockedInventoryItemEntityAsync(userId, itemId);
+        int lockedAmount = lockedItem?.Quantity ?? 0;
+
         if (freeItemAmount == 0)
         {
             await _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetAmountKey(userId, itemId));
@@ -73,7 +91,7 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
         }
         else
         {
-            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(userId, itemId), new CachedOwnedItem { ItemId = itemId, UserId = userId, Quantity = freeItemAmount });
+            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetAmountKey(userId, itemId), new InventoryItem(itemId, freeItemAmount + lockedAmount, lockedAmount));
             await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId), await GetAmountOfLockedItemAsync(userId, itemId));
         }
 
@@ -134,18 +152,21 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
     public async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
     {
         // get amount of free item from cache
-        int? itemQuantity = await _cacheService.GetCacheValueAsync<int?>(CacheKeys.Inventory.GetAmountKey(userId, itemId));
-
+        var inventoryItem = await _cacheService.GetCacheValueAsync<InventoryItem?>(CacheKeys.Inventory.GetAmountKey(userId, itemId));
+        
         // if miss
-        if (itemQuantity is null)
+        if (inventoryItem is null)
         {
             // then get from repository
-            itemQuantity = await _repository.GetAmountOfFreeItemAsync(userId, itemId);
+            var inventory = await _repository.GetInventoryAsync(userId);
+            
+            if (inventory is not null)
+            {
+                inventoryItem = inventory.GetItem(itemId);
+            }
         }
 
-        int lockedItemQuantity = await GetAmountOfLockedItemAsync(userId, itemId);
-
-        return itemQuantity.Value - lockedItemQuantity;
+        return inventoryItem.FreeAmount;
     }
 
     public Task<int> GetAmountOfLockedItemAsync(string userId, string itemId)

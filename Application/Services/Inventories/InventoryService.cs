@@ -151,7 +151,7 @@ public class InventoryService : IInventoryService, IDisposable
             };
         }
 
-        bool modified = await _repository.AddInventoryAsync(inventory);
+        bool modified = await _repository.DropItemAsync(model.UserId, model.ItemId, model.Quantity);
 
         if (!modified)
             return new QuantifiedItemResult

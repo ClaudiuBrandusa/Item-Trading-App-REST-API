@@ -51,7 +51,7 @@ public class InventoryController : BaseController
 
         var result = await _mediator.Send(model);
 
-        return MapResult<QuantifiedItemResult, AddItemSuccessResponse, AddItemFailedResponse>(result);
+        return MapResult<QuantifiedItemResult, DropItemSuccessResponse, DropItemFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.Get)]

@@ -77,18 +77,22 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
     public async Task<bool> DropItemAsync(string userId, string itemId, int amount)
     {
-        int freeItemAmount = await GetAmountOfFreeItemAsync(userId, itemId);
+        var inventory = await GetInventoryAsync(userId);
 
-        if (freeItemAmount < amount)
+        if (inventory is null)
             return false;
 
-        freeItemAmount -= amount;
+        var inventoryItem = inventory.GetItem(itemId);
 
-        var inventory = await GetInventoryAsync(userId);
+        if (inventoryItem is null)
+            return false;
 
         inventory.DropItem(itemId, amount);
 
-        return await UpdateEntityAsync(inventory);
+        if (inventory.OwnedItems.Count > 0)
+            return await UpdateEntityAsync(inventory);
+        else
+            return await RemoveEntityAsync(inventory);
     }
 
     public async Task<InventoryItem?> GetOwnedItemEntityAsync(string userId, string itemId)
