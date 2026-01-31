@@ -136,7 +136,7 @@ public class InventoryService : IInventoryService, IDisposable
         if (!inventory.ItemIds.Contains(model.ItemId))
             return new QuantifiedItemResult
             {
-                Errors = new[] { "Item does not exist" }
+                Errors = new[] { "Item is not part of the inventory" }
             };
 
         try

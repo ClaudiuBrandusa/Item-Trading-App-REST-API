@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Domain.Entities.Identity;
+using Domain.Entities.Items;
 using Infrastructure.Data;
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Inventory;
@@ -56,6 +57,35 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(quantity, response.Quantity);
     }
+    
+    [Fact]
+    public async Task Add_AddingAnItemThatDoesntExist_ShouldFail()
+    {
+        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();//await dbContextProvider.ProvideDatabaseContextAsync();
+        var dbContext = dbContextFactory.CreateDbContext();
+        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
+
+        var userClaims = Utils.CreateClaimsFromUser((user as User)!);
+
+        var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var itemId = Item.GenerateId();
+        var quantity = 5; 
+        
+        var request = new AddItemRequest { ItemId = itemId, Quantity = quantity };
+
+        var result = await controller.Add(request);
+
+        var objectResult = Utils.AssertActionResultAsBadRequestObjectResult(result);
+        var response = Utils.AssertBadRequestObjectResultFailedResponse<AddItemFailedResponse>(objectResult);
+        
+        Assert.NotNull(response);
+        Assert.NotNull(response.Errors);
+        var errors = response.Errors.ToArray();
+        Assert.Single(response.Errors);
+        Assert.NotEmpty(errors[0]);
+    }
 
     [Fact]
     public async Task Drop_WithValidRequest_ShouldDropTheItemFromInventory()
@@ -96,6 +126,73 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, response.ItemId);
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(remainedQuantity, response.Quantity);
+    }
+
+    [Fact]
+    public async Task Drop_DropItemThatDoesntExist_ShouldFail()
+    {
+        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();//await dbContextProvider.ProvideDatabaseContextAsync();
+        var dbContext = dbContextFactory.CreateDbContext();
+        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
+
+        var userClaims = Utils.CreateClaimsFromUser((user as User)!);
+
+        var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var itemId = Item.GenerateId();
+        var droppedQuantity = 5;
+
+        var request = new DropItemRequest { ItemId = itemId, ItemQuantity = droppedQuantity };
+
+        var result = await controller.Drop(request);
+
+        var objectResult = Utils.AssertActionResultAsBadRequestObjectResult(result);
+        var response = Utils.AssertBadRequestObjectResultFailedResponse<DropItemFailedResponse>(objectResult);
+        
+        Assert.NotNull(response);
+        Assert.NotNull(response.Errors);
+        var errors = response.Errors.ToArray();
+        Assert.Single(response.Errors);
+        Assert.NotEmpty(errors[0]);
+    }
+
+    [Fact]
+    public async Task Drop_ItemExistsButIsNotInInventory_ShouldFail()
+    {
+        var itemName = "Granite";
+        var itemDescription = "itemDescription";
+
+        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();//await dbContextProvider.ProvideDatabaseContextAsync();
+        var dbContext = dbContextFactory.CreateDbContext();
+        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
+
+        var userClaims = Utils.CreateClaimsFromUser((user as User)!);
+
+        var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var createdItemResponse = await Scenarios.CreateItem(
+            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            itemName,
+            itemDescription
+        );
+
+        var itemId = createdItemResponse.ItemId;
+        var droppedQuantity = 5;
+
+        var request = new DropItemRequest { ItemId = itemId, ItemQuantity = droppedQuantity };
+
+        var result = await controller.Drop(request);
+
+        var objectResult = Utils.AssertActionResultAsBadRequestObjectResult(result);
+        var response = Utils.AssertBadRequestObjectResultFailedResponse<DropItemFailedResponse>(objectResult);
+        
+        Assert.NotNull(response);
+        Assert.NotNull(response.Errors);
+        var errors = response.Errors.ToArray();
+        Assert.Single(response.Errors);
+        Assert.NotEmpty(errors[0]);
     }
 
     [Fact]
@@ -175,6 +272,71 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, response.ItemId);
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(lockedQuantity, response.LockedAmount);
+    }
+    
+    [Fact]
+    public async Task GetLockedAmount_WhenNoLockedAmountWasSet_ShouldReturn0()
+    {
+        var itemName = "Aluminum";
+        var itemDescription = "itemDescription";
+
+        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();//await dbContextProvider.ProvideDatabaseContextAsync();
+        var dbContext = dbContextFactory.CreateDbContext();
+        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
+
+        var userClaims = Utils.CreateClaimsFromUser((user as User)!);
+
+        var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var createdItemResponse = await Scenarios.CreateItem(
+            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            itemName,
+            itemDescription
+        );
+
+        var itemId = createdItemResponse.ItemId;
+        var addedQuantity = 5;
+        
+        var mediator = controllerPack.ServiceScope.ServiceProvider.GetRequiredService<IMediator>();
+
+        var addedInventoryItemResponse = await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
+        
+        var result = await controller.GetLockedAmount(itemId);
+
+        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
+        var response = Utils.AssertOkObjectResultSuccessResponse<GetLockedAmountSuccessResponse>(objectResult);
+        
+        Assert.NotNull(response);
+        Assert.Equal(itemId, response.ItemId);
+        Assert.Equal(itemName, response.ItemName);
+        Assert.Equal(0, response.LockedAmount);
+    }
+    
+    [Fact]
+    public async Task GetLockedAmount_WhenItemDoesntExist_ShouldReturn0()
+    {
+        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();//await dbContextProvider.ProvideDatabaseContextAsync();
+        var dbContext = dbContextFactory.CreateDbContext();
+        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
+
+        var userClaims = Utils.CreateClaimsFromUser((user as User)!);
+
+        var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var itemId = Item.GenerateId();
+        
+        var result = await controller.GetLockedAmount(itemId);
+
+        var objectResult = Utils.AssertActionResultAsBadRequestObjectResult(result);
+        var response = Utils.AssertBadRequestObjectResultFailedResponse<GetLockedAmountFailedResponse>(objectResult);
+        
+        Assert.NotNull(response);
+        Assert.NotNull(response.Errors);
+        var errors = response.Errors.ToArray();
+        Assert.Single(errors);
+        Assert.NotEmpty(errors[0]);
     }
 
     private ControllerPack<InventoryController> CreateControllerPackWithDefaultUser(TestAppFactory factory)
