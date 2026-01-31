@@ -6,7 +6,7 @@ using Item_Trading_App_REST_API.Controllers;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Web.API.IntegrationTests.Controllers;
+namespace Web.API.IntegrationTests.Controllers.Common;
 
 public static class Scenarios
 {

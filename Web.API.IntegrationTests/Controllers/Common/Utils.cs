@@ -1,8 +1,9 @@
 using System.Security.Claims;
 using Domain.Entities.Identity;
+using Item_Trading_App_Contracts.Responses.Base;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Web.API.IntegrationTests.Controllers;
+namespace Web.API.IntegrationTests.Controllers.Common;
 
 public static class Utils
 {
@@ -56,5 +57,14 @@ public static class Utils
         Assert.Equal(400, badRequestObjectResult.StatusCode);
         Assert.IsAssignableFrom<T>(badRequestObjectResult.Value);
         return badRequestObjectResult.Value as T;
+    }
+
+    public static void AssertResponseHasOnlyOneError<T>(T? response) where T : FailedResponse
+    {
+        Assert.NotNull(response);
+        Assert.NotNull(response.Errors);
+        var errors = response.Errors.ToArray();
+        Assert.Single(response.Errors);
+        Assert.NotEmpty(errors[0]);
     }
 }

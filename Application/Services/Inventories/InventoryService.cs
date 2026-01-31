@@ -133,6 +133,12 @@ public class InventoryService : IInventoryService, IDisposable
 
         var inventory = await _repository.GetInventoryAsync(model.UserId);
 
+        if (inventory is null)
+            return new QuantifiedItemResult
+                {
+                    Errors = new[] { "Something went wrong" }
+                };
+
         if (!inventory.ItemIds.Contains(model.ItemId))
             return new QuantifiedItemResult
             {

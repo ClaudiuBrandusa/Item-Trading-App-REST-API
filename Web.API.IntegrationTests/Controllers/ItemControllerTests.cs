@@ -1,8 +1,12 @@
-﻿using Item_Trading_App_Contracts.Requests.Item;
+﻿using Domain.Entities.Items;
+using Item_Trading_App_Contracts.Requests.Item;
+using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_REST_API.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Web.API.IntegrationTests.Common.Factories;
+using Web.API.IntegrationTests.Controllers.Common;
+using static Web.API.IntegrationTests.Controllers.Common.Utils;
 
 namespace Web.API.IntegrationTests.Controllers;
 
@@ -21,7 +25,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var request = new Item_Trading_App_Contracts.Requests.Item.CreateItemRequest
+        var request = new CreateItemRequest
         {
             ItemName = "Test",
             ItemDescription = "Test"
@@ -29,12 +33,32 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Create(request);
 
-        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
-        var response = Utils.AssertOkObjectResultSuccessResponse<CreateItemSuccessResponse>(objectResult);
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var response = AssertOkObjectResultSuccessResponse<CreateItemSuccessResponse>(objectResult);
+        
         Assert.NotNull(response);
         Assert.NotEmpty(response.ItemId);
         Assert.Equal(request.ItemName, response.ItemName);
         Assert.Equal(request.ItemDescription, response.ItemDescription);
+    }
+
+    [Fact]
+    public async Task CreateItem_CreateItemWithInvalidData_ShouldFail()
+    {
+        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        var controller = controllerPack.ControllerInstance;
+
+        var request = new CreateItemRequest
+        {
+            ItemName = string.Empty,
+            ItemDescription = string.Empty
+        };
+
+        var result = await controller.Create(request);
+
+        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultFailedResponse<CreateItemFailedResponse>(objectResult);
+        AssertResponseHasOnlyOneError(response);
     }
 
     [Fact]
@@ -67,15 +91,15 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             var createdItemResult = await controller.Create(createItemRequests[index]);
             var createdItemObjectResult = createdItemResult as OkObjectResult;
             var response = createdItemObjectResult!.Value as CreateItemSuccessResponse;
-            createdItemResponses[index] = response;
+            createdItemResponses[index] = response!;
         });
 
         var searchString = string.Empty;
 
         var result = await controller.List(searchString);
 
-        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
-        var itemsResponse = Utils.AssertOkObjectResultSuccessResponse<ItemsResponse>(objectResult);
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var itemsResponse = AssertOkObjectResultSuccessResponse<ItemsResponse>(objectResult);
         
         var createdItemIds = createdItemResponses.Select(x => x.ItemId).ToArray();
 
@@ -95,9 +119,9 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var request = new Item_Trading_App_Contracts.Requests.Item.CreateItemRequest
+        var request = new CreateItemRequest
         {
-            ItemName = "Test",
+            ItemName = "Iron",
             ItemDescription = "Test"
         };
 
@@ -108,12 +132,28 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Get(itemId);
 
-        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
-        var itemResponse = Utils.AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var itemResponse = AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
+        
         Assert.NotNull(itemResponse);
         Assert.Equal(itemId, itemResponse.Id);
         Assert.Equal(request.ItemName, itemResponse.Name);
         Assert.Equal(request.ItemDescription, itemResponse.Description);
+    }
+
+    [Fact]
+    public async Task GetItemById_WithNonExistingId_ShouldFail()
+    {
+        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        var controller = controllerPack.ControllerInstance;
+
+        var itemId = Item.GenerateId();
+
+        var result = await controller.Get(itemId);
+
+        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
+        var itemResponse = AssertBadRequestObjectResultFailedResponse<FailedResponse>(objectResult);
+        AssertResponseHasOnlyOneError(itemResponse);
     }
 
     [Fact]
@@ -122,9 +162,9 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var request = new Item_Trading_App_Contracts.Requests.Item.CreateItemRequest
+        var request = new CreateItemRequest
         {
-            ItemName = "Test",
+            ItemName = "Lead",
             ItemDescription = "Test"
         };
 
@@ -145,12 +185,35 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Update(updateRequest);
 
-        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
-        var updateItemResponse = Utils.AssertOkObjectResultSuccessResponse<UpdateItemSuccessResponse>(objectResult);
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var updateItemResponse = AssertOkObjectResultSuccessResponse<UpdateItemSuccessResponse>(objectResult);
+        
         Assert.NotNull(updateItemResponse);
         Assert.Equal(itemId, updateItemResponse.ItemId);
         Assert.Equal(expectedUpdatedName, updateItemResponse.ItemName);
         Assert.Equal(expectedUpdatedDescription, updateItemResponse.ItemDescription);
+    }
+
+    [Fact]
+    public async Task UpdateItem_WithNonExistingId_ShouldFail()
+    {
+        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        var controller = controllerPack.ControllerInstance;
+
+        var itemId = Item.GenerateId();
+
+        var updateRequest = new UpdateItemRequest
+        {
+            ItemId = itemId,
+            ItemName = "UpdatedName",
+            ItemDescription = "UpdatedDescription"
+        };
+
+        var result = await controller.Update(updateRequest);
+
+        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
+        var updateItemResponse = AssertBadRequestObjectResultFailedResponse<UpdateItemFailedResponse>(objectResult);
+        AssertResponseHasOnlyOneError(updateItemResponse);
     }
 
     [Fact]
@@ -159,9 +222,9 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var request = new Item_Trading_App_Contracts.Requests.Item.CreateItemRequest
+        var request = new CreateItemRequest
         {
-            ItemName = "Test",
+            ItemName = "Brass",
             ItemDescription = "Test"
         };
 
@@ -177,19 +240,39 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Delete(deleteItemRequest);
 
-        var objectResult = Utils.AssertActionResultAsOkObjectResult(result);
-        var deleteItemResponse = Utils.AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var deleteItemResponse = AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
         
         Assert.NotNull(deleteItemResponse);
         Assert.Equal(itemId, deleteItemResponse.ItemId);
         Assert.Equal(request.ItemName, deleteItemResponse.ItemName);
     }
 
+    [Fact]
+    public async Task DeleteItem_WithNonExistingId_ShouldFail()
+    {
+        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        var controller = controllerPack.ControllerInstance;
+        
+        var itemId = Item.GenerateId();
+
+        var deleteItemRequest = new DeleteItemRequest
+        {
+            ItemId = itemId
+        };
+
+        var result = await controller.Delete(deleteItemRequest);
+
+        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
+        var deleteItemResponse = AssertBadRequestObjectResultFailedResponse<DeleteItemFailedResponse>(objectResult);
+        AssertResponseHasOnlyOneError(deleteItemResponse);
+    }
+
     private ControllerPack<ItemController> CreateControllerPackWithDefaultUser(TestAppFactory factory)
     {
         var controllerPack = new ControllerPack<ItemController>(factory);
 
-        var user = Utils.CreateDefaultUser();
+        var user = CreateDefaultUser();
 
         controllerPack.SetUser(user);
 
