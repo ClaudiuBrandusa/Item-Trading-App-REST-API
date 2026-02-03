@@ -1,4 +1,6 @@
-﻿using DotNet.Testcontainers.Builders;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using DotNet.Testcontainers.Builders;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -32,6 +34,8 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
             { "ALLOW_EMPTY_PASSWORD", "yes" }
         }.AsReadOnly())
         .Build();
+
+    private JwtSecurityTokenHandler _jwtSecuritytokenHandler = new();
 
     public async Task InitializeAsync()
     {
@@ -80,5 +84,19 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             builder.AddInMemoryCollection(overrides);
         });
+    }
+
+    public IEnumerable<Claim> GetClaimsFromToken(string token)
+    {
+        var jsonToken = _jwtSecuritytokenHandler.ReadToken(token);
+        var tokenS = jsonToken as JwtSecurityToken;
+        
+        return tokenS?.Claims ?? Array.Empty<Claim>();
+    }
+
+    public string? GetUserIdFromToken(string token)
+    {
+        var claims = GetClaimsFromToken(token);
+        return claims.FirstOrDefault(x => x.Type == "id")?.Value ?? string.Empty;
     }
 }
