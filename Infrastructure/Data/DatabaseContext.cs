@@ -19,6 +19,8 @@ public class DatabaseContext : IdentityDbContext
 
     public DbSet<Inventory> Inventories { get; set; }
 
+    public DbSet<InventoryItem> InventoryItems { get; set; }
+
     public DbSet<LockedItem> LockedItems { get; set; }
 
     public DbSet<Trade> Trades { get; set; }

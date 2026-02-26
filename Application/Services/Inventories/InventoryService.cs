@@ -145,18 +145,6 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Item is not part of the inventory" }
             };
 
-        try
-        {
-            inventory.DropItem(model.ItemId, model.Quantity);
-        }
-        catch (ArgumentException ex)
-        {
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { ex.Message }
-            };
-        }
-
         bool modified = await _repository.DropItemAsync(model.UserId, model.ItemId, model.Quantity);
 
         if (!modified)
@@ -173,7 +161,7 @@ public class InventoryService : IInventoryService, IDisposable
         {
             ItemId = model.ItemId,
             ItemName = await _sender.Send(new GetItemNameQuery { ItemId = model.ItemId }),
-            Quantity = inventory.GetItemFreeAmount(model.ItemId),
+            Quantity = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId),
             Success = true
         };
     }

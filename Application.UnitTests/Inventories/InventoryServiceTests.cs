@@ -11,7 +11,6 @@ using Application.Behaviors.Inventories.UnlockItem;
 using Application.Behaviors.Inventories.GetLockedAmount;
 using Application.Behaviors.Inventories.ListUsersOwningItem;
 using Domain.Entities.Items;
-using Domain.Entities.Inventories;
 using Domain.Entities.Identity;
 using Domain.Aggregates.Inventories;
 using Application.Results.Items;
@@ -128,7 +127,18 @@ public class InventoryServiceTests
                 }
                 else
                 {
-                    inventory.DropItem(itemId, amount);
+                    try
+                    {
+                        inventory.DropItem(itemId, amount);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        if (ex.Source == "Domain")
+                        {
+                            // Domain exception found
+                            return false;
+                        }
+                    }
                 }
 
                 return true;

@@ -43,6 +43,8 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
             inventory.AddItem(entity.ItemId, entity.Quantity);
         }
 
+        inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Add);
+
         return inventory;
     }
 
@@ -166,7 +168,7 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
             }
         }
 
-        return inventoryItem.FreeAmount;
+        return inventoryItem?.FreeAmount ?? 0;
     }
 
     public Task<int> GetAmountOfLockedItemAsync(string userId, string itemId)

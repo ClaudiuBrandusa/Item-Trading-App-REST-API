@@ -89,10 +89,36 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
         inventory.DropItem(itemId, amount);
 
-        if (inventory.OwnedItems.Count > 0)
-            return await UpdateEntityAsync(inventory);
+        bool result;
+
+        if (inventory.ItemIds.Contains(itemId))
+        {
+            // then we update the current inventory item amount
+            var updateOperationResult = await context.InventoryItems
+                .Where(x => x.UserId == userId &&
+                        x.ItemId == itemId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(p => p.Quantity, inventoryItem.Quantity));
+
+            result = updateOperationResult > 0;
+        }
         else
-            return await RemoveEntityAsync(inventory);
+        {
+            // then we remove the item
+            var deleteOperationResult = await context.InventoryItems
+                .Where(x => x.UserId == userId &&
+                        x.ItemId == itemId)
+                .ExecuteDeleteAsync();
+
+            result = deleteOperationResult > 0;
+        }
+
+        if (result)
+        {
+            inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Remove);
+        }
+
+        return result;
     }
 
     public async Task<InventoryItem?> GetOwnedItemEntityAsync(string userId, string itemId)
@@ -217,6 +243,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
     private static readonly Func<DatabaseContext, string, Task<Inventory?>> GetInventoryQuery =
         EF.CompileAsyncQuery((DatabaseContext context, string userId) =>
             context.Inventories
+                .Include(x => x.OwnedItems)
                 .AsNoTracking()
                 .FirstOrDefault(oi => Equals(oi.UserId, userId))
         );

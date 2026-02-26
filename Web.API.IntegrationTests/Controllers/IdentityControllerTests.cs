@@ -24,8 +24,8 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var expectedUsername = "New_User";
-        var expectedEmail = "newUser@g.com";
+        var expectedUsername = GetUsername(0);
+        var expectedEmail = GetEmail(0);
 
         var request = new UserRegisterRequest
         {
@@ -51,8 +51,8 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var expectedUsername = "My_User";
-        var expectedEmail = "newUser@g.com";
+        var expectedUsername = GetUsername(1);
+        var expectedEmail = GetEmail(1);
 
         var registerRequest = new UserRegisterRequest
         {
@@ -81,7 +81,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
     }
 
     [Fact]
-    public async Task Login_AttemptLoginWithInvalidData_ShouldExecuteSuccessfully()
+    public async Task Login_AttemptLoginWithInvalidData_ShouldFail()
     {
         var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
@@ -104,8 +104,8 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var expectedUsername = "My_User";
-        var expectedEmail = "newUser@g.com";
+        var expectedUsername = GetUsername(2);
+        var expectedEmail = GetEmail(2);
 
         var registerRequest = new UserRegisterRequest
         {
@@ -139,4 +139,8 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
     {
         return new ControllerPack<IdentityController>(factory);
     }
+
+    private string GetUsername(int index) => $"New_User_{index}";
+
+    private string GetEmail(int index) => $"newUser{index}@g.com";
 }

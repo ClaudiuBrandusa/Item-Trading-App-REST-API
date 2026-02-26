@@ -2,6 +2,8 @@
 
 public class InventoryItem : Entity
 {
+    public string UserId { get; private init; }
+
     public string ItemId { get; private init; }
 
     public int Quantity { get; private set; }
