@@ -1,7 +1,12 @@
+using System.Security.Claims;
+using Domain.Entities.Identity;
+using Infrastructure.Data;
 using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
@@ -129,6 +134,79 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(expectedUsername, getUsernameResponse.Username);
     }
 
+    [Fact]
+    public async Task Refresh_RegisterNewUserThenRefershToken_ShouldExecuteSuccessfully()
+    {
+        var controllerPack = CreateController(_factory);
+        var controller = controllerPack.ControllerInstance;
+
+        var expectedUsername = GetUsername(3);
+        var expectedEmail = GetEmail(3);
+
+        var registerRequest = new UserRegisterRequest
+        {
+            Username = expectedUsername,
+            Email = expectedEmail,
+            Password = _defaultPassword,
+            ConfirmPassword = _defaultPassword
+        };
+
+        var registerResult = await controller.Register(registerRequest);
+        var registerResponse = GetContent<AuthenticationSuccessResponse>(registerResult);
+        
+        var refreshTokenRequest = new RefreshTokenRequest
+        {
+            Token = registerResponse.Token,
+            RefreshToken = registerResponse.RefreshToken
+        };
+
+        var refreshResult = await controller.Refresh(refreshTokenRequest);
+        var objectResult = AssertActionResultAsOkObjectResult(refreshResult);
+        var refreshTokenResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
+
+        Assert.NotNull(refreshTokenResponse);
+        Assert.NotEmpty(refreshTokenResponse.Token);
+        Assert.NotEmpty(refreshTokenResponse.RefreshToken);
+        Assert.NotEqual(default, refreshTokenResponse.ExpirationDateTime);
+        Assert.NotEqual(refreshTokenRequest.Token, refreshTokenResponse.Token);
+        Assert.NotEqual(refreshTokenRequest.RefreshToken, refreshTokenResponse.RefreshToken);
+    }
+
+    [Fact]
+    public async Task ListUsers_RegisterNewUserThenListUsers_ShouldExecuteSuccessfully()
+    {
+        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
+        var dbContext = dbContextFactory.CreateDbContext();
+        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
+
+        var userClaims = CreateClaimsFromUser((user as User)!);
+
+        var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var expectedUsername = GetUsername(4);
+        var expectedEmail = GetEmail(4);
+
+        var registerRequest = new UserRegisterRequest
+        {
+            Username = expectedUsername,
+            Email = expectedEmail,
+            Password = _defaultPassword,
+            ConfirmPassword = _defaultPassword
+        };
+
+        await controller.Register(registerRequest);
+        
+        var listUsersResult = await controller.ListUsers(string.Empty);
+        var objectResult = AssertActionResultAsOkObjectResult(listUsersResult);
+        var listUsersResponse = AssertOkObjectResultSuccessResponse<UsersSuccessResponse>(objectResult);
+
+        Assert.NotNull(listUsersResponse);
+        Assert.NotNull(listUsersResponse.UsersId);
+        var userIds = listUsersResponse.UsersId.ToArray();
+        Assert.True(userIds.Length > 0);
+    }
+
     public static T? GetContent<T>(IActionResult result) where T : class
     {
         var objectResult = result as ObjectResult;
@@ -138,6 +216,15 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
     private ControllerPack<IdentityController> CreateController(TestAppFactory factory)
     {
         return new ControllerPack<IdentityController>(factory);
+    }
+
+    private ControllerPack<IdentityController> CreateControllerPackWithUser(TestAppFactory factory, ClaimsPrincipal user)
+    {
+        var controllerPack = new ControllerPack<IdentityController>(factory);
+
+        controllerPack.SetUser(user);
+
+        return controllerPack;
     }
 
     private string GetUsername(int index) => $"New_User_{index}";

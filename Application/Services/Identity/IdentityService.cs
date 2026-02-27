@@ -191,7 +191,7 @@ public class IdentityService : IIdentityService, IDisposable
         if (user is null)
             return new AuthenticationResult { Errors = new[] { "User not found" } };
 
-        var tokenHandler = CreateJwtSecurityTokenHandler(user);//new JwtSecurityTokenHandler();
+        var tokenHandler = CreateJwtSecurityTokenHandler(user);
         
         var expirationTime = DateTimeUtils.DateTimeWithTimeSpanFromUtcNow(_jwtSettings.TokenLifetime);
 
