@@ -1,12 +1,9 @@
 using System.Security.Claims;
-using Domain.Entities.Identity;
 using Domain.Entities.Items;
-using Infrastructure.Data;
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Inventory;
 using Item_Trading_App_REST_API.Controllers;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
@@ -29,11 +26,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemName = "Gold";
         var itemDescription = "itemDescription";
 
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -58,16 +53,17 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, response.ItemId);
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(quantity, response.Quantity);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
     
     [Fact]
     public async Task Add_AddingAnItemThatDoesntExist_ShouldFail()
     {
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -82,6 +78,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultFailedResponse<AddItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(response);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
 
     [Fact]
@@ -90,11 +89,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemName = "Silver";
         var itemDescription = "itemDescription";
 
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -110,7 +107,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var droppedQuantity = 5;
         var remainedQuantity = addedQuantity - droppedQuantity;
 
-        var addedInventoryItemResponse = await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
+        await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
 
         var request = new DropItemRequest
         {
@@ -127,16 +124,17 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, response.ItemId);
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(remainedQuantity, response.Quantity);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
 
     [Fact]
     public async Task Drop_DropItemThatDoesntExist_ShouldFail()
     {
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -151,6 +149,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultFailedResponse<DropItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(response);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
 
     [Fact]
@@ -159,11 +160,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemName = "Granite";
         var itemDescription = "itemDescription";
 
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -184,6 +183,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultFailedResponse<DropItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(response);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
 
     [Fact]
@@ -192,11 +194,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemName = "Copper";
         var itemDescription = "itemDescription";
 
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -210,7 +210,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemId = createdItemResponse.ItemId;
         var addedQuantity = 5;
 
-        var addedInventoryItemResponse = await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
+        await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
 
         var result = await controller.Get(itemId);
 
@@ -222,6 +222,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(itemDescription, response.ItemDescription);
         Assert.Equal(addedQuantity, response.Quantity);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
     
     [Fact]
@@ -230,11 +233,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemName = "Tin";
         var itemDescription = "itemDescription";
 
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -251,8 +252,8 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
 
         var mediator = controllerPack.ServiceScope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var addedInventoryItemResponse = await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
-        var lockItemAmountResult = await Scenarios.LockItemAmount(mediator, user!.Id, itemId, lockedQuantity);
+        await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
+        await Scenarios.LockItemAmount(mediator, user!.Id, itemId, lockedQuantity);
 
         var result = await controller.GetLockedAmount(itemId);
 
@@ -263,6 +264,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, response.ItemId);
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(lockedQuantity, response.LockedAmount);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
     
     [Fact]
@@ -271,11 +275,9 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemName = "Aluminum";
         var itemDescription = "itemDescription";
 
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -289,9 +291,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemId = createdItemResponse.ItemId;
         var addedQuantity = 5;
         
-        var mediator = controllerPack.ServiceScope.ServiceProvider.GetRequiredService<IMediator>();
-
-        var addedInventoryItemResponse = await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
+        await Scenarios.AddItemToInventory(controller, itemId, addedQuantity);
         
         var result = await controller.GetLockedAmount(itemId);
 
@@ -302,16 +302,17 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, response.ItemId);
         Assert.Equal(itemName, response.ItemName);
         Assert.Equal(0, response.LockedAmount);
+
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
     
     [Fact]
     public async Task GetLockedAmount_WhenItemDoesntExist_ShouldReturn0()
     {
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
-        var user = dbContext.Users.FirstOrDefault(x => x.UserName == "Claudiu");
-
-        var userClaims = CreateClaimsFromUser((user as User)!);
+        var dbContext = _factory.GetDatabaseContext();
+        var user = dbContext.GetUserByName("Claudiu");
+        var userClaims = CreateClaimsFromUser(user!);
 
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -323,35 +324,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultFailedResponse<GetLockedAmountFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(response);
-    }
 
-    private ControllerPack<InventoryController> CreateControllerPackWithDefaultUser(TestAppFactory factory)
-    {
-        return CreateControllerPackWithDefaultUser<InventoryController>(factory);
+        controllerPack.Dispose();
+        dbContext.Dispose();
     }
 
     private ControllerPack<InventoryController> CreateControllerPackWithUser(TestAppFactory factory, ClaimsPrincipal user)
     {
         return CreateControllerPackWithUser<InventoryController>(factory, user);
-    }
-
-    private ControllerPack<T> CreateControllerPackWithUser<T>(TestAppFactory factory, ClaimsPrincipal user) where T : BaseController
-    {
-        var controllerPack = new ControllerPack<T>(factory);
-
-        controllerPack.SetUser(user);
-
-        return controllerPack;
-    }
-
-    private ControllerPack<T> CreateControllerPackWithDefaultUser<T>(TestAppFactory factory) where T : BaseController
-    {
-        var controllerPack = new ControllerPack<T>(factory);
-
-        var user = CreateDefaultUser();
-
-        controllerPack.SetUser(user);
-
-        return controllerPack;
     }
 }

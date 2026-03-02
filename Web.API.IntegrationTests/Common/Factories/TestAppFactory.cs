@@ -99,4 +99,10 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         var claims = GetClaimsFromToken(token);
         return claims.FirstOrDefault(x => x.Type == "id")?.Value ?? string.Empty;
     }
+
+    public DatabaseContext GetDatabaseContext()
+    {
+        var dbContextFactory = Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
+        return dbContextFactory.CreateDbContext();
+    }
 }

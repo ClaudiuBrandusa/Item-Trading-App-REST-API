@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Domain.Entities.Identity;
 using Item_Trading_App_Contracts.Responses.Base;
+using Item_Trading_App_REST_API.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Web.API.IntegrationTests.Common.Factories;
 
 namespace Web.API.IntegrationTests.Controllers.Common;
 
@@ -27,6 +29,32 @@ public static class Utils
             new Claim(ClaimTypes.Name, user.UserName!),
             new Claim(ClaimTypes.Role, "Admin")
         }, authenticationType: "Test"));
+    }
+
+    public static ControllerPack<T> CreateControllerPackWithUser<T>(TestAppFactory factory, ClaimsPrincipal user) where T : BaseController
+    {
+        var controllerPack = new ControllerPack<T>(factory);
+
+        controllerPack.SetUser(user);
+
+        return controllerPack;
+    }
+
+    public static ControllerPack<T> CreateControllerPackWithDefaultUser<T>(TestAppFactory factory) where T : BaseController
+    {
+        var controllerPack = new ControllerPack<T>(factory);
+
+        var user = CreateDefaultUser();
+
+        controllerPack.SetUser(user);
+
+        return controllerPack;
+    }
+
+    public static T? GetContent<T>(IActionResult result) where T : class
+    {
+        var objectResult = result as ObjectResult;
+        return objectResult?.Value as T;
     }
     
     public static OkObjectResult? AssertActionResultAsOkObjectResult(IActionResult? actionResult)

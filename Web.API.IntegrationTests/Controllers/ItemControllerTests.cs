@@ -3,7 +3,6 @@ using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_REST_API.Controllers;
-using Microsoft.AspNetCore.Mvc;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
@@ -40,6 +39,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         Assert.NotEmpty(response.ItemId);
         Assert.Equal(request.ItemName, response.ItemName);
         Assert.Equal(request.ItemDescription, response.ItemDescription);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -59,6 +60,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultFailedResponse<CreateItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(response);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -89,8 +92,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         await Parallel.ForAsync(0, expectedItemAmount, async (index, ct) =>
         {
             var createdItemResult = await controller.Create(createItemRequests[index]);
-            var createdItemObjectResult = createdItemResult as OkObjectResult;
-            var response = createdItemObjectResult!.Value as CreateItemSuccessResponse;
+            var response = GetContent<CreateItemSuccessResponse>(createdItemResult);
             createdItemResponses[index] = response!;
         });
 
@@ -111,6 +113,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         {
             Assert.Contains(itemId, itemIds);
         });
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -126,8 +130,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         };
 
         var createdItemResult = await controller.Create(request);
-        var createdItemObjectResult = createdItemResult as OkObjectResult;
-        var createItemResponse = createdItemObjectResult!.Value as CreateItemSuccessResponse;
+        var createItemResponse = GetContent<CreateItemSuccessResponse>(createdItemResult);
         var itemId = createItemResponse!.ItemId;
 
         var result = await controller.Get(itemId);
@@ -139,6 +142,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, itemResponse.Id);
         Assert.Equal(request.ItemName, itemResponse.Name);
         Assert.Equal(request.ItemDescription, itemResponse.Description);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -154,6 +159,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var itemResponse = AssertBadRequestObjectResultFailedResponse<FailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(itemResponse);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -169,8 +176,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         };
 
         var createdItemResult = await controller.Create(request);
-        var createdItemObjectResult = createdItemResult as OkObjectResult;
-        var createItemResponse = createdItemObjectResult!.Value as CreateItemSuccessResponse;
+        var createItemResponse = GetContent<CreateItemSuccessResponse>(createdItemResult);
         var itemId = createItemResponse!.ItemId;
 
         var expectedUpdatedName = $"{request.ItemName}_Updated";
@@ -192,6 +198,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(itemId, updateItemResponse.ItemId);
         Assert.Equal(expectedUpdatedName, updateItemResponse.ItemName);
         Assert.Equal(expectedUpdatedDescription, updateItemResponse.ItemDescription);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -214,6 +222,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var updateItemResponse = AssertBadRequestObjectResultFailedResponse<UpdateItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(updateItemResponse);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -229,8 +239,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         };
 
         var createdItemResult = await controller.Create(request);
-        var createdItemObjectResult = createdItemResult as OkObjectResult;
-        var createItemResponse = createdItemObjectResult!.Value as CreateItemSuccessResponse;
+        var createItemResponse = GetContent<CreateItemSuccessResponse>(createdItemResult);
         var itemId = createItemResponse!.ItemId;
 
         var deleteItemRequest = new DeleteItemRequest
@@ -246,6 +255,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         Assert.NotNull(deleteItemResponse);
         Assert.Equal(itemId, deleteItemResponse.ItemId);
         Assert.Equal(request.ItemName, deleteItemResponse.ItemName);
+
+        controllerPack.Dispose();
     }
 
     [Fact]
@@ -266,16 +277,12 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var deleteItemResponse = AssertBadRequestObjectResultFailedResponse<DeleteItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(deleteItemResponse);
+
+        controllerPack.Dispose();
     }
 
     private ControllerPack<ItemController> CreateControllerPackWithDefaultUser(TestAppFactory factory)
     {
-        var controllerPack = new ControllerPack<ItemController>(factory);
-
-        var user = CreateDefaultUser();
-
-        controllerPack.SetUser(user);
-
-        return controllerPack;
+        return CreateControllerPackWithDefaultUser<ItemController>(factory);
     }
 }
