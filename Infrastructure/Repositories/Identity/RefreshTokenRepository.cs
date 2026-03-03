@@ -1,5 +1,5 @@
 ﻿using Domain.Entities.Identity;
-using Domain.Repositories;
+using Domain.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

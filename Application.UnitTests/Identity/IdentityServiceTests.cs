@@ -7,12 +7,12 @@ using Application.Behaviors.Identity.RefreshToken;
 using Application.Behaviors.Identity.GetUsername;
 using Application.Behaviors.Identity.ListUsers;
 using Application.Services.Cache;
-using Domain.Repositories;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using Domain.Entities.Identity;
 using Application.Results.RefreshToken;
 using Application.Utils;
+using Domain.Repositories.Identity;
 
 namespace Application_UnitTests.Identity;
 

@@ -1,6 +1,6 @@
 ﻿using Application.Results.RefreshToken;
 using Application.Services.UnitOfWork;
-using Domain.Repositories;
+using Domain.Repositories.Identity;
 using Item_Trading_App_REST_API.Options;
 
 namespace Application.Services.RefreshToken;

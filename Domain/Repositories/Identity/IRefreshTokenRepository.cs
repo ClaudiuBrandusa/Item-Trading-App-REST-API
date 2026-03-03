@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Identity;
 
-namespace Domain.Repositories;
+namespace Domain.Repositories.Identity;
 
 public interface IRefreshTokenRepository : IRepository, IDisposable
 {

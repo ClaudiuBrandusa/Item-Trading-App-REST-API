@@ -1,6 +1,6 @@
 ﻿using Application.Utils;
 using Domain.Entities.Identity;
-using Domain.Repositories;
+using Domain.Repositories.Identity;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Identity;

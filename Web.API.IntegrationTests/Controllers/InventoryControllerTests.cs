@@ -313,7 +313,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var dbContext = _factory.GetDatabaseContext();
         var user = dbContext.GetUserByName("Claudiu");
         var userClaims = CreateClaimsFromUser(user!);
-
+        
         var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 

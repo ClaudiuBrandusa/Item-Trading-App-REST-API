@@ -1,7 +1,7 @@
 ﻿using Domain.Entities.Identity;
 using System.Security.Claims;
 
-namespace Domain.Repositories;
+namespace Domain.Repositories.Identity;
 
 public interface IIdentityRepository : IUserRepository
 {

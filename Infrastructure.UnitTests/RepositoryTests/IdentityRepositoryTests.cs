@@ -1,5 +1,5 @@
 ﻿using Domain.Entities.Identity;
-using Domain.Repositories;
+using Domain.Repositories.Identity;
 using Infrastructure.Data;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;

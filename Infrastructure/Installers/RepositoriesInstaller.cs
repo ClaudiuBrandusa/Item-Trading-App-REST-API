@@ -1,5 +1,6 @@
 ﻿using Application.Repositories;
 using Domain.Repositories;
+using Domain.Repositories.Identity;
 using Domain.Repositories.Inventories;
 using Domain.Repositories.Items;
 using Domain.Repositories.TradeItems;
