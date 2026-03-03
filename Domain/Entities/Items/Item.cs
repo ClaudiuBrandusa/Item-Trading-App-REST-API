@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities.Items;
+﻿using Domain.Primitives;
+
+namespace Domain.Entities.Items;
 
 public class Item : Entity
 {

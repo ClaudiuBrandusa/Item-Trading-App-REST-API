@@ -1,5 +1,6 @@
 ﻿using Domain.Common.Wrappers;
 using Domain.Entities.Inventories;
+using Domain.Primitives;
 using System.Collections.ObjectModel;
 
 namespace Domain.Aggregates.Inventories;

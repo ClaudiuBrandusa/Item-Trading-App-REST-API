@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities.Inventories;
+﻿using Domain.Primitives;
+
+namespace Domain.Entities.Inventories;
 
 public class InventoryItem : Entity
 {

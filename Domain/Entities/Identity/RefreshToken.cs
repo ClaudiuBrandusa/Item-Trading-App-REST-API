@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities.Identity;
+﻿using Domain.Primitives;
+
+namespace Domain.Entities.Identity;
 
 public class RefreshToken : Entity
 {

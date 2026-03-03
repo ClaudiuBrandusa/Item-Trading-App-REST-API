@@ -1,4 +1,5 @@
 ﻿using Domain.Aggregates.Trades;
+using Domain.Primitives;
 
 namespace Domain.Entities.Trades;
 
