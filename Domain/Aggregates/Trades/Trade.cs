@@ -25,38 +25,40 @@ public class Trade : AggregateRoot
     private Trade() { }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
-    public Trade(DateTime sentDate)
+    public Trade(DateTime sentDate, string senderId, string receiverId)
     {
         TradeId = GenerateId();
         SentDate = sentDate;
+
+        if (senderId == receiverId)
+            throw new ArgumentException("A trade offer must be created between two different users");
+
+        SetSender(senderId);
+        SetReceiver(receiverId);
     }
 
-    public Trade(DateTime sentDate, DateTime? responseDate, bool? response) : this(sentDate)
+    public Trade(DateTime sentDate, string senderId, string receiverId, DateTime? responseDate, bool? response) : this(sentDate, senderId, receiverId)
     {
         ResponseDate = responseDate;
         Response = response;
     }
 
-    public Trade(string tradeId, DateTime sentDate)
+    public Trade(string tradeId, DateTime sentDate, string senderId, string receiverId)
     {
         TradeId = tradeId;
         SentDate = sentDate;
+
+        if (senderId == receiverId)
+            throw new ArgumentException("A trade offer must be created between two different users");
+
+        SetSender(senderId);
+        SetReceiver(receiverId);
     }
 
-    public Trade(string tradeId, DateTime sentDate, DateTime? responseDate, bool? response) : this(tradeId, sentDate)
+    public Trade(string tradeId, DateTime sentDate, DateTime? responseDate, bool? response, string senderId, string receiverId) : this(tradeId, sentDate, senderId, receiverId)
     {
         ResponseDate = responseDate;
         Response = response;
-    }
-
-    public void SetSender(string userId)
-    {
-        SentTrade = new SentTrade(TradeId, userId);
-    }
-
-    public void SetReceiver(string userId)
-    {
-        ReceivedTrade = new ReceivedTrade(TradeId, userId);
     }
 
     public void AddTradeContent(TradeItem tradeContent)
@@ -90,4 +92,14 @@ public class Trade : AggregateRoot
     }
 
     protected override object GetId() => TradeId;
+
+    private void SetSender(string userId)
+    {
+        SentTrade = new SentTrade(TradeId, userId);
+    }
+
+    private void SetReceiver(string userId)
+    {
+        ReceivedTrade = new ReceivedTrade(TradeId, userId);
+    }
 }

@@ -21,7 +21,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
     [Fact]
     public async Task CreateItem_CreatesANewItem_ShouldCreateTheItemSuccessfully()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var request = new CreateItemRequest
@@ -34,19 +34,16 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
         var response = AssertOkObjectResultSuccessResponse<CreateItemSuccessResponse>(objectResult);
-        
         Assert.NotNull(response);
         Assert.NotEmpty(response.ItemId);
         Assert.Equal(request.ItemName, response.ItemName);
         Assert.Equal(request.ItemDescription, response.ItemDescription);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task CreateItem_CreateItemWithInvalidData_ShouldFail()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var request = new CreateItemRequest
@@ -60,14 +57,12 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultFailedResponse<CreateItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(response);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task List_CreateServeralItemsThenListThemWithAnEmptySearchString_ShouldReturnAListOfItems()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var expectedItemAmount = 10;
@@ -102,9 +97,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
         var itemsResponse = AssertOkObjectResultSuccessResponse<ItemsResponse>(objectResult);
-        
         var createdItemIds = createdItemResponses.Select(x => x.ItemId).ToArray();
-
         Assert.NotNull(itemsResponse);
         Assert.NotNull(itemsResponse.ItemsId);
         var itemIds = itemsResponse.ItemsId.ToArray();
@@ -113,14 +106,12 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         {
             Assert.Contains(itemId, itemIds);
         });
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task GetItemById_WithExistingId_ShouldReturnTheItem()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var request = new CreateItemRequest
@@ -137,19 +128,16 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
         var itemResponse = AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
-        
         Assert.NotNull(itemResponse);
         Assert.Equal(itemId, itemResponse.Id);
         Assert.Equal(request.ItemName, itemResponse.Name);
         Assert.Equal(request.ItemDescription, itemResponse.Description);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task GetItemById_WithNonExistingId_ShouldFail()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var itemId = Item.GenerateId();
@@ -159,14 +147,12 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var itemResponse = AssertBadRequestObjectResultFailedResponse<FailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(itemResponse);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task UpdateItem_WithExistingId_ShouldUpdateTheItem()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var request = new CreateItemRequest
@@ -193,19 +179,16 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
         var updateItemResponse = AssertOkObjectResultSuccessResponse<UpdateItemSuccessResponse>(objectResult);
-        
         Assert.NotNull(updateItemResponse);
         Assert.Equal(itemId, updateItemResponse.ItemId);
         Assert.Equal(expectedUpdatedName, updateItemResponse.ItemName);
         Assert.Equal(expectedUpdatedDescription, updateItemResponse.ItemDescription);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task UpdateItem_WithNonExistingId_ShouldFail()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var itemId = Item.GenerateId();
@@ -222,14 +205,12 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var updateItemResponse = AssertBadRequestObjectResultFailedResponse<UpdateItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(updateItemResponse);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task DeleteItem_WithExistingId_ShouldDeleteTheItem()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var request = new CreateItemRequest
@@ -251,18 +232,15 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
         var deleteItemResponse = AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
-        
         Assert.NotNull(deleteItemResponse);
         Assert.Equal(itemId, deleteItemResponse.ItemId);
         Assert.Equal(request.ItemName, deleteItemResponse.ItemName);
-
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task DeleteItem_WithNonExistingId_ShouldFail()
     {
-        var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
         
         var itemId = Item.GenerateId();
@@ -277,8 +255,6 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var objectResult = AssertActionResultAsBadRequestObjectResult(result);
         var deleteItemResponse = AssertBadRequestObjectResultFailedResponse<DeleteItemFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(deleteItemResponse);
-
-        controllerPack.Dispose();
     }
 
     private ControllerPack<ItemController> CreateControllerPackWithDefaultUser(TestAppFactory factory)

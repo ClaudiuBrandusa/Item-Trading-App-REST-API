@@ -18,18 +18,6 @@ public class TradeRepository : RepositoryBase, ITradeRepository
         _sender = sender;
     }
 
-    public async ValueTask AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId)
-    {
-        var sentTradeTask = context.AddAsync(
-            new SentTrade(tradeId, senderUserId));
-        var receivedTradeTask = context.AddAsync(
-            new ReceivedTrade(tradeId, receiverUserId)
-        );
-
-        await sentTradeTask;
-        await receivedTradeTask;
-    }
-
     public Task<TradeItem[]> GetTradeItemsAsync(string tradeId, bool responded) => responded ?
         _sender.Send(new GetTradeItemsHistoryQuery { TradeId = tradeId }) :
         _sender.Send(new GetTradeItemsQuery { TradeId = tradeId });

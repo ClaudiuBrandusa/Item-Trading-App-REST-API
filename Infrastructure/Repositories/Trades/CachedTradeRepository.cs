@@ -23,9 +23,6 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
         _sender = sender;
     }
 
-    public ValueTask AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId) =>
-        _repository.AddSentAndReceivedTradeEntitiesAsync(tradeId, senderUserId, receiverUserId);
-
     public Task<TradeItem[]> GetTradeItemsAsync(string tradeId, bool responded) => _repository.GetTradeItemsAsync(tradeId, responded);
 
     public Task<CachedTrade?> GetCachedTradeAsync(string tradeId)

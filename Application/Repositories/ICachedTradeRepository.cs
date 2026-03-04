@@ -7,8 +7,6 @@ namespace Application.Repositories;
 
 public interface ICachedTradeRepository : ICachedRepository, IDisposable
 {
-    ValueTask AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId);
-
     /// <param name="tradeId"></param>
     /// <param name="responded"></param>
     /// <returns>Trade's items</returns>

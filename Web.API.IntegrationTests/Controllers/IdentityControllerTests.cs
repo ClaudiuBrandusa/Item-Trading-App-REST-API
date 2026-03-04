@@ -1,9 +1,6 @@
-using Infrastructure.Data;
 using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Controllers;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
@@ -23,7 +20,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
     [Fact]
     public async Task Register_RegisterNewUser_ShouldExecuteSuccessfully()
     {
-        var controllerPack = CreateController(_factory);
+        using var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var expectedUsername = GetUsername(0);
@@ -38,21 +35,20 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         };
 
         var registerResult = await controller.Register(request);
+        var receivedResponseDateTime = DateTime.UtcNow;
+
         var objectResult = AssertActionResultAsOkObjectResult(registerResult);
         var authenticationResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
-
         Assert.NotNull(authenticationResponse);
         Assert.NotEmpty(authenticationResponse.Token);
         Assert.NotEmpty(authenticationResponse.RefreshToken);
-        Assert.NotEqual(DateTime.MinValue, authenticationResponse.ExpirationDateTime);
-    
-        controllerPack.Dispose();
+        Assert.True(receivedResponseDateTime < authenticationResponse.ExpirationDateTime);
     }
 
     [Fact]
     public async Task Login_RegisterNewUserThenLogin_ShouldExecuteSuccessfully()
     {
-        var controllerPack = CreateController(_factory);
+        using var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var expectedUsername = GetUsername(1);
@@ -75,21 +71,20 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         };
 
         var loginResult = await controller.Login(loginRequest);
+        var receivedResponseDateTime = DateTime.UtcNow;
+
         var objectResult = AssertActionResultAsOkObjectResult(loginResult);
         var authenticationResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
-
         Assert.NotNull(authenticationResponse);
         Assert.NotEmpty(authenticationResponse.Token);
         Assert.NotEmpty(authenticationResponse.RefreshToken);
-        Assert.NotEqual(DateTime.MinValue, authenticationResponse.ExpirationDateTime);
-    
-        controllerPack.Dispose();
+        Assert.True(receivedResponseDateTime < authenticationResponse.ExpirationDateTime);
     }
 
     [Fact]
     public async Task Login_AttemptLoginWithInvalidData_ShouldFail()
     {
-        var controllerPack = CreateController(_factory);
+        using var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var loginRequest = new UserLoginRequest
@@ -99,17 +94,16 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         };
 
         var loginResult = await controller.Login(loginRequest);
+
         var objectResult = AssertActionResultAsBadRequestObjectResult(loginResult);
         var authenticationResponse = AssertBadRequestObjectResultFailedResponse<AuthenticationFailedResponse>(objectResult);
         AssertResponseHasOnlyOneError(authenticationResponse);
-    
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task GetUsername_RegisterNewUserThenLogin_ShouldExecuteSuccessfully()
     {
-        var controllerPack = CreateController(_factory);
+        using var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var expectedUsername = GetUsername(2);
@@ -124,25 +118,24 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         };
 
         var registerResult = await controller.Register(registerRequest);
+        var receivedResponseDateTime = DateTime.UtcNow;
         var registerResponse = GetContent<AuthenticationSuccessResponse>(registerResult);
         
         var userId = _factory.GetUserIdFromToken(registerResponse!.Token);
 
         var getUsernameResult = await controller.GetUsername(userId);
+
         var objectResult = AssertActionResultAsOkObjectResult(getUsernameResult);
         var getUsernameResponse = AssertOkObjectResultSuccessResponse<UsernameSuccessResponse>(objectResult);
-
         Assert.NotNull(getUsernameResponse);
         Assert.Equal(userId, getUsernameResponse.UserId);
         Assert.Equal(expectedUsername, getUsernameResponse.Username);
-    
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task Refresh_RegisterNewUserThenRefershToken_ShouldExecuteSuccessfully()
     {
-        var controllerPack = CreateController(_factory);
+        using var controllerPack = CreateController(_factory);
         var controller = controllerPack.ControllerInstance;
 
         var expectedUsername = GetUsername(3);
@@ -166,29 +159,27 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         };
 
         var refreshResult = await controller.Refresh(refreshTokenRequest);
+        var receivedResponseDateTime = DateTime.UtcNow;
+
         var objectResult = AssertActionResultAsOkObjectResult(refreshResult);
         var refreshTokenResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
-
         Assert.NotNull(refreshTokenResponse);
         Assert.NotEmpty(refreshTokenResponse.Token);
         Assert.NotEmpty(refreshTokenResponse.RefreshToken);
-        Assert.NotEqual(default, refreshTokenResponse.ExpirationDateTime);
+        Assert.True(receivedResponseDateTime < refreshTokenResponse.ExpirationDateTime);
         Assert.NotEqual(refreshTokenRequest.Token, refreshTokenResponse.Token);
         Assert.NotEqual(refreshTokenRequest.RefreshToken, refreshTokenResponse.RefreshToken);
-    
-        controllerPack.Dispose();
     }
 
     [Fact]
     public async Task ListUsers_RegisterNewUserThenListUsers_ShouldExecuteSuccessfully()
     {
-        var dbContextFactory = _factory.Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        var dbContext = dbContextFactory.CreateDbContext();
+        using var dbContext = _factory.GetDatabaseContext();
         var user = dbContext.GetUserByName("Claudiu");
 
         var userClaims = CreateClaimsFromUser(user!);
 
-        var controllerPack = CreateControllerPackWithUser<IdentityController>(_factory, userClaims);
+        using var controllerPack = CreateControllerPackWithUser<IdentityController>(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var expectedUsername = GetUsername(4);
@@ -205,15 +196,13 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         await controller.Register(registerRequest);
         
         var listUsersResult = await controller.ListUsers(string.Empty);
+
         var objectResult = AssertActionResultAsOkObjectResult(listUsersResult);
         var listUsersResponse = AssertOkObjectResultSuccessResponse<UsersSuccessResponse>(objectResult);
-
         Assert.NotNull(listUsersResponse);
         Assert.NotNull(listUsersResponse.UsersId);
         var userIds = listUsersResponse.UsersId.ToArray();
         Assert.True(userIds.Length > 0);
-    
-        controllerPack.Dispose();
     }
 
     private ControllerPack<IdentityController> CreateController(TestAppFactory factory)

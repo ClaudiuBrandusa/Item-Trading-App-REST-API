@@ -85,9 +85,17 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                offer = new Domain.Aggregates.Trades.Trade(DateTime.Now);
+                offer = new Domain.Aggregates.Trades.Trade(DateTime.Now, model.SenderUserId, model.TargetUserId);
 
-                await _repository.AddEntityAsync(offer);
+                if (!await _repository.AddEntityAsync(offer))
+                {
+                    taskCompletionSource.SetResult(new TradeOfferResult
+                    {
+                        Errors = new[] { "Something went wrong" }
+                    });
+
+                    return false;
+                }
 
                 foreach (var item in items)
                 {
@@ -102,8 +110,6 @@ public class TradeService : ITradeService, IDisposable
                         return false;
                     }
                 }
-
-                await _repository.AddSentAndReceivedTradeEntitiesAsync(offer.TradeId, model.SenderUserId, model.TargetUserId);
 
                 await _repository.SaveChangesAsync();
 
@@ -463,7 +469,7 @@ public class TradeService : ITradeService, IDisposable
                 receiverId = await GetReceiverIdAsync(model.TradeId);
                 trade.ReceiverUserId = receiverId;
 
-                if (!await _repository.RemoveEntityAsync(new Domain.Aggregates.Trades.Trade(model.TradeId, DateTime.Now)))
+                if (!await _repository.RemoveEntityAsync(new Domain.Aggregates.Trades.Trade(model.TradeId, DateTime.Now, senderId, receiverId)))
                 {
                     taskCompletionSource.SetResult(new TradeOfferResult
                     {
@@ -754,7 +760,7 @@ public class TradeService : ITradeService, IDisposable
         trade.ResponseDate = DateTime.Now;
 
         return _repository.UpdateEntityAsync(
-            new Domain.Aggregates.Trades.Trade(trade.TradeId, trade.SentDate, trade.ResponseDate, trade.Response));
+            new Domain.Aggregates.Trades.Trade(trade.TradeId, trade.SentDate, trade.ResponseDate, trade.Response, trade.SenderUserId, trade.ReceiverUserId));
     }
 
     private Task SetCacheForCreatedTradeAsync(Domain.Aggregates.Trades.Trade tradeEntity, CreateTradeOfferCommand model)

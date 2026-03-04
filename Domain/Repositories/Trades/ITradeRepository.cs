@@ -5,8 +5,6 @@ namespace Domain.Repositories.Trades;
 
 public interface ITradeRepository : IRepository, IDisposable
 {
-    ValueTask AddSentAndReceivedTradeEntitiesAsync(string tradeId, string senderUserId, string receiverUserId);
-
     Task<TradeItem[]> GetTradeItemsAsync(string tradeId, bool responded);
 
     Task<Trade?> GetTradeEntityAsync(string tradeId);

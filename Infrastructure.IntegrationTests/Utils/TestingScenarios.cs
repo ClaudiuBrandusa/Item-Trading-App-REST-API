@@ -190,9 +190,7 @@ public static class TestingScenarios
 
     public static Trade CreateTrade(DateTime sentDate, string senderUserId, string receiverUserId)
     {
-        var trade = new Trade(sentDate);
-        trade.SetSender(senderUserId);
-        trade.SetReceiver(receiverUserId);
+        var trade = new Trade(sentDate, senderUserId, receiverUserId);
 
         return trade;
     }

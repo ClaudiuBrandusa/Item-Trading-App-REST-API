@@ -389,6 +389,6 @@ public class ItemServiceTests
         // Assert
 
         Assert.NotNull(getItemDescriptionResult);
-        Assert.Equal(getItemDescriptionResult, DEFAULT_ITEM_DESCRIPTION);
+        Assert.Equal(DEFAULT_ITEM_DESCRIPTION, getItemDescriptionResult);
     }
 }

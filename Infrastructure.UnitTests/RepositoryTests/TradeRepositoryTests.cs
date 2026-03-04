@@ -30,9 +30,9 @@ public class TradeRepositoryTests
     {
         // Arrange
 
-        var tradeMock = new Trade(DateTime.UtcNow);
+        var tradeMock = new Trade(DateTime.UtcNow, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
 
-        var createdTradeResult = await _sut.AddEntityAsync(tradeMock);
+        await _sut.AddEntityAsync(tradeMock);
 
         // Act
 
@@ -74,13 +74,14 @@ public class TradeRepositoryTests
     {
         // Arrange
 
-        var tradeMock = new Trade(DateTime.UtcNow);
+        var tradeMock = new Trade(DateTime.UtcNow, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
 
-        var createdTradeResult = await _sut.AddEntityAsync(tradeMock);
+        await _sut.AddEntityAsync(tradeMock);
 
-        await _sut.AddSentAndReceivedTradeEntitiesAsync(tradeMock.TradeId, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
-
-        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync();
+        using (var databaseContext = _contextWrapper.ProvideDatabaseContext())
+        {
+            await databaseContext.SaveChangesAsync();
+        }
 
         // Act
 
@@ -98,11 +99,9 @@ public class TradeRepositoryTests
     {
         // Arrange
 
-        var tradeMock = new Trade(DateTime.UtcNow);
+        var tradeMock = new Trade(DateTime.UtcNow, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
 
-        var createdTradeResult = await _sut.AddEntityAsync(tradeMock);
-
-        await _sut.AddSentAndReceivedTradeEntitiesAsync(tradeMock.TradeId, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
+        await _sut.AddEntityAsync(tradeMock);
 
         await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync();
 
@@ -128,11 +127,9 @@ public class TradeRepositoryTests
         {
             string tradeId = Trade.GenerateId();
 
-            var tradeMock = new Trade(tradeId, DateTime.UtcNow);
+            var tradeMock = new Trade(tradeId, DateTime.UtcNow, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
 
-            var createdTradeResult = await _sut.AddEntityAsync(tradeMock);
-
-            await _sut.AddSentAndReceivedTradeEntitiesAsync(tradeId, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
+            await _sut.AddEntityAsync(tradeMock);
         }
 
         await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync();
@@ -156,11 +153,9 @@ public class TradeRepositoryTests
 
         for (int i = 0; i < count; i++)
         {
-            var tradeMock = new Trade(DateTime.UtcNow);
+            var tradeMock = new Trade(DateTime.UtcNow, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
 
             var createdTradeResult = await _sut.AddEntityAsync(tradeMock);
-
-            await _sut.AddSentAndReceivedTradeEntitiesAsync(tradeMock.TradeId, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
         }
 
         await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync();

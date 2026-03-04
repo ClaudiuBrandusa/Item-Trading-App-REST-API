@@ -66,8 +66,6 @@ public class TradeTests : IClassFixture<DatabaseFixture>
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, 5);
         var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, 10);
 
-        trade.SetSender(senderUser.Id);
-        trade.SetReceiver(receiverUser.Id);
         trade.AddTradeContent(tradeContent);
 
         // Act
@@ -98,8 +96,6 @@ public class TradeTests : IClassFixture<DatabaseFixture>
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, 5);
         var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, 10);
 
-        trade.SetSender(senderUser.Id);
-        trade.SetReceiver(receiverUser.Id);
         trade.AddTradeContent(tradeContent);
 
         // Act
@@ -117,35 +113,6 @@ public class TradeTests : IClassFixture<DatabaseFixture>
         Assert.Equal(trade.TradeId, retrievedTrade.TradeId);
         Assert.Equal(trade.Response, retrievedTrade.Response);
         Assert.Equal(trade.ResponseDate, retrievedTrade.ResponseDate);
-    }
-
-    [Fact]
-    public async Task AddSentAndReceivedTradeEntities_CreateTradeThenAddSentAndReceivedTradeEntities_ExecutesSuccessfully()
-    {
-        // Arrange
-
-        (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 3);
-        var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
-        var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Bronze", string.Empty);
-        var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, 5);
-        var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, 10);
-
-        trade.SetSender(senderUser.Id);
-        trade.SetReceiver(receiverUser.Id);
-        trade.AddTradeContent(tradeContent);
-
-        // Act
-
-        var tradeCreated = await _repository.AddEntityAsync(trade);
-        await _repository.AddSentAndReceivedTradeEntitiesAsync(trade.TradeId, senderUser.Id, receiverUser.Id);
-        var sentTrade = await _repository.GetSentTradeEntityAsync(trade.TradeId);
-        var receivedTrade = await _repository.GetReceivedTradeEntityAsync(trade.TradeId);
-
-        // Assert
-
-        Assert.True(tradeCreated);
-        Assert.NotNull(sentTrade);
-        Assert.NotNull(receivedTrade);
     }
 
     [Fact]

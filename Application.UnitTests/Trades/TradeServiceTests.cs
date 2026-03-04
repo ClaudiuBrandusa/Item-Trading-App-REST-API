@@ -79,30 +79,21 @@ public class TradeServiceTests
             });
 
         tradeRepositoryMock.Setup(repo => repo.AddEntityAsync(It.IsAny<Trade>()))
-            .Callback((Trade trade) =>
+            .ReturnsAsync((Trade trade) =>
             {
                 collection.Add(trade);
 
                 cachedTrades.Add(new CachedTrade(
                     trade.TradeId,
-                    string.Empty,
-                    string.Empty,
+                    trade.SentTrade.SenderId,
+                    trade.ReceivedTrade.ReceiverId,
                     trade.SentDate,
                     trade.Response,
                     trade.ResponseDate,
                     new TradeItemDTO[0])
                 );
-            });
 
-        tradeRepositoryMock.Setup(repo => repo.AddSentAndReceivedTradeEntitiesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Callback((string tradeId, string senderUserId, string receiverUserId) =>
-            {
-                var cachedTrade = GetCachedTrade(tradeId);
-
-                if (cachedTrade == null) return;
-
-                cachedTrade.SenderUserId = senderUserId;
-                cachedTrade.ReceiverUserId = receiverUserId;
+                return true;
             });
 
         /*tradeRepositoryMock.Setup(repo => repo.GetTradeEntityAsync(It.IsAny<string>()))

@@ -167,10 +167,7 @@ public static class DatabaseContextExtensions
 
     private static async Task<Trade> SeedTrade(DatabaseContext databaseContext, string senderUserId, string receiverUserId, string[] itemsToBeAdded)
     {
-        var trade = new Trade(DateTime.Now);
-
-        trade.SetSender(senderUserId);
-        trade.SetReceiver(receiverUserId);
+        var trade = new Trade(DateTime.Now, senderUserId, receiverUserId);
 
         AddTradeContents(itemsToBeAdded, trade);
         await AddLockedItemsForTradeContent(databaseContext, trade);
