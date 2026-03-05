@@ -175,9 +175,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
     public async Task ListUsers_RegisterNewUserThenListUsers_ShouldExecuteSuccessfully()
     {
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser<IdentityController>(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;

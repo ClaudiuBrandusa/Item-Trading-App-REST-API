@@ -113,16 +113,16 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
     {
         using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
+        
+        var itemName = "Brass";
+        var itemDescription = "Test";
 
-        var request = new CreateItemRequest
-        {
-            ItemName = "Iron",
-            ItemDescription = "Test"
-        };
-
-        var createdItemResult = await controller.Create(request);
-        var createItemResponse = GetContent<CreateItemSuccessResponse>(createdItemResult);
-        var itemId = createItemResponse!.ItemId;
+        var createdItemResponse = await Scenarios.CreateItem(
+            controller,
+            itemName,
+            itemDescription
+        );
+        var itemId = createdItemResponse!.ItemId;
 
         var result = await controller.Get(itemId);
 
@@ -130,8 +130,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var itemResponse = AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
         Assert.NotNull(itemResponse);
         Assert.Equal(itemId, itemResponse.Id);
-        Assert.Equal(request.ItemName, itemResponse.Name);
-        Assert.Equal(request.ItemDescription, itemResponse.Description);
+        Assert.Equal(itemName, itemResponse.Name);
+        Assert.Equal(itemDescription, itemResponse.Description);
     }
 
     [Fact]
@@ -155,18 +155,19 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
 
-        var request = new CreateItemRequest
-        {
-            ItemName = "Lead",
-            ItemDescription = "Test"
-        };
+        var itemName = "Lead";
+        var itemDescription = "Test";
 
-        var createdItemResult = await controller.Create(request);
-        var createItemResponse = GetContent<CreateItemSuccessResponse>(createdItemResult);
-        var itemId = createItemResponse!.ItemId;
+        var createdItemResponse = await Scenarios.CreateItem(
+            controller,
+            itemName,
+            itemDescription
+        );
 
-        var expectedUpdatedName = $"{request.ItemName}_Updated";
-        var expectedUpdatedDescription = $"{request.ItemDescription}_Updated";
+        var itemId = createdItemResponse!.ItemId;
+
+        var expectedUpdatedName = $"{itemName}_Updated";
+        var expectedUpdatedDescription = $"{itemDescription}_Updated";
 
         var updateRequest = new UpdateItemRequest
         {
@@ -212,16 +213,16 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
     {
         using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
         var controller = controllerPack.ControllerInstance;
+        
+        var itemName = "Brass";
+        var itemDescription = "Test";
 
-        var request = new CreateItemRequest
-        {
-            ItemName = "Brass",
-            ItemDescription = "Test"
-        };
-
-        var createdItemResult = await controller.Create(request);
-        var createItemResponse = GetContent<CreateItemSuccessResponse>(createdItemResult);
-        var itemId = createItemResponse!.ItemId;
+        var createdItemResponse = await Scenarios.CreateItem(
+            controller,
+            itemName,
+            itemDescription
+        );
+        var itemId = createdItemResponse!.ItemId;
 
         var deleteItemRequest = new DeleteItemRequest
         {
@@ -234,7 +235,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var deleteItemResponse = AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
         Assert.NotNull(deleteItemResponse);
         Assert.Equal(itemId, deleteItemResponse.ItemId);
-        Assert.Equal(request.ItemName, deleteItemResponse.ItemName);
+        Assert.Equal(itemName, deleteItemResponse.ItemName);
     }
 
     [Fact]

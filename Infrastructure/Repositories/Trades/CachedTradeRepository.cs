@@ -88,7 +88,7 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     public Task<string[]> ListReceivedTradeIdsCachedAsync(string userId)
     {
         return _cacheService.GetEntityIdsAsync(
-            GetReceivedTradeCacheKey(userId, ""),
+            GetReceivedTradeCacheKey("", userId),
             async (args) => await _repository.ListReceivedTradeIdsAsync(userId),
             true
         );
@@ -97,7 +97,7 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     public Task<string[]> ListSentTradeIdsCachedAsync(string userId)
     {
         return _cacheService.GetEntityIdsAsync(
-            GetSentTradeCacheKey(userId, ""),
+            GetSentTradeCacheKey("", userId),
             async (args) => await _repository.ListSentTradeIdsAsync(userId),
             true
         );
@@ -117,8 +117,8 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
                 trade.ResponseDate,
                 tradeItems
             )),
-            _cacheService.SetCacheValueAsync(GetSentTradeCacheKey(senderId, tradeId), ""),
-            _cacheService.SetCacheValueAsync(GetReceivedTradeCacheKey(receiverId, tradeId), "")
+            _cacheService.SetCacheValueAsync(GetSentTradeCacheKey(tradeId, senderId), ""),
+            _cacheService.SetCacheValueAsync(GetReceivedTradeCacheKey(tradeId, receiverId), "")
         );
     }
 
@@ -127,8 +127,8 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
         var tasks = new Task[3 + tradeItemIds.Length];
 
         tasks[0] = _cacheService.ClearCacheKeyAsync(GetTradeCacheKey(tradeId));
-        tasks[1] = _cacheService.ClearCacheKeyAsync(GetSentTradeCacheKey(senderId, tradeId));
-        tasks[2] = _cacheService.ClearCacheKeyAsync(GetReceivedTradeCacheKey(receiverId, tradeId));
+        tasks[1] = _cacheService.ClearCacheKeyAsync(GetSentTradeCacheKey(tradeId, senderId));
+        tasks[2] = _cacheService.ClearCacheKeyAsync(GetReceivedTradeCacheKey(tradeId, receiverId));
         for (int i = 0; i < tradeItemIds.Length; i++)
             tasks[3 + i] = _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(tradeItemIds[i]), tradeId);
 

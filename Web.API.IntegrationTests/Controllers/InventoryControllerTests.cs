@@ -27,14 +27,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = "itemDescription";
 
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var item = await Scenarios.CreateItem(
-            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            _factory,
             itemName,
             itemDescription
         );
@@ -58,8 +57,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
     public async Task Add_AddingAnItemThatDoesntExist_ShouldFail()
     {
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -83,14 +81,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = "itemDescription";
 
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var createdItemResponse = await Scenarios.CreateItem(
-            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            _factory,
             itemName,
             itemDescription
         );
@@ -122,8 +119,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
     public async Task Drop_DropItemThatDoesntExist_ShouldFail()
     {
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -147,14 +143,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = "itemDescription";
 
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var createdItemResponse = await Scenarios.CreateItem(
-            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            _factory,
             itemName,
             itemDescription
         );
@@ -178,14 +173,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = "itemDescription";
 
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var createdItemResponse = await Scenarios.CreateItem(
-            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            _factory,
             itemName,
             itemDescription
         );
@@ -213,14 +207,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = "itemDescription";
 
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var createdItemResponse = await Scenarios.CreateItem(
-            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            _factory,
             itemName,
             itemDescription
         );
@@ -251,14 +244,13 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = "itemDescription";
 
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var createdItemResponse = await Scenarios.CreateItem(
-            CreateControllerPackWithDefaultUser<ItemController>(_factory).ControllerInstance,
+            _factory,
             itemName,
             itemDescription
         );
@@ -282,8 +274,7 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
     public async Task GetLockedAmount_WhenItemDoesntExist_ShouldReturn0()
     {
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu");
-        var userClaims = CreateClaimsFromUser(user!);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
         
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;

@@ -26,24 +26,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Andesite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
         var receiverUser = dbContext.GetUserByName("Root")!;
 
@@ -82,25 +78,21 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
         var userId = user.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
-
         var itemName = "Diorite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
         var tradeItems = new ItemWithPrice[]
         {
@@ -137,8 +129,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -171,24 +162,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Slate";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
         var receiverUser = dbContext.GetUserByName("Root")!;
 
@@ -230,8 +217,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -254,27 +240,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Quartzite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -327,8 +308,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -356,27 +336,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Limestone";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -427,27 +402,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Basalt";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -503,24 +473,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Marble";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
         var receiverUser = dbContext.GetUserByName("Root")!;
 
@@ -568,27 +534,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Calcite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -641,8 +602,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -670,27 +630,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Feldspar";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -741,27 +696,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Gravel";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -817,24 +767,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Dolomite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
         var receiverUser = dbContext.GetUserByName("Root")!;
 
@@ -882,24 +828,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Aragonite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
         var receiverUser = dbContext.GetUserByName("Root")!;
 
@@ -950,8 +892,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -979,27 +920,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Anhydrite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -1050,27 +986,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Gypsum";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -1126,27 +1057,22 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
-
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
 
         var itemName = "Gneiss";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -1197,8 +1123,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var expectedTradeDirections = Enum.GetNames(typeof(TradeDirection));
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -1215,38 +1140,29 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.All(expectedTradeDirections, expectedTradeDirection => tradeDirections.Contains(expectedTradeDirection));
     }
 
-    // List all trades
     [Fact]
     public async Task List_CreateSomeTradesThenListThem_ShouldListSuccessfully()
     {
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
-
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
-        using var receiverInventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, receiverUserClaims);
-
         var itemName = "Tonalite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(receiverInventoryControllerPack.ControllerInstance, itemId, itemQuantity);
-
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -1291,37 +1207,29 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.Contains(createdTradeFromReceiver.TradeId, receivedTradeIds);
     }
     
-    // List sent trades (also add received trade and expect it to not be included)
     [Fact]
     public async Task List_CreateSomeTradesThenListOnlySentTrades_ShouldListSuccessfully()
     {
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
-
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
-        using var receiverInventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, receiverUserClaims);
-
         var itemName = "Dacite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(receiverInventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -1365,37 +1273,29 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.Contains(createdTradeFromSender.TradeId, sentTradeIds);
     }
 
-    // List received trades (also add sent trade and expect it to not be included)
     [Fact]
     public async Task List_CreateSomeTradesThenListOnlyReceivedTrades_ShouldListSuccessfully()
     {
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        var user = dbContext.GetUserByName("Claudiu")!;
-        var userClaims = CreateClaimsFromUser(user);
-
-        var receiverUser = dbContext.GetUserByName("Root")!;
-        var receiverUserClaims = CreateClaimsFromUser(receiverUser);
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
-        using var itemControllerPack = CreateControllerPackWithUser<ItemController>(_factory, userClaims);
-        using var inventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, userClaims);
-        using var receiverInventoryControllerPack = CreateControllerPackWithUser<InventoryController>(_factory, receiverUserClaims);
-
         var itemName = "Basanite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(itemControllerPack.ControllerInstance, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(inventoryControllerPack.ControllerInstance, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(receiverInventoryControllerPack.ControllerInstance, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
 
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
