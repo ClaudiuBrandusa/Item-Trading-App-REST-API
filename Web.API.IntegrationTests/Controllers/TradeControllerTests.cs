@@ -3,6 +3,7 @@ using Application.Models.Trades;
 using Domain.Entities.Identity;
 using Item_Trading_App_Contracts.Base.Item;
 using Item_Trading_App_Contracts.Requests.Trade;
+using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_Contracts.Responses.Trade;
 using Item_Trading_App_REST_API.Controllers;
 using Web.API.IntegrationTests.Common.Factories;
@@ -46,13 +47,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
         var createTradeOfferRequest = new TradeOfferRequest
@@ -96,13 +91,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
         var createTradeOfferRequest = new TradeOfferRequest
@@ -182,23 +171,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
 
         // Act
 
@@ -242,9 +218,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
-
         var itemName = "Quartzite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
@@ -263,23 +236,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var request = new AcceptTradeOfferRequest
         {
@@ -338,9 +298,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
-
         var itemName = "Limestone";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
@@ -359,23 +316,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var request = new AcceptTradeOfferRequest
         {
@@ -384,9 +328,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await receiverController.Accept(request);
+        await Scenarios.AcceptTrade(receiverController, createdTrade.TradeId);
 
-        var result = await controller.Accept(request);
+        var result = await receiverController.Accept(request);
 
         // Assert
 
@@ -403,9 +347,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
-
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
 
         var itemName = "Basalt";
         var itemDescription = string.Empty;
@@ -425,23 +366,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var cancelRequest = new CancelTradeOfferRequest
         {
@@ -455,7 +383,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await controller.Cancel(cancelRequest);
+        await Scenarios.CancelTrade(_factory, userClaims, createdTrade.TradeId);
 
         var result = await receiverController.Accept(acceptRequest);
 
@@ -493,23 +421,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
 
         var request = new AcceptTradeOfferRequest
         {
@@ -536,9 +451,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
-
         var itemName = "Calcite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
@@ -557,23 +469,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var request = new RejectTradeOfferRequest
         {
@@ -632,9 +531,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
-
         var itemName = "Feldspar";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
@@ -653,23 +549,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var request = new RejectTradeOfferRequest
         {
@@ -678,7 +561,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await receiverController.Reject(request);
+        await Scenarios.RejectTrade(receiverController, createdTrade.TradeId);
 
         var result = await receiverController.Reject(request);
 
@@ -698,9 +581,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
-
         var itemName = "Gravel";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
@@ -719,23 +599,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var cancelRequest = new CancelTradeOfferRequest
         {
@@ -749,7 +616,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await controller.Cancel(cancelRequest);
+        await Scenarios.CancelTrade(_factory, userClaims, createdTrade.TradeId);
 
         var result = await receiverController.Reject(rejectRequest);
 
@@ -787,23 +654,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
 
         var request = new RejectTradeOfferRequest
         {
@@ -848,23 +702,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
 
         var request = new CancelTradeOfferRequest
         {
@@ -937,29 +778,13 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
-        using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
-        var receiverController = receiverControllerPack.ControllerInstance;
-
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
 
         var request = new CancelTradeOfferRequest
         {
@@ -1003,29 +828,13 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
 
-        using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
-        var receiverController = receiverControllerPack.ControllerInstance;
-
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
 
         var acceptRequest = new AcceptTradeOfferRequest
         {
@@ -1039,7 +848,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await receiverController.Accept(acceptRequest);
+        await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTrade.TradeId);
 
         var result = await controller.Cancel(cancelRequest);
 
@@ -1059,9 +868,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
-        var controller = controllerPack.ControllerInstance;
-
         var itemName = "Gneiss";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
@@ -1080,23 +886,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTrade = GetContent<TradeOfferSuccessResponse>(createdTradeResponse)!;
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
 
         var request = new CancelTradeOfferRequest
         {
@@ -1164,31 +957,13 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
         await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
 
-        using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
-        var receiverController = receiverControllerPack.ControllerInstance;
-
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeFromSenderResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTradeFromSender = GetContent<TradeOfferSuccessResponse>(createdTradeFromSenderResponse)!;
-        createTradeOfferRequest.TargetUserId = user.Id;
-        var createdTradeFromReceiverResponse = await receiverController.Offer(createTradeOfferRequest);
-        var createdTradeFromReceiver = GetContent<TradeOfferSuccessResponse>(createdTradeFromReceiverResponse)!;
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
 
         // Act
 
@@ -1204,7 +979,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.True(sentTradeIds.Length > 0);
         Assert.True(receivedTradeIds.Length > 0);
         Assert.Contains(createdTradeFromSender.TradeId, sentTradeIds);
+        Assert.DoesNotContain(createdTradeFromSender.TradeId, receivedTradeIds);
         Assert.Contains(createdTradeFromReceiver.TradeId, receivedTradeIds);
+        Assert.DoesNotContain(createdTradeFromReceiver.TradeId, sentTradeIds);
     }
     
     [Fact]
@@ -1231,31 +1008,13 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
         await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
 
-        using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
-        var receiverController = receiverControllerPack.ControllerInstance;
-
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeFromSenderResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTradeFromSender = GetContent<TradeOfferSuccessResponse>(createdTradeFromSenderResponse)!;
-        createTradeOfferRequest.TargetUserId = user.Id;
-        var createdTradeFromReceiverResponse = await receiverController.Offer(createTradeOfferRequest);
-        var createdTradeFromReceiver = GetContent<TradeOfferSuccessResponse>(createdTradeFromReceiverResponse)!;
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
 
         // Act
 
@@ -1297,32 +1056,13 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
         await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
 
-
-        using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
-        var receiverController = receiverControllerPack.ControllerInstance;
-
         var tradeItems = new ItemWithPrice[]
         {
-            new ItemWithPrice
-            {
-                Id = itemId,
-                Name = itemName,
-                Price = 50,
-                Quantity = itemQuantity
-            }
+            CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createTradeOfferRequest = new TradeOfferRequest
-        {
-            TargetUserId = receiverUserId,
-            Items = tradeItems
-        };
-
-        var createdTradeFromSenderResponse = await controller.Offer(createTradeOfferRequest);
-        var createdTradeFromSender = GetContent<TradeOfferSuccessResponse>(createdTradeFromSenderResponse)!;
-        createTradeOfferRequest.TargetUserId = user.Id;
-        var createdTradeFromReceiverResponse = await receiverController.Offer(createTradeOfferRequest);
-        var createdTradeFromReceiver = GetContent<TradeOfferSuccessResponse>(createdTradeFromReceiverResponse)!;
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
 
         // Act
 
@@ -1338,6 +1078,17 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.Empty(sentTradeIds);
         Assert.True(receivedTradeIds.Length > 0);
         Assert.Contains(createdTradeFromReceiver.TradeId, receivedTradeIds);
+    }
+
+    private ItemWithPrice CreateTradeItem(CreateItemSuccessResponse item, int price, int quantity)
+    {
+        return new ItemWithPrice
+        {
+            Id = item.ItemId,
+            Name = item.ItemName,
+            Price = price,
+            Quantity = quantity
+        };
     }
 
     private void AssertTradeOfferResponse(User senderUser, User receiverUser, ItemWithPrice[] tradeItems, TradeOfferSuccessResponse response)
