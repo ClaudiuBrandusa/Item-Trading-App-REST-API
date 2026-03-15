@@ -1,11 +1,12 @@
 ﻿using Application.Constants;
 using Application.Helpers;
 using Application.Services.Notification;
+using Domain.DomainEvents.Items;
 using MediatR;
 
 namespace Application.Behaviors.Item.UpdateItem;
 
-public class ItemUpdatedEventHandler : INotificationHandler<ItemUpdatedEvent>
+public class ItemUpdatedEventHandler : INotificationHandler<ItemUpdatedDomainEvent>
 {
     private readonly IClientNotificationService _clientNotificationService;
 
@@ -14,7 +15,7 @@ public class ItemUpdatedEventHandler : INotificationHandler<ItemUpdatedEvent>
         _clientNotificationService = clientNotificationService;
     }
 
-    public Task Handle(ItemUpdatedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(ItemUpdatedDomainEvent notification, CancellationToken cancellationToken)
     {
         var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.SenderUserId);
 

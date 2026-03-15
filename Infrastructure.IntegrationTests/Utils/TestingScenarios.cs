@@ -4,6 +4,7 @@ using Domain.Entities.Identity;
 using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
+using Domain.Repositories.Inventories;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Repositories.Inventories;
@@ -88,7 +89,7 @@ public static class TestingScenarios
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
         var repository = new IdentityRepository(dbContextWrapper, userManager);
-
+        
         var userToBeCreated = new User
         {
             Id = User.GenerateId(),
@@ -158,19 +159,58 @@ public static class TestingScenarios
         return inventory;
     }
 
+    public static async Task<Inventory> GetInventory(IInventoryRepository repository, string userId)
+    {
+        var inventory = await repository.GetInventoryAsync(userId);
+
+        if (inventory is null)
+            inventory = new Inventory(userId);
+
+        return inventory;
+    }
+    
+    public static async Task<Inventory> LoadInventory(IServiceProvider serviceProvider, string userId)
+    {
+        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var repository = new InventoryRepository(dbContextWrapper);
+        
+        var inventory = await repository.LoadInventoryAsync(userId);
+
+        if (inventory is null)
+            inventory = new Inventory(userId);
+
+        repository.Dispose();
+
+        return inventory;
+    }
+    
+    public static async Task<Inventory> LoadInventory(IInventoryRepository repository, string userId)
+    {
+        var inventory = await repository.LoadInventoryAsync(userId);
+
+        if (inventory is null)
+            inventory = new Inventory(userId);
+
+        return inventory;
+    }
+
     public static async Task<InventoryItem> AddItemToUser(IServiceProvider serviceProvider, Item item, User user, int quantity)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
         var repository = new InventoryRepository(dbContextWrapper);
 
-        var inventory = await GetInventory(serviceProvider, user.Id);
+        var inventory = await LoadInventory(repository, user.Id);
 
         inventory.AddItem(item.ItemId, quantity);
 
-        bool operationResult = await repository.AddInventoryAsync(inventory);
+        bool operationResult = await repository.AddInventoryOrUpdateAsync(inventory);
 
-        var response = await repository.GetOwnedItemEntityAsync(user.Id, item.ItemId);
+        await repository.SaveChangesAsync();
+
+        var newInventory = await GetInventory(repository, user.Id);
+
+        var response = newInventory.GetItem(item.ItemId);
 
         repository.Dispose();
 
@@ -184,7 +224,7 @@ public static class TestingScenarios
 
     public static Trade CreateTrade(string senderUserId, string receiverUserId)
     {
-        DateTime sentDate = DateTime.Now;
+        DateTime sentDate = DateTime.UtcNow;
         return CreateTrade(sentDate, senderUserId, receiverUserId);
     }
 

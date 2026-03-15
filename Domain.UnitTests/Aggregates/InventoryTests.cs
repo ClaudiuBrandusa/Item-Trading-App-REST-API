@@ -66,6 +66,10 @@ public class InventoryTests
         Assert.NotNull(firstElement);
         Assert.Equal(itemId, firstElement.ItemId);
         Assert.Equal(expectedQuantity, firstElement.Quantity);
+        var domainEvents = inventory.GetDomainEvents();
+        Assert.Single(domainEvents);
+        inventory.ClearDomainEvents();
+        Assert.Empty(inventory.GetDomainEvents());
     }
 
     [Fact]

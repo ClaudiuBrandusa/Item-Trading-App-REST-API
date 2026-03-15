@@ -28,6 +28,7 @@ using Application.Results.Trades;
 using Application.Models.Trades;
 using Domain.Entities.Trades;
 using Application.Models.TradeItems;
+using Domain.DomainEvents.Trades;
 
 namespace Application.Services.Trade;
 
@@ -85,7 +86,14 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                offer = new Domain.Aggregates.Trades.Trade(DateTime.Now, model.SenderUserId, model.TargetUserId);
+                offer = new Domain.Aggregates.Trades.Trade(DateTime.UtcNow, model.SenderUserId, model.TargetUserId);
+
+                foreach (var item in items)
+                {
+                    var tradeContent = new TradeItem(offer.TradeId, item.ItemId, item.Quantity, item.Price);
+                    
+                    offer.AddTradeContent(tradeContent);
+                }
 
                 if (!await _repository.AddEntityAsync(offer))
                 {
@@ -96,22 +104,6 @@ public class TradeService : ITradeService, IDisposable
 
                     return false;
                 }
-
-                foreach (var item in items)
-                {
-                    var request = _mapper.AdaptToType<TradeItemDTO, AddTradeItemCommand>(item, (nameof(AddTradeItemCommand.TradeId), offer.TradeId));
-                    if (!await _sender.Send(request))
-                    {
-                        taskCompletionSource.SetResult(new TradeOfferResult
-                        {
-                            Errors = new[] { "Something went wrong" }
-                        });
-
-                        return false;
-                    }
-                }
-
-                await _repository.SaveChangesAsync();
 
                 return true;
             }
@@ -134,11 +126,6 @@ public class TradeService : ITradeService, IDisposable
 
         await Task.WhenAll(
             SetCacheForCreatedTradeAsync(offer, model),
-            _publisher.Publish(new TradeCreatedEvent
-            {
-                TradeId = offer.TradeId,
-                ReceiverId = model.TargetUserId,
-            }),
             receiverUsernameTask,
             senderUsernameTask
         );
@@ -291,12 +278,7 @@ public class TradeService : ITradeService, IDisposable
         var receiverNameTask = GetUsernameAsync(receiverId);
 
         await Task.WhenAll(
-            _publisher.Publish(new TradeRespondedEvent
-            {
-                TradeId = model.TradeId,
-                SenderId = senderId,
-                Response = true
-            }),
+            _publisher.Publish(new TradeRespondedDomainEvent(model.TradeId, senderId, true)),
             senderNameTask,
             receiverNameTask
         );
@@ -394,12 +376,7 @@ public class TradeService : ITradeService, IDisposable
         var receiverNameTask = GetUsernameAsync(senderId);
 
         await Task.WhenAll(
-            _publisher.Publish(new TradeRespondedEvent
-            {
-                TradeId = model.TradeId,
-                SenderId = senderId,
-                Response = false
-            }),
+            _publisher.Publish(new TradeRespondedDomainEvent(model.TradeId, senderId, false)),
             senderNameTask,
             receiverNameTask
         );
@@ -469,7 +446,7 @@ public class TradeService : ITradeService, IDisposable
                 receiverId = await GetReceiverIdAsync(model.TradeId);
                 trade.ReceiverUserId = receiverId;
 
-                if (!await _repository.RemoveEntityAsync(new Domain.Aggregates.Trades.Trade(model.TradeId, DateTime.Now, senderId, receiverId)))
+                if (!await _repository.RemoveEntityAsync(new Domain.Aggregates.Trades.Trade(model.TradeId, DateTime.UtcNow, senderId, receiverId)))
                 {
                     taskCompletionSource.SetResult(new TradeOfferResult
                     {
@@ -498,11 +475,7 @@ public class TradeService : ITradeService, IDisposable
 
         await Task.WhenAll(
              ClearCacheUsedForTradeAsync(model.TradeId, senderId, receiverId, trade.TradeItems.Select(x => x.ItemId).ToArray()),
-             _publisher.Publish(new TradeCancelledEvent
-             {
-                 TradeId = model.TradeId,
-                 ReceiverId = receiverId
-             }),
+             _publisher.Publish(new TradeCancelledDomainEvent(model.TradeId, receiverId)),
              senderNameTask,
              receiverNameTask
         );
@@ -757,7 +730,7 @@ public class TradeService : ITradeService, IDisposable
     private Task<bool> UpdateTradeEntityAsync(CachedTrade trade, bool response)
     {
         trade.Response = response;
-        trade.ResponseDate = DateTime.Now;
+        trade.ResponseDate = DateTime.UtcNow;
 
         return _repository.UpdateEntityAsync(
             new Domain.Aggregates.Trades.Trade(trade.TradeId, trade.SentDate, trade.ResponseDate, trade.Response, trade.SenderUserId, trade.ReceiverUserId));

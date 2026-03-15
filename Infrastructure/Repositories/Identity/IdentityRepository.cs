@@ -39,9 +39,11 @@ public class IdentityRepository : RepositoryBase, IIdentityRepository
         return user.UserName ?? string.Empty;
     }
 
-    public Task<IdentityResult> CreateUserAsync(User user, string password)
+    public async Task<IdentityResult> CreateUserAsync(User user, string password)
     {
-        return _userManager.CreateAsync(user, password);
+        var createdUser = await _userManager.CreateAsync(user, password);
+        await context.SaveChangesAsync();
+        return createdUser;
     }
 
     public async Task<bool> UpdateUserAsync(User user)

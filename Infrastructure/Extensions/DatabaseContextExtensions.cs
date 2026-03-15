@@ -167,7 +167,7 @@ public static class DatabaseContextExtensions
 
     private static async Task<Trade> SeedTrade(DatabaseContext databaseContext, string senderUserId, string receiverUserId, string[] itemsToBeAdded)
     {
-        var trade = new Trade(DateTime.Now, senderUserId, receiverUserId);
+        var trade = new Trade(DateTime.UtcNow, senderUserId, receiverUserId);
 
         AddTradeContents(itemsToBeAdded, trade);
         await AddLockedItemsForTradeContent(databaseContext, trade);
@@ -192,7 +192,10 @@ public static class DatabaseContextExtensions
     {
         foreach (var tradeItem in trade.TradeContents)
         {
-            LockedItem lockedItem = databaseContext.LockedItems.FirstOrDefault(x => x.UserId == trade.SentTrade.SenderId && x.ItemId == tradeItem.ItemId);
+            LockedItem lockedItem = databaseContext.LockedItems
+                .FirstOrDefault(x => x.UserId == trade.SentTrade.SenderId && 
+                x.ItemId == tradeItem.ItemId
+            );
 
             if (lockedItem is null)
             {

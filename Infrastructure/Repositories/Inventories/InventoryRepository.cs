@@ -17,190 +17,57 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
     {
         var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
 
-        var inventoryEntity = await GetInventoryQuery(context, userId);
+        var inventoryEntity = await GetInventoryQuery(dbContext, userId);
 
         DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return inventoryEntity;
     }
 
-    public async Task<bool> AddInventoryAsync(Inventory inventory)
+    public async Task<Inventory> LoadInventoryAsync(string userId)
     {
-        var storedInventory = await context.Inventories.FindAsync(inventory.UserId);
+        var inventoryEntity = await GetInventoryTrackingQuery(context, userId);
 
-        bool hasInventory = storedInventory is not null;
-
-        if (hasInventory)
+        if (inventoryEntity is null)
         {
-            var itemsToBeAdded = inventory.GetCollectionUpdates(Inventory.CollectionUpdate.Add);
-
-            for (int i = 0; i < itemsToBeAdded.Count; i++)
-            {
-                var item = inventory.GetItem(itemsToBeAdded[i]);
-
-                storedInventory!.AddItem(item);
-            }
-
-            inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Add);
-
-            var itemsToBeUpdated = inventory.GetCollectionUpdates(Inventory.CollectionUpdate.Update);
-
-            for (int i = 0; i < itemsToBeUpdated.Count; i++)
-            {
-                var item = inventory.GetItem(itemsToBeUpdated[i]);
-
-                storedInventory!.AddItem(item);
-            }
-
-            inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Update);
-
-            var itemsToBeRemoved = inventory.GetCollectionUpdates(Inventory.CollectionUpdate.Remove);
-
-            for (int i = 0; i < itemsToBeRemoved.Count; i++)
-            {
-                var item = inventory.GetItem(itemsToBeRemoved[i]);
-
-                storedInventory!.DropItem(item.ItemId, item.Quantity);
-            }
-
-            inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Remove);
-
-            var result = await context.SaveChangesAsync() > 0;
-
-            context.Entry(storedInventory).State = EntityState.Detached;
-
-            return result;
+            inventoryEntity = new Inventory(userId);
         }
 
-        return await AddEntityAsync(inventory);
+        return inventoryEntity;
     }
 
-    public async Task<bool> DropItemAsync(string userId, string itemId, int amount)
+    public async Task<bool> AddInventoryOrUpdateAsync(Inventory inventory)
     {
-        var inventory = await GetInventoryAsync(userId);
-
-        if (inventory is null)
-            return false;
-
-        var inventoryItem = inventory.GetItem(itemId);
-
-        if (inventoryItem is null)
-            return false;
-
-        inventory.DropItem(itemId, amount);
-
-        bool result;
-
-        if (inventory.ItemIds.Contains(itemId))
+        if (await DoesUserInventoryExist(inventory.UserId))
         {
-            // then we update the current inventory item amount
-            var updateOperationResult = await context.InventoryItems
-                .Where(x => x.UserId == userId &&
-                        x.ItemId == itemId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(p => p.Quantity, inventoryItem.Quantity));
-
-            result = updateOperationResult > 0;
-        }
-        else
-        {
-            // then we remove the item
-            var deleteOperationResult = await context.InventoryItems
-                .Where(x => x.UserId == userId &&
-                        x.ItemId == itemId)
-                .ExecuteDeleteAsync();
-
-            result = deleteOperationResult > 0;
+            return await context.SaveChangesAsync() > 0;
         }
 
-        if (result)
-        {
-            inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Remove);
-        }
+        bool result = (await context.AddAsync(inventory)).State == EntityState.Added;
 
-        return result;
+        return result && await context.SaveChangesAsync() > 0;
     }
 
-    public async Task<InventoryItem?> GetOwnedItemEntityAsync(string userId, string itemId)
+    public async Task<bool> DropItemAsync(Inventory inventory, string itemId, int amount)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var inventoryItemEntity = await GetOwnedItemQuery(dbContext, userId, itemId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
-
-        return inventoryItemEntity;
+        return await context.SaveChangesAsync() > 0;
     }
 
-    public async Task<LockedItem?> GetLockedInventoryItemEntityAsync(string userId, string itemId)
+    public async Task<bool> UpdateInventory(Inventory inventory)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
+        context.Update(inventory);
 
-        var lockedInventoryItemEntity = await GetLockedInventoryItemQuery(dbContext, userId, itemId);
+        return await context.SaveChangesAsync() > 0;
+    }
 
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
-
-        return lockedInventoryItemEntity;
+    public async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
+    {
+        return await GetItemFreeQuantity(userId, itemId);
     }
 
     public async Task<int> GetAmountOfLockedItemAsync(string userId, string itemId)
     {
         return await GetLockedItemQuantity(userId, itemId);
-    }
-
-    public async Task<bool> LockItemAsync(string userId, string itemId, int quantity)
-    {
-        bool storedInDb = await GetLockedInventoryItemEntityAsync(userId, itemId) is not null;
-        bool modified;
-
-        if (!storedInDb)
-        {
-            modified = await AddEntityAsync(new LockedItem(userId, itemId, quantity));
-        }
-        else
-        {
-            int lockedAmount = await GetAmountOfLockedItemAsync(userId, itemId);
-
-            quantity += lockedAmount;
-
-            modified = await UpdateEntityAsync(new LockedItem(userId, itemId, quantity));
-        }
-
-        return modified;
-    }
-
-    public async Task<bool> UnlockItemAsync(string userId, string itemId, int quantity)
-    {
-        var lockedAmount = await GetAmountOfLockedItemAsync(userId, itemId);
-
-        int remainedLockedAmount = lockedAmount - quantity;
-
-        if (remainedLockedAmount < 0)
-        {
-            return false;
-        }
-
-        var entity = new LockedItem(userId, itemId, remainedLockedAmount);
-
-        if (remainedLockedAmount == 0)
-        {
-            return await RemoveEntityAsync(entity);
-        }
-        else
-        {
-            return await UpdateEntityAsync(entity);
-        }
-    }
-
-    public async Task<int> GetAmountOfFreeItemAsync(string userId, string itemId)
-    {
-        var itemQuantity = await GetItemQuantity(userId, itemId);
-
-        int lockedItemQuantity = await GetAmountOfLockedItemAsync(userId, itemId);
-
-        if (itemQuantity == 0) return 0;
-
-        return itemQuantity - lockedItemQuantity;
     }
 
     public Task<string[]> ListUsersThatOwnItemAsync(string itemId) =>
@@ -209,6 +76,11 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
             .Where(x => x.OwnedItems.Any(x => x.ItemId == itemId))
             .Select(x => x.UserId)
             .ToArrayAsync();
+
+    private async Task<bool> DoesUserInventoryExist(string userId)
+    {
+        return await UserInventoryExistQuery(context, userId);
+    }
 
     /// <summary>
     /// Returns the item quantity for the item with <paramref name="itemId"/> owned by the user with <paramref name="userId"/>
@@ -222,6 +94,20 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
         DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
 
         return inventoryItemQuantity;
+    }
+
+    /// <summary>
+    /// Returns the free item quantity for the item with <paramref name="itemId"/> owned by the user with <paramref name="userId"/>
+    /// </summary>
+    private async Task<int> GetItemFreeQuantity(string userId, string itemId)
+    {
+        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
+
+        var inventoryItemFreeQuantity = await GetInventoryItemFreeQuantityQuery(dbContext, userId, itemId);
+
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+
+        return inventoryItemFreeQuantity;
     }
 
     /// <summary>
@@ -248,6 +134,19 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
                 .FirstOrDefault(oi => Equals(oi.UserId, userId))
         );
 
+    private static readonly Func<DatabaseContext, string, Task<bool>> UserInventoryExistQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string userId) =>
+            context.Inventories
+                .Any(oi => Equals(oi.UserId, userId))
+        );
+
+    private static readonly Func<DatabaseContext, string, Task<Inventory?>> GetInventoryTrackingQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string userId) =>
+            context.Inventories
+                .Include(x => x.OwnedItems)
+                .FirstOrDefault(oi => Equals(oi.UserId, userId))
+        );
+
     private static readonly Func<DatabaseContext, string, Task<Inventory?>> GetInventoryAsNoTrackingQuery =
         EF.CompileAsyncQuery((DatabaseContext context, string userId) =>
             context.Inventories
@@ -266,29 +165,26 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
                 .FirstOrDefault()
         );
 
-    private static readonly Func<DatabaseContext, string, string, Task<InventoryItem?>> GetOwnedItemQuery =
+    private static readonly Func<DatabaseContext, string, string, Task<int>> GetInventoryItemFreeQuantityQuery =
         EF.CompileAsyncQuery((DatabaseContext context, string userId, string itemId) =>
             context.Inventories
                 .AsNoTracking()
-                .Where(i => Equals(i.UserId, userId))
-                .SelectMany(i => i.OwnedItems)
-                .FirstOrDefault(oi => Equals(oi.ItemId, itemId))
+                .Where(i => i.UserId == userId)
+                .SelectMany(oi => oi.OwnedItems)
+                .Where(oi => oi.ItemId == itemId)
+                .Select(oi => oi.Quantity - oi.LockedAmount)
+                .FirstOrDefault()
         );
 
     private static readonly Func<DatabaseContext, string, string, Task<int>> GetLockedItemQuantityQuery =
         EF.CompileAsyncQuery((DatabaseContext context, string userId, string itemId) =>
-            context.LockedItems
+            context.Inventories
+                .Include(x => x.OwnedItems)
                 .AsNoTracking()
-                .Where(li => Equals(li.UserId, userId) && Equals(li.ItemId, itemId))
-                .Select(x => x.Quantity)
+                .Where(i => Equals(i.UserId, userId))
+                .SelectMany(oi => oi.OwnedItems)
+                .Select(x => x.LockedAmount)
                 .FirstOrDefault()
-        );
-
-    private static readonly Func<DatabaseContext, string, string, Task<LockedItem?>> GetLockedInventoryItemQuery =
-        EF.CompileAsyncQuery((DatabaseContext context, string userId, string itemId) =>
-            context.LockedItems
-                .AsNoTracking()
-                .FirstOrDefault(li => Equals(li.UserId, userId) && Equals(li.ItemId, itemId))
         );
 
     #endregion Queries

@@ -8,6 +8,7 @@ using Domain.Entities.Trades;
 using Application.Repositories;
 using MapsterMapper;
 using MediatR;
+using Domain.DomainEvents.Trades;
 
 namespace Application.Services.TradeItems;
 
@@ -77,22 +78,14 @@ public class TradeItemService : ITradeItemService, IDisposable
 
     private Task TradeItemCreated(TradeItem tradeItem, string tradeId)
     {
-        var eventNotification = new TradeItemAddedEvent
-        {
-            TradeId = tradeId,
-            Data = tradeItem
-        };
+        var eventNotification = new TradeItemAddedDomainEvent(tradeId, tradeItem);
 
         return _mediator.Publish(eventNotification);
     }
 
     private Task TradeItemRemoved(string tradeId, bool keepCache)
     {
-        var eventNotification = new TradeItemRemovedEvent
-        {
-            TradeId = tradeId,
-            KeepCache = keepCache
-        };
+        var eventNotification = new TradeItemRemovedDomainEvent(tradeId, keepCache);
 
         return _mediator.Publish(eventNotification);
     }

@@ -29,7 +29,7 @@ public class RefreshToken : Entity
         Token = GenerateToken();
         JwtId = jwtId;
         UserId = userId;
-        CreationDate = DateTime.Now;
+        CreationDate = DateTime.UtcNow;
         ExpiryDate = GenerateExpiryDate(refreshTokenLifetime);
     }
 
@@ -46,5 +46,5 @@ public class RefreshToken : Entity
 
     public static string GenerateToken() => Guid.NewGuid().ToString();
 
-    public static DateTime GenerateExpiryDate(TimeSpan refreshTokenLifetime) => DateTime.Now.Add(refreshTokenLifetime);
+    public static DateTime GenerateExpiryDate(TimeSpan refreshTokenLifetime) => DateTime.UtcNow.Add(refreshTokenLifetime);
 }

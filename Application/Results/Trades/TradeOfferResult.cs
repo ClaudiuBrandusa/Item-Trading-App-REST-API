@@ -15,7 +15,7 @@ public record TradeOfferResult : Result
 
     public string ReceiverName { get; set; } = string.Empty;
 
-    public DateTime CreationDate { get; set; } = DateTime.Now;
+    public DateTime CreationDate { get; set; } = DateTime.UtcNow;
 
     public DateTime? ResponseDate { get; set; }
 

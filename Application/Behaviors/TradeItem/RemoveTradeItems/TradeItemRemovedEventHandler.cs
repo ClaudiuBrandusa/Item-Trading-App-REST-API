@@ -1,10 +1,11 @@
 ﻿using Application.Constants;
 using Application.Services.Cache;
+using Domain.DomainEvents.Trades;
 using MediatR;
 
 namespace Application.Behaviors.TradeItem.RemoveTradeItems;
 
-public class TradeItemRemovedEventHandler : INotificationHandler<TradeItemRemovedEvent>
+public class TradeItemRemovedEventHandler : INotificationHandler<TradeItemRemovedDomainEvent>
 {
     private readonly ICacheService _cacheService;
 
@@ -13,7 +14,7 @@ public class TradeItemRemovedEventHandler : INotificationHandler<TradeItemRemove
         _cacheService = cacheService;
     }
 
-    public Task Handle(TradeItemRemovedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(TradeItemRemovedDomainEvent notification, CancellationToken cancellationToken)
     {
         if (!notification.KeepCache)
         {

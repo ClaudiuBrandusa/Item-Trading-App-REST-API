@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Trades;
+﻿using Domain.Aggregates.Trades;
+using Domain.Entities.Trades;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

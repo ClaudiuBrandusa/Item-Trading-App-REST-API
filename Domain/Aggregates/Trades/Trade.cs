@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Trades;
+﻿using Domain.DomainEvents.Trades;
+using Domain.Entities.Trades;
 using Domain.Primitives;
 
 namespace Domain.Aggregates.Trades;
@@ -35,6 +36,8 @@ public class Trade : AggregateRoot
 
         SetSender(senderId);
         SetReceiver(receiverId);
+
+        RaiseDomainEvent(new TradeCreatedDomainEvent(TradeId, receiverId));
     }
 
     public Trade(DateTime sentDate, string senderId, string receiverId, DateTime? responseDate, bool? response) : this(sentDate, senderId, receiverId)
@@ -74,7 +77,7 @@ public class Trade : AggregateRoot
     public void SetResponse(bool response)
     {
         Response = response;
-        ResponseDate = DateTime.Now;
+        ResponseDate = DateTime.UtcNow;
     }
 
     public static string GenerateId() => Guid.NewGuid().ToString();

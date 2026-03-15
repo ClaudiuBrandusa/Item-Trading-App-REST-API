@@ -29,7 +29,6 @@ public class InventoryServiceTests
     {
         var inventoryRepositoryMock = TestingUtils.CreateRepositoryMock<Inventory, ICachedInventoryRepository>(inventories.Values.ToList());
         var senderMock = new Mock<ISender>();
-        var publisherMock = new Mock<IPublisher>();
         var mapper = TestingUtils.GetMapper();
 
         #region MediatorMocks
@@ -51,6 +50,12 @@ public class InventoryServiceTests
             });
 
         inventoryRepositoryMock.Setup(x => x.GetInventoryAsync(It.IsAny<string>()))
+            .ReturnsAsync((string userId) =>
+            {
+                return GetInventory(userId);
+            });
+
+        inventoryRepositoryMock.Setup(x => x.LoadInventoryAsync(It.IsAny<string>()))
             .ReturnsAsync((string userId) =>
             {
                 return GetInventory(userId);
@@ -97,68 +102,25 @@ public class InventoryServiceTests
                 return inventory.GetItemFreeAmount(itemId);
             });
 
-        inventoryRepositoryMock.Setup(repo => repo.LockItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync((string userId, string itemId, int quantity) =>
+        inventoryRepositoryMock.Setup(repo => repo.LockItemAsync(It.IsAny<Inventory>(), It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync((Inventory inventory, string itemId, int quantity) =>
             {
-                var inventory = GetInventory(userId);
+                var tmp = GetInventory(inventory.UserId);
                 
-                if (inventory is null || !inventory.ItemIds.Contains(itemId))
-                {
-                    return false;
-                }
-                else
-                {
-                    var item = inventory.GetItem(itemId);
+                return tmp is not null;
+            });
 
-                    item.Lock(quantity);
-                }
-
+        inventoryRepositoryMock.Setup(repo => repo.DropItemAsync(It.IsAny<Inventory>(), It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync((Inventory inventory, string itemId, int amount) =>
+            {
+                var tmp = GetInventory(inventory.UserId);            
                 return true;
             });
 
-        inventoryRepositoryMock.Setup(repo => repo.DropItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync((string userId, string itemId, int amount) =>
+        inventoryRepositoryMock.Setup(repo => repo.UnlockItemAsync(It.IsAny<Inventory>(), It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync((Inventory inventory, string itemId, int quantity) =>
             {
-                var inventory = GetInventory(userId);
-
-                if (inventory is null || !inventory.ItemIds.Contains(itemId))
-                {
-                    return false;
-                }
-                else
-                {
-                    try
-                    {
-                        inventory.DropItem(itemId, amount);
-                    }
-                    catch (ArgumentException ex)
-                    {
-                        if (ex.Source == "Domain")
-                        {
-                            // Domain exception found
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
-            });
-
-        inventoryRepositoryMock.Setup(repo => repo.UnlockItemAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-            .ReturnsAsync((string userId, string itemId, int quantity) =>
-            {
-                var inventory = GetInventory(userId);
-
-                if (inventory is null || !inventory.ItemIds.Contains(itemId))
-                {
-                    return false;
-                }
-                else
-                {
-                    var item = inventory.GetItem(itemId);
-
-                    item.Unlock(quantity);
-                }
+                var tmp = GetInventory(inventory.UserId);
 
                 return true;
             });
@@ -167,7 +129,7 @@ public class InventoryServiceTests
 
         var clientNotificationServiceMock = new Mock<IClientNotificationService>();
 
-        _sut = new InventoryService(inventoryRepositoryMock.Object, clientNotificationServiceMock.Object, senderMock.Object, publisherMock.Object, mapper);
+        _sut = new InventoryService(inventoryRepositoryMock.Object, clientNotificationServiceMock.Object, senderMock.Object, mapper);
     }
 
     [Fact(DisplayName = "Add item to inventory")]
@@ -910,7 +872,7 @@ public class InventoryServiceTests
 
     #region Utils
 
-    private Inventory? GetInventory(string userId) => inventories.ContainsKey(userId) ? inventories[userId] : null;
+    private Inventory GetInventory(string userId) => inventories.ContainsKey(userId) ? inventories[userId] : new Inventory(userId);
 
     #endregion Utils
 }

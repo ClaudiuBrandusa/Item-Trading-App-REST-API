@@ -21,7 +21,6 @@ using Application.Behaviors.Inventories.RemoveItemFromUsers;
 using Application.Models.Inventories;
 using Domain.Entities.Inventories;
 using Application.Helpers;
-using Domain.Aggregates.Inventories;
 
 namespace Application.Services.Inventories;
 
@@ -30,15 +29,13 @@ public class InventoryService : IInventoryService, IDisposable
     private readonly ICachedInventoryRepository _repository;
     private readonly IClientNotificationService _clientNotificationService;
     private readonly ISender _sender;
-    private readonly IPublisher _publisher;
     private readonly IMapper _mapper;
 
-    public InventoryService(ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IPublisher publisher, IMapper mapper)
+    public InventoryService(ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IMapper mapper)
     {
         _repository = inventoryRepository;
         _clientNotificationService = clientNotificationService;
         _sender = sender;
-        _publisher = publisher;
         _mapper = mapper;
     }
 
@@ -73,7 +70,7 @@ public class InventoryService : IInventoryService, IDisposable
 
         var itemData = await _sender.Send(new GetItemQuery { ItemId = model.ItemId });
 
-        if (itemData is null)
+        if (itemData is null || !itemData.Success)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Item not found" }
@@ -81,14 +78,9 @@ public class InventoryService : IInventoryService, IDisposable
 
         bool modified;
 
-        var inventory = await _repository.GetInventoryAsync(model.UserId);
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
-        if (inventory is null)
-        {
-            inventory = new Inventory(model.UserId);
-        }
-
-        inventory.AddItem(model.ItemId, model.Quantity);
+        inventory.AddItem(model.ItemId, model.Quantity, model.Notify);
 
         modified = await _repository.AddInventoryAsync(inventory);
 
@@ -97,10 +89,6 @@ public class InventoryService : IInventoryService, IDisposable
             {
                 Errors = new[] { "Something went wrong" }
             };
-
-        var eventNotification = _mapper.AdaptToType<AddInventoryItemCommand, InventoryItemAddedEvent>(model);
-
-        await _publisher.Publish(eventNotification);
 
         return new QuantifiedItemResult
         {
@@ -131,7 +119,7 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "You cannot drop an amount of 0 from your inventory" }
             };
 
-        var inventory = await _repository.GetInventoryAsync(model.UserId);
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
         if (inventory is null)
             return new QuantifiedItemResult
@@ -145,17 +133,25 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Item is not part of the inventory" }
             };
 
-        bool modified = await _repository.DropItemAsync(model.UserId, model.ItemId, model.Quantity);
+        try
+        {
+            inventory.DropItem(model.ItemId, model.Quantity);
+        }
+        catch (ArgumentException ex)
+        {
+            return new QuantifiedItemResult
+            {
+                Errors = new[] { ex.Message }
+            };
+        }
+
+        bool modified = await _repository.DropItemAsync(inventory, model.ItemId, model.Quantity);
 
         if (!modified)
             return new QuantifiedItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
-
-        var eventNotification = _mapper.AdaptToType<DropInventoryItemCommand, InventoryItemDroppedEvent>(model);
-
-        await _publisher.Publish(eventNotification);
 
         return new QuantifiedItemResult
         {
@@ -228,17 +224,17 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "You do not own enough of this item" }
             };
 
-        if (!await _repository.LockItemAsync(model.UserId, model.ItemId, model.Quantity))
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
+
+        inventory.LockItem(model.ItemId, model.Quantity);
+
+        if (!await _repository.LockItemAsync(inventory, model.ItemId, model.Quantity))
             return new LockItemResult
             {
                 Errors = new[] { "Something went wrong" }
             };
         else
             amount -= model.Quantity;
-
-        var notificationEvent = _mapper.AdaptToType<LockItemCommand, InventoryItemLockedEvent>(model, (nameof(InventoryItemLockedEvent.Quantity), amount));
-
-        await _publisher.Publish(notificationEvent);
 
         return new LockItemResult
         {
@@ -257,20 +253,25 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Invalid input data" }
             };
 
-        int amount = await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
-        if (amount == 0 || model.Quantity > amount)
-            return new LockItemResult
-            {
-                Errors = new[] { "Cannot unlock more than you have locked" }
-            };
-
-        amount -= model.Quantity;
-        bool modified = false;
-        
         try
         {
-            modified = await _repository.UnlockItemAsync(model.UserId, model.ItemId, model.Quantity);
+            inventory.UnlockItem(model.ItemId, model.Quantity);
+        }
+        catch (ArgumentException ex)
+        {
+            return new LockItemResult
+            {
+                Errors = new[] { ex.Message }
+            };
+        }
+
+        bool modified = false;
+
+        try
+        {
+            modified = await _repository.UnlockItemAsync(inventory, model.ItemId, model.Quantity);
         }
         catch (Exception)
         {
@@ -283,17 +284,13 @@ public class InventoryService : IInventoryService, IDisposable
                 Errors = new[] { "Something went wrong" }
             };
 
-        amount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
-
-        var eventNotification = _mapper.AdaptToType<UnlockItemCommand, InventoryItemUnlockedEvent>(model, (nameof(InventoryItemUnlockedEvent.Quantity), await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId)));
-
-        await _publisher.Publish(eventNotification);
+        var freeItemAmount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
         return new LockItemResult
         {
             ItemId = model.ItemId,
             UserId = model.UserId,
-            Quantity = amount,
+            Quantity = freeItemAmount,
             Success = true
         };
     }

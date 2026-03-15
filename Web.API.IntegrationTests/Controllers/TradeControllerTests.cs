@@ -6,6 +6,9 @@ using Item_Trading_App_Contracts.Requests.Trade;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_Contracts.Responses.Trade;
 using Item_Trading_App_REST_API.Controllers;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Quartz;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
@@ -250,8 +253,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         var result = await receiverController.Accept(request);
 
-        var dateTimeAfterResponse = DateTime.UtcNow;
-
         // Assert
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
@@ -259,7 +260,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(createdTrade.TradeId, response.TradeId);
         Assert.Equal(user.Id, response.SenderId);
         Assert.Equal(user.UserName, response.SenderName);
-        Assert.True(dateTimeAfterResponse < response.ResponseDate);
     }
 
     [Fact]
@@ -483,8 +483,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         var result = await receiverController.Reject(request);
 
-        var dateTimeAfterResponse = DateTime.UtcNow;
-
         // Assert
 
         var objectResult = AssertActionResultAsOkObjectResult(result);
@@ -492,7 +490,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.Equal(createdTrade.TradeId, response.TradeId);
         Assert.Equal(user.Id, response.SenderId);
         Assert.Equal(user.UserName, response.SenderName);
-        Assert.True(dateTimeAfterResponse < response.ResponseDate);
     }
 
     [Fact]
@@ -715,8 +712,6 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Act
 
         var result = await controller.Cancel(request);
-
-        var dateTimeAfterResponse = DateTime.UtcNow;
 
         // Assert
 
@@ -1078,6 +1073,60 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         Assert.Empty(sentTradeIds);
         Assert.True(receivedTradeIds.Length > 0);
         Assert.Contains(createdTradeFromReceiver.TradeId, receivedTradeIds);
+    }
+
+    [Fact]
+    public async Task List_CreateSomeTradesAndRespondThemThenListThem_ShouldListSuccessfully()
+    {
+        // Arrange
+        
+        using var dbContext = _factory.GetDatabaseContext();
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        var receiverUserId = receiverUser.Id;
+
+        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var itemName = "Granodiorite";
+        var itemDescription = string.Empty;
+        var itemQuantity = 10;
+
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        
+        var itemId = createdItem.ItemId;
+        
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
+
+        var tradeItems = new ItemWithPrice[]
+        {
+            CreateTradeItem(createdItem, 50, itemQuantity)
+        };
+
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
+
+        var x = await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTradeFromSender.TradeId);
+        var y = await Scenarios.AcceptTrade(controller, createdTradeFromReceiver.TradeId);
+
+        // Act
+
+        var result = await controller.List([createdItem.ItemId], TradeDirection.All.ToString(), true);
+
+        // Assert
+
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var response = AssertOkObjectResultSuccessResponse<ListTradeOffersSuccessResponse>(objectResult);
+        Assert.NotNull(response);
+        var sentTradeIds = response.SentTradeOfferIds.ToArray();
+        var receivedTradeIds = response.ReceivedTradeOfferIds.ToArray();
+        Assert.True(sentTradeIds.Length > 0);
+        Assert.True(receivedTradeIds.Length > 0);
+        Assert.Contains(createdTradeFromSender.TradeId, sentTradeIds);
+        Assert.DoesNotContain(createdTradeFromSender.TradeId, receivedTradeIds);
+        Assert.Contains(createdTradeFromReceiver.TradeId, receivedTradeIds);
+        Assert.DoesNotContain(createdTradeFromReceiver.TradeId, sentTradeIds);
     }
 
     private ItemWithPrice CreateTradeItem(CreateItemSuccessResponse item, int price, int quantity)

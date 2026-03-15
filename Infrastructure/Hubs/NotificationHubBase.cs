@@ -24,11 +24,11 @@ public abstract class NotificationHubBase : Hub
         if (!await _connectedUsersRepository.AddConnectionIdToUser(Context.ConnectionId, userId, name))
         {
             var nus = NotificationHelper.CreateAllUsersExceptNotificationStrategy(userId);
-            await _clientNotificationService.SendMessageNotificationAsync(nus, $"User {name} has connected!", DateTime.Now);
+            await _clientNotificationService.SendMessageNotificationAsync(nus, $"User {name} has connected!", DateTime.UtcNow);
         }
 
         var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(userId);
-        await _clientNotificationService.SendMessageNotificationAsync(notificationStrategy, "Welcome!", DateTime.Now);
+        await _clientNotificationService.SendMessageNotificationAsync(notificationStrategy, "Welcome!", DateTime.UtcNow);
 
         await Task.Run(() => Clients.Caller.SendAsync("connected"));
         

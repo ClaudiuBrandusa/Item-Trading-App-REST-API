@@ -6,6 +6,7 @@ using Domain.Entities.Inventories;
 using Domain.Entities.Trades;
 using Domain.Aggregates.Trades;
 using Domain.Aggregates.Inventories;
+using Infrastructure.Common.Outbox;
 
 namespace Infrastructure.Data;
 
@@ -32,6 +33,8 @@ public class DatabaseContext : IdentityDbContext
     public DbSet<TradeItem> TradeContent { get; set; }
 
     public DbSet<TradeItemHistory> TradeContentHistory { get; set; }
+
+    public DbSet<OutboxMessage> OutboxMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

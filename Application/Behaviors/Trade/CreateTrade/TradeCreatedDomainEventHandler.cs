@@ -2,22 +2,23 @@
 using Application.Constants;
 using Application.Helpers;
 using Application.Services.Notification;
+using Domain.DomainEvents.Trades;
 using MediatR;
 
 namespace Application.Behaviors.Trade.CreateTrade;
 
-public class TradeCreatedEventHandler : INotificationHandler<TradeCreatedEvent>
+public class TradeCreatedDomainEventHandler : INotificationHandler<TradeCreatedDomainEvent>
 {
     private readonly IClientNotificationService _clientNotificationService;
     private readonly IMediator _mediator;
 
-    public TradeCreatedEventHandler(IClientNotificationService clientNotificationService, IMediator mediator)
+    public TradeCreatedDomainEventHandler(IClientNotificationService clientNotificationService, IMediator mediator)
     {
         _clientNotificationService = clientNotificationService;
         _mediator = mediator;
     }
 
-    public Task Handle(TradeCreatedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(TradeCreatedDomainEvent notification, CancellationToken cancellationToken)
     {
         var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(notification.ReceiverId);
         
@@ -32,7 +33,7 @@ public class TradeCreatedEventHandler : INotificationHandler<TradeCreatedEvent>
                 await _clientNotificationService.SendMessageNotificationAsync(
                         notificationStrategy,
                         $"You've received a trade from {username}",
-                        DateTime.Now);
+                        DateTime.UtcNow);
             }, CancellationToken.None));
     }
 }

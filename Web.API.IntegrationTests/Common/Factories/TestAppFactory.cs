@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using DotNet.Testcontainers.Builders;
+using Infrastructure.Common.Outbox;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -12,8 +13,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.MsSql;
+using Quartz;
 using Testcontainers.Redis;
 using Web.API.IntegrationTests.Common.Auth;
+using Infrastructure.BackgroundJobs;
 
 namespace Web.API.IntegrationTests.Common.Factories;
 
@@ -67,14 +70,47 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.AddAuthorization();
 
+            var quartzDescriptors = services
+                .Where(s => s.ServiceType.Namespace?.Contains("Quartz") == true)
+                .ToList();
+
+            foreach (var d in quartzDescriptors)
+                services.Remove(d);
+
+            services.AddQuartz(q =>
+            {
+                q.UseInMemoryStore();
+                q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 1);
+
+                var jobKey = new JobKey(nameof(ProcessOutboxMessagesJob));
+
+                q.AddJob<ProcessOutboxMessagesJob>(jobKey!, (IJobConfigurator cfg) => cfg
+                    .WithIdentity(jobKey)
+                    .StoreDurably())
+                .AddTrigger(trigger =>
+                    trigger.ForJob(jobKey)
+                        .StartNow()
+                );
+            });
+
+            services.AddQuartzHostedService(opt =>
+            {
+                opt.WaitForJobsToComplete = true;
+                opt.StartDelay = TimeSpan.Zero;
+            });
+
             services.RemoveAll<IDbContextFactory<DatabaseContext>>();
             services.RemoveAll<DbContextOptions<DatabaseContext>>();
 
-            services.AddDbContextFactory<DatabaseContext>(options =>
-            options
-                .UseSqlServer(_dbContainer.GetConnectionString())
-                .ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS))
-            );
+            services.AddDbContextFactory<DatabaseContext>((sp, options) =>
+            {
+                var interceptor = sp.GetRequiredService<ConvertDomainEventsToOutboxMessagesInterceptor>();            
+
+                options
+                    .UseSqlServer(_dbContainer.GetConnectionString())
+                    .AddInterceptors(interceptor)
+                    .ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS));
+            });
         }).ConfigureAppConfiguration((context, builder) =>
         {
             var overrides = new Dictionary<string, string?>()

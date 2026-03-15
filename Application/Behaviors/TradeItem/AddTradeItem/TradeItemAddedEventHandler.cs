@@ -1,10 +1,11 @@
 ﻿using Application.Constants;
 using Application.Services.Cache;
+using Domain.DomainEvents.Trades;
 using MediatR;
 
 namespace Application.Behaviors.TradeItem.AddTradeItem;
 
-public class TradeItemAddedEventHandler : INotificationHandler<TradeItemAddedEvent>
+public class TradeItemAddedEventHandler : INotificationHandler<TradeItemAddedDomainEvent>
 {
     private readonly ICacheService _cacheService;
 
@@ -13,7 +14,7 @@ public class TradeItemAddedEventHandler : INotificationHandler<TradeItemAddedEve
         _cacheService = cacheService;
     }
 
-    public Task Handle(TradeItemAddedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(TradeItemAddedDomainEvent notification, CancellationToken cancellationToken)
     {
         return Task.WhenAll(
             _cacheService.SetCacheValueAsync(CacheKeys.TradeItem.GetTradeItemKey(notification.TradeId, notification.Data.ItemId), notification.Data),

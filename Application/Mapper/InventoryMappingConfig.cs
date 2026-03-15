@@ -49,6 +49,7 @@ public class InventoryMappingConfig : IRegister
 
         config.ForType<CachedOwnedItem, InventoryItem>()
             .MapWith((CachedOwnedItem cachedOwnedItem) => new InventoryItem(
+                cachedOwnedItem.UserId,
                 cachedOwnedItem.ItemId,
                 cachedOwnedItem.Quantity,
                 0
@@ -68,12 +69,6 @@ public class InventoryMappingConfig : IRegister
         config.ForType<TradeItem, UnlockItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(UnlockItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(UnlockItemCommand.Notify)]);
-
-        config.ForType<LockItemCommand, InventoryItemLockedEvent>()
-            .Map(dest => dest.Quantity, src => MapContext.Current!.Parameters[nameof(InventoryItemLockedEvent.Quantity)]);
-
-        config.ForType<UnlockItemCommand, InventoryItemUnlockedEvent>()
-            .Map(dest => dest.Quantity, src => MapContext.Current!.Parameters[nameof(InventoryItemUnlockedEvent.Quantity)]);
     }
 }
 

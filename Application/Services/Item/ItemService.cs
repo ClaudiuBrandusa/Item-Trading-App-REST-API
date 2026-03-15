@@ -11,6 +11,7 @@ using Application.Behaviors.Item.GetItemDescription;
 using Application.Behaviors.TradeItem.ItemUsedInTrade;
 using Application.Repositories;
 using Application.Results.Items;
+using Domain.DomainEvents.Items;
 
 namespace Application.Services.Item;
 
@@ -45,7 +46,7 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Unable to add this item" }
             };
 
-        await _publisher.Publish(new ItemCreatedEvent { Item = item, SenderUserId = model.SenderUserId });
+        await _publisher.Publish(new ItemCreatedDomainEvent(item, model.SenderUserId));
         
         return new FullItemResult
         {
@@ -84,7 +85,7 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Unable to update item" }
             };
 
-        await _publisher.Publish(new ItemUpdatedEvent { Item = item, SenderUserId = model.SenderUserId });
+        await _publisher.Publish(new ItemUpdatedDomainEvent(item, model.SenderUserId));
         
         return new FullItemResult
         {
@@ -125,7 +126,7 @@ public class ItemService : IItemService, IDisposable
                 Errors = new[] { "Unable to remove item" }
             };
 
-        await _publisher.Publish(new ItemDeletedEvent { ItemId = model.ItemId, UserId = model.UserId });
+        await _publisher.Publish(new ItemDeletedDomainEvent(model.ItemId, model.UserId));
 
         return new DeleteItemResult
         {

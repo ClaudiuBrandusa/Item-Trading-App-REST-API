@@ -5,11 +5,18 @@ namespace Application.Repositories;
 public interface ICachedInventoryRepository : ICachedRepository, IDisposable
 {
     /// <summary>
-    /// Retrieves the user's inventory
+    /// Retrieves the user's inventory for reading purposes
     /// </summary>
     /// <param name="userId"></param>
     /// <returns>User's inventory</returns>
-    Task<Inventory?> GetInventoryAsync(string userId);
+    Task<Inventory> GetInventoryAsync(string userId);
+
+    /// <summary>
+    /// Loads the user's inventory for writing purposes. This instace is tracked by the context.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    Task<Inventory> LoadInventoryAsync(string userId);
 
     /// <summary>
     /// Adds a new inventory instance to the database
@@ -25,47 +32,34 @@ public interface ICachedInventoryRepository : ICachedRepository, IDisposable
     /// <param name="itemId"></param>
     /// <param name="amount"></param>
     /// <returns>Operation result</returns>
-    Task<bool> DropItemAsync(string userId, string itemId, int amount);
+    Task<bool> DropItemAsync(Inventory inventory, string itemId, int amount);
 
     /// <summary>
     /// Locks the amount <paramref name="quantity"/> of item with <paramref name="itemId"/> in the inventory of the user with <paramref name="userId"/>
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
-    /// <param name="quantity"></param>
     /// <returns>Operation result</returns>
-    Task<bool> LockItemAsync(string userId, string itemId, int quantity);
+    Task<bool> LockItemAsync(Inventory inventory, string itemId, int quantity);
 
     /// <summary>
     /// Unlocks the amount <paramref name="quantity"/> of item with <paramref name="itemId"/> in the inventory of the user with <paramref name="userId"/>
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
-    /// <param name="quantity"></param>
     /// <returns>Operation result</returns>
-    Task<bool> UnlockItemAsync(string userId, string itemId, int quantity);
+    Task<bool> UnlockItemAsync(Inventory inventory, string itemId, int quantity);
 
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
     /// <returns>The amount of free item with <paramref name="itemId"/> from the inventory of the user with <paramref name="userId"/></returns>
     Task<int> GetAmountOfFreeItemAsync(string userId, string itemId);
 
     /// <summary>
     /// Will cache the result
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
     /// <returns>The amount of an item with <paramref name="itemId"/> that is locked in the inventory of the user with <paramref name="userId"/></returns>
     Task<int> GetAmountOfLockedItemAsync(string userId, string itemId);
 
-    /// <param name="itemId"></param>
     /// <returns>List of users that own the item with <paramref name="itemId"/></returns>
     Task<string[]> ListUsersThatOwnItemAsync(string itemId);
 
     /// <summary>
     /// Removes the cache of item with <paramref name="itemId"/> from the inventory of user with <paramref name="userId"/>
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
     Task RemoveItemCacheForUserAsync(string userId, string itemId);
 }

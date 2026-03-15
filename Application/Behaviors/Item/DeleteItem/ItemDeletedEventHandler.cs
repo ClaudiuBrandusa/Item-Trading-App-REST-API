@@ -3,11 +3,12 @@ using Application.Behaviors.Inventories.RemoveItemFromUsers;
 using Application.Constants;
 using Application.Helpers;
 using Application.Services.Notification;
+using Domain.DomainEvents.Items;
 using MediatR;
 
 namespace Application.Behaviors.Item.DeleteItem;
 
-public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedEvent>
+public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedDomainEvent>
 {
     private readonly IClientNotificationService _clientNotificationService;
     private readonly IMediator _mediator;
@@ -18,7 +19,7 @@ public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedEvent>
         _mediator = mediator;
     }
 
-    public Task Handle(ItemDeletedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(ItemDeletedDomainEvent notification, CancellationToken cancellationToken)
     {
         var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.UserId);
 

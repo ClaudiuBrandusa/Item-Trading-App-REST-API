@@ -2,20 +2,21 @@
 using Application.Helpers;
 using Application.Models.Trades;
 using Application.Services.Notification;
+using Domain.DomainEvents.Trades;
 using MediatR;
 
 namespace Application.Behaviors.Trade.CancelTrade;
 
-public class TradeCancelledEventHandler : INotificationHandler<TradeCancelledEvent>
+public class TradeCancelledDomainEventHandler : INotificationHandler<TradeCancelledDomainEvent>
 {
     private readonly IClientNotificationService _clientNotificationService;
 
-    public TradeCancelledEventHandler(IClientNotificationService clientNotificationService)
+    public TradeCancelledDomainEventHandler(IClientNotificationService clientNotificationService)
     {
         _clientNotificationService = clientNotificationService;
     }
 
-    public Task Handle(TradeCancelledEvent notification, CancellationToken cancellationToken)
+    public Task Handle(TradeCancelledDomainEvent notification, CancellationToken cancellationToken)
     {
         var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(notification.ReceiverId);
 

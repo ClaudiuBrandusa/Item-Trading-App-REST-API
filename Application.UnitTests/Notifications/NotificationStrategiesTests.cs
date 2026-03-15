@@ -19,7 +19,7 @@ public class NotificationStrategiesTests
             Content = new MessageContent()
             {
                 Content = "content",
-                CreatedDateTime = DateTime.Now
+                CreatedDateTime = DateTime.UtcNow
             }
         };
         var connectedUsersRepositoryMock = new Mock<IConnectedUsersRepository>();
@@ -45,7 +45,7 @@ public class NotificationStrategiesTests
             Content = new MessageContent()
             {
                 Content = "content",
-                CreatedDateTime = DateTime.Now
+                CreatedDateTime = DateTime.UtcNow
             }
         };
         var connectedUsersRepositoryMock = new Mock<IConnectedUsersRepository>();
@@ -69,7 +69,7 @@ public class NotificationStrategiesTests
             Content = new MessageContent()
             {
                 Content = "content",
-                CreatedDateTime = DateTime.Now
+                CreatedDateTime = DateTime.UtcNow
             }
         };
         var connectedUsersRepositoryMock = new Mock<IConnectedUsersRepository>();
@@ -95,7 +95,7 @@ public class NotificationStrategiesTests
             Content = new MessageContent()
             {
                 Content = "content",
-                CreatedDateTime = DateTime.Now
+                CreatedDateTime = DateTime.UtcNow
             }
         };
         var connectedUsersRepositoryMock = new Mock<IConnectedUsersRepository>();

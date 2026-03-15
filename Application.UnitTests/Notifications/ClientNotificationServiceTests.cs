@@ -74,7 +74,7 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedDateTime = DateTime.Now;
+        var expectedDateTime = DateTime.UtcNow;
         var expectedNotificationType = "information";
         var expectedId = string.Empty;
 

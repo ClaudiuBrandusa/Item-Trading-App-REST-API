@@ -1,4 +1,5 @@
 ﻿using Domain.Common.Wrappers;
+using Domain.DomainEvents.Inventories;
 using Domain.Entities.Inventories;
 using Domain.Primitives;
 using System.Collections.ObjectModel;
@@ -24,7 +25,7 @@ public class Inventory : AggregateRoot
     List<string> itemsToBeUpdated = new();
     List<string> itemsToBeRemoved = new();
 
-    public void AddItem(string itemId, int quantity)
+    public void AddItem(string itemId, int quantity, bool notify = false)
     {
         if (string.IsNullOrEmpty(itemId))
             throw new ArgumentException($"Invalid value for {nameof(itemId)}.");
@@ -39,12 +40,14 @@ public class Inventory : AggregateRoot
         }
         else
         {
-            _ownedItems.Add(new InventoryItem(itemId, quantity));
+            _ownedItems.Add(new InventoryItem(UserId, itemId, quantity));
             itemsToBeAdded.Add(itemId);
         }
+
+        RaiseDomainEvent(new InventoryItemAddedDomainEvent(UserId, itemId, quantity, notify));
     }
 
-    public void AddItem(InventoryItem inventoryItem)
+    public void AddItem(InventoryItem inventoryItem, bool notify = false)
     {
         if (_ownedItems.TryGetValue(inventoryItem.ItemId, out var existing))
         {
@@ -53,9 +56,11 @@ public class Inventory : AggregateRoot
         }
         else
         {
-            _ownedItems.Add(new InventoryItem(inventoryItem.ItemId, inventoryItem.Quantity));
+            _ownedItems.Add(new InventoryItem(UserId, inventoryItem.ItemId, inventoryItem.Quantity));
             itemsToBeAdded.Add(inventoryItem.ItemId);
         }
+
+        RaiseDomainEvent(new InventoryItemAddedDomainEvent(UserId, inventoryItem.ItemId, inventoryItem.Quantity, notify));
     }
 
     public void DropItem(string itemId, int quantity)
@@ -88,6 +93,36 @@ public class Inventory : AggregateRoot
             _ownedItems[itemId].Drop(quantity);
             itemsToBeUpdated.Add(itemId);
         }
+
+        RaiseDomainEvent(new InventoryItemDroppedDomainEvent(UserId, itemId, quantity, true));
+    }
+
+    public bool LockItem(string itemId, int lockedAmount)
+    {
+        var inventoryItem = GetItem(itemId);
+
+        if (inventoryItem is null)
+            throw new ArgumentException($"Unable to lock item. Inventory doesn't have an item with id {itemId}.");
+
+        inventoryItem.Lock(lockedAmount);
+
+        RaiseDomainEvent(new InventoryItemLockedDomainEvent(UserId, itemId, lockedAmount, true));
+
+        return true;
+    }
+
+    public bool UnlockItem(string itemId, int unlockedAmount)
+    {
+        var inventoryItem = GetItem(itemId);
+
+        if (inventoryItem is null)
+            throw new ArgumentException($"Unable to lock item. Inventory doesn't have an item with id {itemId}.");
+
+        inventoryItem.Unlock(unlockedAmount);
+
+        RaiseDomainEvent(new InventoryItemUnlockedDomainEvent(UserId, itemId, unlockedAmount, true));
+
+        return true;
     }
 
     public InventoryItem? GetItem(string itemId) => _ownedItems.ContainsKey(itemId) ? _ownedItems[itemId] : null;

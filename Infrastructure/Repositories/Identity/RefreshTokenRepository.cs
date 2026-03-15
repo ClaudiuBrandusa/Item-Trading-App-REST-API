@@ -64,7 +64,6 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
             .Where(x =>
                 Equals(x.UserId, userId) &&
                 x.Used == false &&
-                x.ExpiryDate > DateTime.UtcNow.AddHours(1) &&
                 x.Invalidated == false &&
                 Equals(x.JwtId, jwtTokenId))
             .ToListAsync();

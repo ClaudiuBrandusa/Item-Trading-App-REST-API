@@ -54,6 +54,40 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
     }
     
     [Fact]
+    public async Task Add_WithValidRequestTwice_ShouldAddTheItemToInventory()
+    {
+        var itemName = "Palladium";
+        var itemDescription = "itemDescription";
+
+        using var dbContext = _factory.GetDatabaseContext();
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+
+        using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
+        var controller = controllerPack.ControllerInstance;
+
+        var item = await Scenarios.CreateItem(
+            _factory,
+            itemName,
+            itemDescription
+        );
+
+        var itemId = item.ItemId;
+        var quantity = 5; 
+        
+        var request = new AddItemRequest { ItemId = itemId, Quantity = quantity };
+
+        await controller.Add(request);
+        var result = await controller.Add(request);
+
+        var objectResult = AssertActionResultAsOkObjectResult(result);
+        var response = AssertOkObjectResultSuccessResponse<AddItemSuccessResponse>(objectResult);
+        Assert.NotNull(response);
+        Assert.Equal(itemId, response.ItemId);
+        Assert.Equal(itemName, response.ItemName);
+        Assert.Equal(quantity * 2, response.Quantity);
+    }
+    
+    [Fact]
     public async Task Add_AddingAnItemThatDoesntExist_ShouldFail()
     {
         using var dbContext = _factory.GetDatabaseContext();

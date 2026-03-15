@@ -16,11 +16,12 @@ public class InventoryItem : Entity
 
     private InventoryItem() { } // EF Core
 
-    public InventoryItem(string itemId, int quantity, int lockedAmount = 0)
+    public InventoryItem(string userId, string itemId, int quantity, int lockedAmount = 0)
     {
         if (string.IsNullOrWhiteSpace(itemId)) throw new ArgumentException(nameof(itemId));
         if (quantity < 0) throw new ArgumentOutOfRangeException(nameof(quantity));
 
+        UserId = userId;
         ItemId = itemId;
         Quantity = quantity;
         LockedAmount = lockedAmount;
