@@ -19,7 +19,6 @@ using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.TradeItem.RemoveTradeItems;
 using Application.Behaviors.TradeItem.GetTradeItems;
 using Application.Behaviors.TradeItem.HasTradeItem;
-using Application.Behaviors.TradeItem.AddTradeItem;
 using Application.Behaviors.Inventories.LockItem;
 using Application.Services.UnitOfWork;
 using Application.Repositories;
@@ -29,6 +28,7 @@ using Application.Models.Trades;
 using Domain.Entities.Trades;
 using Application.Models.TradeItems;
 using Domain.DomainEvents.Trades;
+using Application.Behaviors.Inventories.LockItems;
 
 namespace Application.Services.Trade;
 
@@ -57,26 +57,36 @@ public class TradeService : ITradeService, IDisposable
                 Errors = new[] { "Invalid input data" }
             };
 
-        var items = new List<TradeItemDTO>();
+        TradeItemDTO[] items = null;
         Domain.Aggregates.Trades.Trade offer = null;
 
         var transactionError = await _unitOfWork.ExplicitTransaction(async (TaskCompletionSource<TradeOfferResult?> taskCompletionSource) =>
         {
             try
             {
-                var processTradeItemsResult = await ProcessTradeItemsFromInputModelAsync(model, items);
+                var lockItemsCommand = new LockItemsCommand
+                {
+                    UserId = model.SenderUserId,
+                    Items = model.Items
+                        .Select(x => (x.ItemId, x.Quantity))
+                        .ToArray()
+                };
 
-                if (!processTradeItemsResult.Success)
+                var lockItemsResult = await _sender.Send(lockItemsCommand);
+
+                if (!lockItemsResult.Success)
                 {
                     taskCompletionSource.SetResult(new TradeOfferResult
                     {
-                        Errors = processTradeItemsResult.Errors
+                        Errors = lockItemsResult.Errors
                     });
 
                     return false;
                 }
 
-                if (items.Count == 0)
+                items = lockItemsResult.Items;
+
+                if (items.Length == 0)
                 {
                     taskCompletionSource.SetResult(new TradeOfferResult
                     {
@@ -84,6 +94,27 @@ public class TradeService : ITradeService, IDisposable
                     });
 
                     return false;
+                }
+
+                var modelItems = model.Items.ToArray();
+
+                for (int i = 0; i < items.Length; i++)
+                {
+                    var modelItem = modelItems[i];
+
+                    if (modelItem.Price < 0)
+                    {
+                        taskCompletionSource.SetResult(new TradeOfferResult
+                        {
+                            Errors = new[] { "Invalid price" }
+                        });
+
+                        return false;
+                    }
+
+                    var item = items[i];
+                    item.Price = modelItem.Price;
+                    item.ItemName = await GetItemNameAsync(item.ItemId);
                 }
 
                 offer = new Domain.Aggregates.Trades.Trade(DateTime.UtcNow, model.SenderUserId, model.TargetUserId);
@@ -200,7 +231,7 @@ public class TradeService : ITradeService, IDisposable
                 senderId = await GetSenderIdAsync(model.TradeId);
                 trade.SenderUserId = senderId;
 
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(senderId, model.TradeId);
+                var unlockTradeItemsResult = await UnlockTradeItemsAsync(senderId, trade);
 
                 if (!unlockTradeItemsResult.Success)
                 {
@@ -212,7 +243,7 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                var giveItemsResult = await GiveItemsAsync(model.UserId, model.TradeId);
+                var giveItemsResult = await GiveItemsAsync(model.UserId, trade);
 
                 if (!giveItemsResult.Success)
                 {
@@ -224,7 +255,7 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                var takeItemsResult = await TakeItemsAsync(senderId, model.TradeId);
+                var takeItemsResult = await TakeItemsAsync(senderId, trade);
 
                 if (!takeItemsResult.Success)
                 {
@@ -335,7 +366,7 @@ public class TradeService : ITradeService, IDisposable
         {
             try
             {
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(senderId, model.TradeId);
+                var unlockTradeItemsResult = await UnlockTradeItemsAsync(senderId, trade);
 
                 if (!unlockTradeItemsResult.Success)
                 {
@@ -432,7 +463,7 @@ public class TradeService : ITradeService, IDisposable
         {
             try
             {
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(model.UserId, model.TradeId);
+                var unlockTradeItemsResult = await UnlockTradeItemsAsync(model.UserId, trade);
 
                 if (!unlockTradeItemsResult.Success)
                 {
@@ -772,9 +803,9 @@ public class TradeService : ITradeService, IDisposable
         return cachedTrade?.Response;
     }
 
-    private async Task<Result> UnlockTradeItemsAsync(string userId, string tradeId)
+    private async Task<Result> UnlockTradeItemsAsync(string userId, CachedTrade trade)
     {
-        var tradeItems = await _repository.GetTradeItemsAsync(tradeId, false);
+        var tradeItems = trade.TradeItems;
 
         for (int i = 0; i < tradeItems.Length; i++)
         {
@@ -783,7 +814,13 @@ public class TradeService : ITradeService, IDisposable
             if (item is null)
                 continue;
 
-            var request = _mapper.AdaptToType<TradeItem, UnlockItemCommand>(item, ((string, object))(nameof(UnlockItemCommand.UserId), userId), (nameof(UnlockItemCommand.Notify), true));
+            var request = new UnlockItemCommand
+            {
+                UserId = userId,
+                ItemId = item.ItemId,
+                Quantity = item.Quantity,
+                Notify = true
+            };
 
             var result = await _sender.Send(request);
 
@@ -803,15 +840,23 @@ public class TradeService : ITradeService, IDisposable
     }
 
     // Takes the items from trade to the receiver
-    private async Task<Result> GiveItemsAsync(string userId, string tradeId)
+    private async Task<Result> GiveItemsAsync(string userId, CachedTrade trade)
     {
-        var tradeItems = await _repository.GetTradeItemsAsync(tradeId, false);
+        var tradeItems = trade.TradeItems;
         
         for (int i = 0; i < tradeItems.Length; i++)
         {
             var item = tradeItems[i];
 
-            var result = await _sender.Send(_mapper.AdaptToType<TradeItem, AddInventoryItemCommand>(item, ((string, object))(nameof(AddInventoryItemCommand.UserId), userId), (nameof(AddInventoryItemCommand.Notify), true)));
+            var request = new AddInventoryItemCommand
+            {
+                UserId = userId,
+                ItemId = item.ItemId,
+                Quantity = item.Quantity,
+                Notify = true
+            };
+
+            var result = await _sender.Send(request);
             
             if (!result.Success)
             {
@@ -829,15 +874,23 @@ public class TradeService : ITradeService, IDisposable
     }
 
     // Takes the items from the sender
-    private async Task<Result> TakeItemsAsync(string userId, string tradeId)
+    private async Task<Result> TakeItemsAsync(string userId, CachedTrade trade)
     {
-        var tradeItems = await _repository.GetTradeItemsAsync(tradeId, false);
-        
+        var tradeItems = trade.TradeItems;
+
         for (int i = 0; i < tradeItems.Length; i++)
         {
             var item = tradeItems[i];
 
-            var result = await _sender.Send(_mapper.AdaptToType<TradeItem, DropInventoryItemCommand>(item, ((string, object))(nameof(DropInventoryItemCommand.UserId), userId), (nameof(DropInventoryItemCommand.Notify), true)));
+            var request = new DropInventoryItemCommand
+            {
+                UserId = userId,
+                ItemId = item.ItemId,
+                Quantity = item.Quantity,
+                Notify = true
+            };
+
+            var result = await _sender.Send(request);
 
             if (!result.Success)
             {

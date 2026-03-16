@@ -43,8 +43,6 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
             inventory.AddItem(entity.ItemId, entity.Quantity);
         }
 
-        inventory.ResetCollectionUpdates(Inventory.CollectionUpdate.Add);
-
         return inventory;
     }
 
@@ -113,6 +111,20 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
         var modified = await _repository.UpdateInventory(inventory);
 
         await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId), quantity);
+
+        return modified;
+    }
+
+    public async Task<bool> LockItemsAsync(Inventory inventory, (string itemId, int quantity)[] items)
+    {
+        var userId = inventory.UserId;
+
+        var modified = await _repository.SaveChangesAsync() > 0;
+
+        foreach ((var itemId, var quantity) in items)
+        {
+            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId), quantity);
+        }
 
         return modified;
     }

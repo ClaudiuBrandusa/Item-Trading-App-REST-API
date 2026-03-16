@@ -6,6 +6,7 @@ using Application.Behaviors.Inventories.HasItem;
 using Application.Behaviors.Inventories.ListItems;
 using Application.Behaviors.Inventories.ListUsersOwningItem;
 using Application.Behaviors.Inventories.LockItem;
+using Application.Behaviors.Inventories.LockItems;
 using Application.Behaviors.Inventories.RemoveItemFromUsers;
 using Application.Behaviors.Inventories.UnlockItem;
 using Application.Models.Inventories;
@@ -45,6 +46,11 @@ public interface IInventoryService
     /// Locks a given quantity of the item from the user's inventory
     /// </summary>
     Task<LockItemResult> LockItemAsync(LockItemCommand model);
+
+    /// <summary>
+    /// Locks a given set of items from the user's inventory
+    /// </summary>
+    Task<LockItemsResult> LockItemsAsync(LockItemsCommand model);
 
     /// <summary>
     /// Unlocks a given quantity of the item from the user's inventory

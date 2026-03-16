@@ -41,6 +41,12 @@ public interface ICachedInventoryRepository : ICachedRepository, IDisposable
     Task<bool> LockItemAsync(Inventory inventory, string itemId, int quantity);
 
     /// <summary>
+    /// Locks the amount <paramref name="quantity"/> of items with <paramref name="itemId"/> in the inventory of the user with <paramref name="userId"/>
+    /// </summary>
+    /// <returns>Operation result</returns>
+    Task<bool> LockItemsAsync(Inventory inventory, (string itemId, int quantity)[] items);
+
+    /// <summary>
     /// Unlocks the amount <paramref name="quantity"/> of item with <paramref name="itemId"/> in the inventory of the user with <paramref name="userId"/>
     /// </summary>
     /// <returns>Operation result</returns>

@@ -21,6 +21,8 @@ using Application.Behaviors.Inventories.RemoveItemFromUsers;
 using Application.Models.Inventories;
 using Domain.Entities.Inventories;
 using Application.Helpers;
+using Application.Behaviors.Inventories.LockItems;
+using Application.Models.TradeItems;
 
 namespace Application.Services.Inventories;
 
@@ -241,6 +243,60 @@ public class InventoryService : IInventoryService, IDisposable
             UserId = model.UserId,
             ItemId = model.ItemId,
             Quantity = amount,
+            Success = true
+        };
+    }
+
+    public async Task<LockItemsResult> LockItemsAsync(LockItemsCommand model)
+    {
+        if (string.IsNullOrEmpty(model.UserId) || model.Items is null || model.Items.Length == 0)
+            return new LockItemsResult
+            {
+                Errors = new[] { "Invalid input data" }
+            };
+
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
+
+        if (inventory is null)
+            return new LockItemsResult
+            {
+                Errors = new [] { "Something went wrong" }
+            };
+
+        var items = new TradeItemDTO[model.Items.Length];
+
+        int index = 0;
+
+        foreach ((var itemId, var quantity) in model.Items)
+        {
+            try
+            {
+                inventory.LockItem(itemId, quantity);
+                items[index++] = new TradeItemDTO
+                {
+                    ItemId = itemId,
+                    Quantity = inventory.GetItemFreeAmount(itemId)
+                };
+            }
+            catch (ArgumentException ex)
+            {
+                return new LockItemsResult
+                {
+                    Errors = new [] { ex.Message }
+                };
+            }
+        }
+
+        if (!await _repository.LockItemsAsync(inventory, model.Items))
+            return new LockItemsResult
+                {
+                    Errors = new [] { "Something went wrong" }
+                };
+
+        return new LockItemsResult
+        {
+            UserId = model.UserId,
+            Items = items,
             Success = true
         };
     }

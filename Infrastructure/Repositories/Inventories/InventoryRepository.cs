@@ -1,5 +1,4 @@
 ﻿using Domain.Aggregates.Inventories;
-using Domain.Entities.Inventories;
 using Domain.Repositories.Inventories;
 using Infrastructure.Data;
 using Infrastructure.Services.DatabaseContextWrapper;

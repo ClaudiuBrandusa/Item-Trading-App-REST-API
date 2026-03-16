@@ -2,7 +2,6 @@
 using Domain.DomainEvents.Inventories;
 using Domain.Entities.Inventories;
 using Domain.Primitives;
-using System.Collections.ObjectModel;
 
 namespace Domain.Aggregates.Inventories;
 
@@ -21,10 +20,6 @@ public class Inventory : AggregateRoot
         UserId = userId;
     }
 
-    List<string> itemsToBeAdded = new();
-    List<string> itemsToBeUpdated = new();
-    List<string> itemsToBeRemoved = new();
-
     public void AddItem(string itemId, int quantity, bool notify = false)
     {
         if (string.IsNullOrEmpty(itemId))
@@ -36,12 +31,10 @@ public class Inventory : AggregateRoot
         if (_ownedItems.TryGetValue(itemId, out var existing))
         {
             existing.Increase(quantity);
-            itemsToBeUpdated.Add(itemId);
         }
         else
         {
             _ownedItems.Add(new InventoryItem(UserId, itemId, quantity));
-            itemsToBeAdded.Add(itemId);
         }
 
         RaiseDomainEvent(new InventoryItemAddedDomainEvent(UserId, itemId, quantity, notify));
@@ -52,12 +45,10 @@ public class Inventory : AggregateRoot
         if (_ownedItems.TryGetValue(inventoryItem.ItemId, out var existing))
         {
             existing.Increase(inventoryItem.Quantity);
-            itemsToBeUpdated.Add(inventoryItem.ItemId);
         }
         else
         {
             _ownedItems.Add(new InventoryItem(UserId, inventoryItem.ItemId, inventoryItem.Quantity));
-            itemsToBeAdded.Add(inventoryItem.ItemId);
         }
 
         RaiseDomainEvent(new InventoryItemAddedDomainEvent(UserId, inventoryItem.ItemId, inventoryItem.Quantity, notify));
@@ -79,7 +70,6 @@ public class Inventory : AggregateRoot
             if (existing.LockedAmount == 0)
             {
                 _ownedItems.Remove(itemId);
-                itemsToBeRemoved.Add(itemId);
             }
             else
                 throw new ArgumentException("You cannot drop from your inventory more than you already have free.");
@@ -91,7 +81,6 @@ public class Inventory : AggregateRoot
         else
         {
             _ownedItems[itemId].Drop(quantity);
-            itemsToBeUpdated.Add(itemId);
         }
 
         RaiseDomainEvent(new InventoryItemDroppedDomainEvent(UserId, itemId, quantity, true));
@@ -132,42 +121,6 @@ public class Inventory : AggregateRoot
     public int GetLockedItemAmount(string itemId) => _ownedItems.ContainsKey(itemId) ? _ownedItems[itemId].LockedAmount : 0;
 
     public int GetItemFreeAmount(string itemId) => _ownedItems.ContainsKey(itemId) ? _ownedItems[itemId].FreeAmount : 0;
-
-    public enum CollectionUpdate
-    {
-        Add,
-        Update,
-        Remove
-    }
-
-    public ReadOnlyCollection<string> GetCollectionUpdates(CollectionUpdate type)
-    {
-        switch (type)
-        {
-            case CollectionUpdate.Add:
-                return itemsToBeAdded.AsReadOnly();
-            case CollectionUpdate.Update:
-                return itemsToBeUpdated.AsReadOnly();
-            default:
-                return itemsToBeRemoved.AsReadOnly();
-        }
-    }
-
-    public void ResetCollectionUpdates(CollectionUpdate type)
-    {
-        switch (type)
-        {
-            case CollectionUpdate.Add:
-                itemsToBeAdded.Clear();
-                break;
-            case CollectionUpdate.Update:
-                itemsToBeUpdated.Clear();
-                break;
-            default:
-                itemsToBeRemoved.Clear();
-                break;
-        }
-    }
 
     public IEnumerable<string> ItemIds => OwnedItems.Select(x => x.ItemId);
 
