@@ -1,5 +1,4 @@
-﻿using Domain.Aggregates.Trades;
-using Domain.Entities.Trades;
+﻿using Domain.Entities.Trades;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,5 +14,7 @@ public class TradeItemConfiguration : IEntityTypeConfiguration<TradeItem>
             .WithMany()
             .HasForeignKey(tc => tc.ItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.ToTable(nameof(DatabaseContext.TradeContent));
     }
 }

@@ -1,4 +1,4 @@
-﻿using Application.Models.TradeItems;
+﻿using Domain.Entities.Trades;
 
 namespace Application.Models.Trades;
 
@@ -16,9 +16,9 @@ public record CachedTrade
 
     public DateTime? ResponseDate { get; set; } = null;
 
-    public TradeItemDTO[] TradeItems { get; set; }
+    public TradeItem[] TradeItems { get; set; }
 
-    public CachedTrade(string tradeId, string senderUserId, string receiverUserId, DateTime sentDate, bool? response, DateTime? responseDate, TradeItemDTO[] tradeItems)
+    public CachedTrade(string tradeId, string senderUserId, string receiverUserId, DateTime sentDate, bool? response, DateTime? responseDate, TradeItem[] tradeItems)
     {
         TradeId = tradeId;
         SenderUserId = senderUserId;

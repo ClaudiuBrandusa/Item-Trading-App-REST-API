@@ -64,6 +64,7 @@ public class InventoryService : IInventoryService, IDisposable
             {
                 Errors = new[] { "You cannot add a negative amount of an item" }
             };
+                    
         else if (model.Quantity == 0)
             return new QuantifiedItemResult
             {

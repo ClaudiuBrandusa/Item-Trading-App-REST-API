@@ -5,7 +5,7 @@ using Application.Behaviors.Trade.ListTrades;
 using Application.Behaviors.Trade.RespondTrade;
 using Application.Results.Trades;
 
-namespace Application.Services.Trade;
+namespace Application.Services.Trades;
 
 public interface ITradeService
 {

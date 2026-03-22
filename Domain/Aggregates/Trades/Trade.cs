@@ -16,7 +16,7 @@ public class Trade : AggregateRoot
 
     private List<TradeItem> _tradeContents = new List<TradeItem>();
 
-    public IReadOnlyCollection<TradeItem> TradeContents => _tradeContents.AsReadOnly();
+    public IReadOnlyCollection<TradeItem> TradeContents => _tradeContents;
 
     public SentTrade SentTrade { get; private set; }
 
@@ -78,6 +78,28 @@ public class Trade : AggregateRoot
     {
         Response = response;
         ResponseDate = DateTime.UtcNow;
+    }
+
+    public string GetSenderId()
+    {
+        return SentTrade.SenderId;
+    }
+
+    public string GetReceiverId()
+    {
+        return ReceivedTrade.ReceiverId;
+    }
+
+    public int GetTotalPrice()
+    {
+        var total = 0;
+
+        foreach (var tradeContent in TradeContents)
+        {
+            total += tradeContent.Price;
+        }
+
+        return total;
     }
 
     public static string GenerateId() => Guid.NewGuid().ToString();

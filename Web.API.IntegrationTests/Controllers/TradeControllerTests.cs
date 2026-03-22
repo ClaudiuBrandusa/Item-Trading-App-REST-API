@@ -6,9 +6,6 @@ using Item_Trading_App_Contracts.Requests.Trade;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_Contracts.Responses.Trade;
 using Item_Trading_App_REST_API.Controllers;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Quartz;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
@@ -1107,8 +1104,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
         var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
 
-        var x = await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTradeFromSender.TradeId);
-        var y = await Scenarios.AcceptTrade(controller, createdTradeFromReceiver.TradeId);
+        await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTradeFromSender.TradeId);
+        await Scenarios.AcceptTrade(controller, createdTradeFromReceiver.TradeId);
 
         // Act
 

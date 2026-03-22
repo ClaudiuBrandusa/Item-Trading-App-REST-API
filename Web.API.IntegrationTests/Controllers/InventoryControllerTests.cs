@@ -322,6 +322,22 @@ public class InventoryControllerTests : IClassFixture<TestAppFactory>
         AssertResponseHasOnlyOneError(response);
     }
 
+    private async Task AssertUserHasItemAmount(InventoryController controller, string itemId, int itemQuantity)
+    {
+        var userItemAmountResponse = GetContent<GetItemSuccessResponse, GetItemFailedResponse>(await controller.Get(itemId));
+        var userItemAmount = userItemAmountResponse.SuccessfullResponseContent.Quantity;
+
+        Assert.Equal(itemQuantity, userItemAmount);
+    }
+
+    private async Task AssertUserHasLockedItemAmount(InventoryController controller, string itemId, int lockedItemAmount)
+    {
+        var userLockedAmountResponse = GetContent<GetLockedAmountSuccessResponse, GetLockedAmountFailedResponse>(await controller.GetLockedAmount(itemId));
+        var userLockedAmount = userLockedAmountResponse.SuccessfullResponseContent.LockedAmount;
+
+        Assert.Equal(lockedItemAmount, userLockedAmount);
+    }
+
     private ControllerPack<InventoryController> CreateControllerPackWithUser(TestAppFactory factory, ClaimsPrincipal user)
     {
         return CreateControllerPackWithUser<InventoryController>(factory, user);

@@ -1,5 +1,4 @@
 ﻿using Domain.Aggregates.Inventories;
-using Domain.Entities.Inventories;
 
 namespace Domain.Repositories.Inventories;
 
@@ -18,6 +17,16 @@ public interface IInventoryRepository : IRepository, IDisposable
     /// <param name="userId"></param>
     /// <returns></returns>
     Task<Inventory> LoadInventoryAsync(string userId);
+
+    /// <summary>
+    /// Attaches the given inventory instance to the database context
+    /// </summary>
+    void Attach(Inventory inventory);
+
+    /// <summary>
+    /// Detaches the given inventory instance from the database context
+    /// </summary>
+    void Detach(Inventory inventory);
 
     /// <summary>
     /// Add inventory for the user

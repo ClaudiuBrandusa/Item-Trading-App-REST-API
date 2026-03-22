@@ -10,6 +10,10 @@ public class TradeConfiguration : IEntityTypeConfiguration<Trade>
     {
         builder.HasKey(t => t.TradeId);
 
+        builder.Metadata
+            .FindNavigation(nameof(Trade.TradeContents))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasMany(t => t.TradeContents)
             .WithOne(x => x.Trade)
             .HasForeignKey(tc => tc.TradeId)

@@ -119,7 +119,7 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
     {
         var userId = inventory.UserId;
 
-        var modified = await _repository.SaveChangesAsync() > 0;
+        var modified = await _repository.AddInventoryOrUpdateAsync(inventory);
 
         foreach ((var itemId, var quantity) in items)
         {

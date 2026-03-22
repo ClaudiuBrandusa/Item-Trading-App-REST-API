@@ -1,5 +1,5 @@
 ﻿using Application.Results.Trades;
-using Application.Services.Trade;
+using Application.Services.Trades;
 using MediatR;
 
 namespace Application.Behaviors.Trade.ListTrades;

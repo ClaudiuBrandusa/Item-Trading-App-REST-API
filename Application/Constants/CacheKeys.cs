@@ -41,6 +41,8 @@ public static class CacheKeys
 
         public static string GetTradeKey(string tradeId) => $"{Trades}{TradeKey}{tradeId}";
 
+        public static string GetTradeResponseCacheKey(string tradeId) => $"{Trades}{TradeKey}{tradeId}:response";
+
         public static string GetSentTradeKey(string userId, string tradeId) => $"{Trades}{SentTrades}{userId}+{tradeId}";
 
         public static string GetReceivedTradeKey(string userId, string tradeId) => $"{Trades}{ReceivedTrades}{userId}+{tradeId}";

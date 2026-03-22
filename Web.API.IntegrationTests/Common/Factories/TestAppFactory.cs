@@ -110,6 +110,8 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
                     .UseSqlServer(_dbContainer.GetConnectionString())
                     .AddInterceptors(interceptor)
                     .ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS));
+                
+                options.EnableSensitiveDataLogging(true);
             });
         }).ConfigureAppConfiguration((context, builder) =>
         {

@@ -22,6 +22,24 @@ public class TradeRepository : RepositoryBase, ITradeRepository
         _sender.Send(new GetTradeItemsHistoryQuery { TradeId = tradeId }) :
         _sender.Send(new GetTradeItemsQuery { TradeId = tradeId });
 
+    public async Task<Trade?> GetTradeAsync(string tradeId)
+    {
+        var trade = await GetTradeTrackingQuery(context, tradeId);
+        
+        return trade;
+    }
+
+    public async Task<bool?> GetTradeResponseAsync(string tradeId)
+    {
+        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
+
+        var response = await GetTradeResponseQuery(dbContext, tradeId);
+
+        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+
+        return response;
+    }
+
     public async Task<Trade?> GetTradeEntityAsync(string tradeId)
     {
         var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
@@ -79,6 +97,24 @@ public class TradeRepository : RepositoryBase, ITradeRepository
         EF.CompileAsyncQuery((DatabaseContext context, string tradeId) =>
             context.Trades
                 .AsNoTracking()
+                .Include(t => t.SentTrade)
+                .Include(t => t.ReceivedTrade)
+                .Include(t => t.TradeContents)
+                .FirstOrDefault(t => Equals(t.TradeId, tradeId))
+        );
+
+    private static readonly Func<DatabaseContext, string, Task<bool?>> GetTradeResponseQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string tradeId) =>
+            context.Trades
+                .AsNoTracking()
+                .Where(t => t.TradeId == tradeId)
+                .Select(t => t.Response)
+                .FirstOrDefault()
+        );
+
+    private static readonly Func<DatabaseContext, string, Task<Trade?>> GetTradeTrackingQuery =
+        EF.CompileAsyncQuery((DatabaseContext context, string tradeId) =>
+            context.Trades
                 .Include(t => t.SentTrade)
                 .Include(t => t.ReceivedTrade)
                 .Include(t => t.TradeContents)

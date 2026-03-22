@@ -56,6 +56,14 @@ public static class Utils
         var objectResult = result as ObjectResult;
         return objectResult?.Value as T;
     }
+
+    public static ApiResponse<T,R> GetContent<T,R>(IActionResult result)
+        where T : class
+        where R : FailedResponse
+    {
+        var objectResult = result as ObjectResult;
+        return new ApiResponse<T,R>(objectResult);
+    }
     
     public static OkObjectResult? AssertActionResultAsOkObjectResult(IActionResult? actionResult)
     {

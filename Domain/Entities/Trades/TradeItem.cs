@@ -1,4 +1,5 @@
-﻿using Domain.Aggregates.Trades;
+﻿using System.Text.Json.Serialization;
+using Domain.Aggregates.Trades;
 using Domain.Entities.Items;
 using Domain.Primitives;
 
@@ -14,8 +15,10 @@ public class TradeItem : Entity
 
     public int Price { get; private set; }
 
-    public Item Item { get; private set; }
+    [JsonIgnore]
+    public virtual Item Item { get; private set; }
 
+    [JsonIgnore]
     public virtual Trade Trade { get; private set; }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -26,6 +29,10 @@ public class TradeItem : Entity
     {
         TradeId = tradeId;
         ItemId = itemId;
+
+        if (quantity < 1)
+            throw new ArgumentException($"Quantity must be bigger than 0");
+
         Quantity = quantity;
         Price = price;
     }

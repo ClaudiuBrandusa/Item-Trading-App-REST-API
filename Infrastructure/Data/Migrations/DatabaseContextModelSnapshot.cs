@@ -191,7 +191,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("TradeId");
 
-                    b.ToTable("TradeContent");
+                    b.ToTable("TradeContent", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Trades.TradeItemHistory", b =>

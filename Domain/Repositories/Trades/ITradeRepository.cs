@@ -5,6 +5,10 @@ namespace Domain.Repositories.Trades;
 
 public interface ITradeRepository : IRepository, IDisposable
 {
+    Task<Trade?> GetTradeAsync(string tradeId);
+
+    Task<bool?> GetTradeResponseAsync(string tradeId);
+
     Task<TradeItem[]> GetTradeItemsAsync(string tradeId, bool responded);
 
     Task<Trade?> GetTradeEntityAsync(string tradeId);

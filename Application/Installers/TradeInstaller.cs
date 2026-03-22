@@ -1,4 +1,4 @@
-﻿using Application.Services.Trade;
+﻿using Application.Services.Trades;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;

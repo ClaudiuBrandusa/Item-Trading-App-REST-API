@@ -103,7 +103,9 @@ public static class Scenarios
 
         var result = await controller.Accept(request);
 
-        return GetContent<AcceptTradeOfferSuccessResponse>(result)!;
+        var response = GetContent<AcceptTradeOfferSuccessResponse>(result);
+
+        return response!;
     }
 
     public static async Task<AcceptTradeOfferSuccessResponse> AcceptTrade(TestAppFactory factory, ClaimsPrincipal userClaims, string tradeId)

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Domain.Primitives;
-using Infrastructure.Data;
+using Infrastructure.Services.DatabaseContextWrapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -11,20 +11,21 @@ namespace Infrastructure.BackgroundJobs;
 [DisallowConcurrentExecution] // ensures that this job will run `as a singleton`
 public sealed class ProcessOutboxMessagesJob : IJob
 {
-	private readonly DatabaseContext _dbContext;
+	private readonly IDatabaseContextWrapper _dbContextWrapper;
     private readonly IPublisher _publisher;
 
-    public ProcessOutboxMessagesJob(DatabaseContext dbContext, IPublisher publisher)
+    public ProcessOutboxMessagesJob(IDatabaseContextWrapper dbContextWrapper, IPublisher publisher)
     {
-        _dbContext = dbContext;
+		_dbContextWrapper = dbContextWrapper;
         _publisher = publisher;
     }
 
     public async Task Execute(IJobExecutionContext context)
 	{
-		var messages = await _dbContext
+		var dbContext = await _dbContextWrapper.ProvideDatabaseContextAsync();
+
+		var messages = await dbContext
 			.OutboxMessages
-			//.Set<OutboxMessage>()
 			.Where(m => m.ProcessedOnUtc == null)
 			.Take(20)
 			.ToListAsync(context.CancellationToken);
@@ -51,6 +52,8 @@ public sealed class ProcessOutboxMessagesJob : IJob
 			outboxMessage.ProcessedOnUtc = DateTime.UtcNow;
 		}
 		
-		await _dbContext.SaveChangesAsync();
+		await dbContext.SaveChangesAsync();
+
+		_dbContextWrapper.DisposeDatabaseContext(dbContext);
 	}
 }

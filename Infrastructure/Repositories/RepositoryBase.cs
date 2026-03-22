@@ -66,6 +66,7 @@ public abstract class RepositoryBase : IRepository, IDisposable
         {
             context.Remove(entity);
             var removed = await context.SaveChangesAsync();
+            context.Entry(entity).State = EntityState.Detached;
             return removed > 0;
         }
         catch (DbUpdateConcurrencyException)
