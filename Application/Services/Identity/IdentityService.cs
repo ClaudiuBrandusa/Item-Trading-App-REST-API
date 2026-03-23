@@ -10,7 +10,7 @@ using Application.Services.RefreshToken;
 using Application.Utils;
 using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
-using Item_Trading_App_REST_API.Options;
+using Application.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

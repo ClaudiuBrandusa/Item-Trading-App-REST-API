@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Item_Trading_App_REST_API.Options;
 using Microsoft.Extensions.DependencyInjection;
-using Item_Trading_App_REST_API.Hubs;
 using Shared.Installers;
 using Application;
 using Infrastructure;
 using System.Reflection;
+using Item_Trading_App_REST_API.Options;
 using Item_Trading_App_REST_API.Extensions;
+using Item_Trading_App_REST_API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 

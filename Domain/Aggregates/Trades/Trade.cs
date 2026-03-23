@@ -22,6 +22,10 @@ public class Trade : AggregateRoot
 
     public ReceivedTrade ReceivedTrade { get; private set; }
 
+    public string SenderId { get => GetSenderId(); }
+
+    public string ReceiverId { get => GetReceiverId(); }
+
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private Trade() { }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.

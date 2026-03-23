@@ -1,6 +1,7 @@
 ﻿using Infrastructure.Wrappers.Hubs;
 using Item_Trading_App_REST_API.Hubs;
 using Item_Trading_App_REST_API.Wrappers.Hubs;
+using Infrastructure.Hubs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;

@@ -6,11 +6,11 @@ using Item_Trading_App_Contracts.Requests.Trade;
 using Item_Trading_App_Contracts.Responses.Inventory;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_Contracts.Responses.Trade;
-using Item_Trading_App_REST_API.Controllers;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Web.API.IntegrationTests.Common.Factories;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
+using Item_Trading_App_REST_API.Controllers;
 
 namespace Web.API.IntegrationTests.Controllers.Common;
 

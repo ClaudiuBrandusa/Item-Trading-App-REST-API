@@ -1,5 +1,5 @@
 ﻿using Application.Utils;
-using Item_Trading_App_REST_API.Options;
+using Application.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

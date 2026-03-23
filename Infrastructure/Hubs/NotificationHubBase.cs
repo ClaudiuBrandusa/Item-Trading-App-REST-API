@@ -3,7 +3,7 @@ using Application.Services.ConnectedUsers;
 using Application.Services.Notification;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Item_Trading_App_REST_API.Hubs;
+namespace Infrastructure.Hubs;
 
 public abstract class NotificationHubBase : Hub
 {

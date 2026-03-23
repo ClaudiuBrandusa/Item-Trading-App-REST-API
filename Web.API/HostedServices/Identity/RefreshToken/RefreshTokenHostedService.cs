@@ -1,9 +1,9 @@
 ﻿using Application.Services.RefreshToken;
-using Item_Trading_App_REST_API.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.Options;
 
 namespace Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
 

@@ -1,4 +1,5 @@
-﻿using Application.Services.ConnectedUsers;
+﻿using Infrastructure.Hubs;
+using Application.Services.ConnectedUsers;
 using Application.Services.Notification;
 using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;

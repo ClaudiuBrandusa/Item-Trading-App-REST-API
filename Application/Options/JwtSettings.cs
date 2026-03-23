@@ -1,4 +1,4 @@
-﻿namespace Item_Trading_App_REST_API.Options;
+﻿namespace Application.Options;
 
 public record JwtSettings
 {

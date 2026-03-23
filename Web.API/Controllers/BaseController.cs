@@ -1,5 +1,5 @@
 ﻿using Application.Models;
-using Item_Trading_App_REST_API.Extensions;
+using Application.Extensions;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;

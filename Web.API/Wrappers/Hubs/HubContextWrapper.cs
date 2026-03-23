@@ -1,9 +1,9 @@
 ﻿using Infrastructure.Wrappers.Hubs;
-using Item_Trading_App_REST_API.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.Hubs;
 
 namespace Item_Trading_App_REST_API.Wrappers.Hubs;
 

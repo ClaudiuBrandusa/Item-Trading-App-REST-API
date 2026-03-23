@@ -202,8 +202,6 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
     {
         if (entity is (InventoryItem ownedItem, string userId))
             return CacheKeys.Inventory.GetAmountKey(userId, ownedItem.ItemId);
-        else if (entity is LockedItem lockedItem)
-            return CacheKeys.Inventory.GetLockedAmountKey(lockedItem.UserId, lockedItem.ItemId);
 
         return string.Empty;
     }

@@ -1,6 +1,6 @@
 ﻿using Application.Services.ConnectedUsers;
 using Application.Services.Notification;
-using Item_Trading_App_REST_API.Hubs;
+using Infrastructure.Hubs;
 
 namespace Infrastructure.IntegrationTests.Hub;
 

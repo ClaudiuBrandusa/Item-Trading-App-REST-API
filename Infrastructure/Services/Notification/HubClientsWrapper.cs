@@ -1,5 +1,5 @@
 ﻿using Application.Services.Notification;
-using Item_Trading_App_REST_API.Hubs;
+using Infrastructure.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Infrastructure.Services.Notification;

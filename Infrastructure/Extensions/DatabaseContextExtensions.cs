@@ -1,10 +1,11 @@
-﻿using Application.Services.UnitOfWork;
+﻿using Application.Behaviors.Trade.CreateTrade;
+using Application.Models.TradeItems;
+using Application.Services.Trades;
+using Application.Services.UnitOfWork;
 using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
-using Domain.Entities.Inventories;
 using Domain.Entities.Items;
-using Domain.Entities.Trades;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,7 @@ public static class DatabaseContextExtensions
         };
 
         var unitOfWorkService = serviceProvider.GetRequiredService<IUnitOfWorkService>();
+        var tradeService = serviceProvider.GetRequiredService<ITradeService>();
 
         await unitOfWorkService.ExplicitTransaction(async () =>
         {
@@ -48,7 +50,9 @@ public static class DatabaseContextExtensions
 
                     // add inventory items
 
-                    SeedUserInventoryItems(inventory, items);
+                    SeedUserInventory(inventory, items);
+
+                    await databaseContext.Inventories.AddAsync(inventory);
 
                     await databaseContext.SaveChangesAsync();
                 }
@@ -59,7 +63,7 @@ public static class DatabaseContextExtensions
 
                 var itemsToBeAdded = new string[] { items[0].ItemId, items[1].ItemId, items[2].ItemId };
 
-                await SeedTrades(databaseContext, userIds[0], userIds[1], items.Select(x => x.ItemId).ToArray());
+                await SeedTrades(tradeService, userIds[0], userIds[1], items.Select(x => (x.ItemId, x.Name)).ToArray());
 
                 var trades = databaseContext.Trades.ToArray();
 
@@ -118,7 +122,7 @@ public static class DatabaseContextExtensions
         return user;
     }
 
-    private static void SeedUserInventoryItems(Inventory inventory, Item[] items)
+    private static void SeedUserInventory(Inventory inventory, Item[] items)
     {
         var random = new Random();
 
@@ -130,11 +134,15 @@ public static class DatabaseContextExtensions
         }
     }
 
-    private static async Task SeedTrades(DatabaseContext databaseContext, string firstUserId, string secondUserId, string[] availableItemIds)
+    private static async Task SeedTrades(ITradeService tradeService, string firstUserId, string secondUserId, (string itemId, string itemName)[] availableItemData)
     {
         var random = new Random();
 
         int tradesCount = random.Next(3, 7);
+
+        // two flags are declared in order to ensure that there was at least one trade sent from each user
+        bool firstUserSentAtLeastOneTrade = false;
+        bool secondUserSentAtLeastOneTrade = false;
 
         for (int i = 0; i < tradesCount; i++)
         {
@@ -145,74 +153,70 @@ public static class DatabaseContextExtensions
             {
                 senderId = firstUserId;
                 receiverId = secondUserId;
+                firstUserSentAtLeastOneTrade = true;
             }
             else
             {
                 senderId = secondUserId;
                 receiverId = firstUserId;
+                secondUserSentAtLeastOneTrade = true;
             }
 
-            await SeedTradeWithRandomItems(databaseContext, random, firstUserId, secondUserId, availableItemIds);
+            await SeedTradeWithRandomItems(tradeService, random, senderId, receiverId, availableItemData);
+        }
+
+        if (!firstUserSentAtLeastOneTrade)
+        {
+            await SeedTradeWithRandomItems(tradeService, random, firstUserId, secondUserId, availableItemData);
+        }
+        else if (!secondUserSentAtLeastOneTrade)
+        {
+            await SeedTradeWithRandomItems(tradeService, random, secondUserId, firstUserId, availableItemData);
         }
     }
 
-    private static Task<Trade> SeedTradeWithRandomItems(DatabaseContext databaseContext, Random random, string senderUserId, string receiverUserId, string[] availableItemIds)
+    private static Task<Trade> SeedTradeWithRandomItems(ITradeService tradeService, Random random, string senderUserId, string receiverUserId, (string itemId, string itemName)[] availableItemData)
     {
-        int itemsCount = random.Next(1, availableItemIds.Length);
+        int itemsCount = random.Next(1, availableItemData.Length);
 
-        var itemsToBeAdded = availableItemIds.Take(itemsCount).ToArray();
+        var itemsToBeAdded = availableItemData.Take(itemsCount).ToArray();
 
-        return SeedTrade(databaseContext, senderUserId, receiverUserId, itemsToBeAdded);
+        return SeedTrade(tradeService, senderUserId, receiverUserId, itemsToBeAdded);
     }
 
-    private static async Task<Trade> SeedTrade(DatabaseContext databaseContext, string senderUserId, string receiverUserId, string[] itemsToBeAdded)
+    private static async Task<Trade> SeedTrade(ITradeService tradeService, string senderUserId, string receiverUserId, (string itemId, string itemName)[] itemDataToBeAdded)
     {
         var trade = new Trade(DateTime.UtcNow, senderUserId, receiverUserId);
 
-        AddTradeContents(itemsToBeAdded, trade);
-        await AddLockedItemsForTradeContent(databaseContext, trade);
+        var tradeItems = new TradeItemDTO[itemDataToBeAdded.Length];
 
-        await databaseContext.Trades.AddAsync(trade);
-        await databaseContext.SaveChangesAsync();
+        for (int i = 0; i < itemDataToBeAdded.Length; i++)
+        {
+            tradeItems[i] = CreateTradeItemWithRandomData(itemDataToBeAdded[i].itemId, itemDataToBeAdded[i].itemName);
+        }
+
+        var createTradeCommand = new CreateTradeOfferCommand
+        {
+            SenderUserId = senderUserId,
+            TargetUserId = receiverUserId,
+            Items = tradeItems
+        };
+
+        await tradeService.CreateTradeOfferAsync(createTradeCommand);
 
         return trade;
     }
 
-    private static void AddTradeContents(string[] itemsToBeAdded, Trade trade)
-    {
-        for (int i = 0; i < itemsToBeAdded.Length; i++)
-        {
-            var tradeContent = CreateTradeContentWithRandomData(itemsToBeAdded[i], trade.TradeId);
-
-            trade.AddTradeContent(tradeContent);
-        }
-    }
-
-    private static async Task AddLockedItemsForTradeContent(DatabaseContext databaseContext, Trade trade)
-    {
-        foreach (var tradeItem in trade.TradeContents)
-        {
-            LockedItem lockedItem = databaseContext.LockedItems
-                .FirstOrDefault(x => x.UserId == trade.SentTrade.SenderId && 
-                x.ItemId == tradeItem.ItemId
-            );
-
-            if (lockedItem is null)
-            {
-                lockedItem = new LockedItem(trade.SentTrade.SenderId, tradeItem.ItemId, tradeItem.Quantity);
-                await databaseContext.LockedItems.AddAsync(lockedItem);
-            }
-            else
-            {
-                lockedItem.AddLockedAmount(tradeItem.Quantity);
-            }
-        }
-    }
-
-    private static TradeItem CreateTradeContentWithRandomData(string itemId, string tradeId)
+    private static TradeItemDTO CreateTradeItemWithRandomData(string itemId, string itemName)
     {
         var random = new Random();
 
-        return new TradeItem(tradeId, itemId, random.Next(2, 5), random.Next(1, 5));
+        return new TradeItemDTO
+        {
+            ItemId = itemId,
+            ItemName = itemName,
+            Quantity = random.Next(2, 5),
+            Price = random.Next(1, 5)
+        };
     }
 }

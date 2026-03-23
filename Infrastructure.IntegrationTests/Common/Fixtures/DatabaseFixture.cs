@@ -1,10 +1,15 @@
 ﻿using Application.Installers;
+using Application.Options;
+using Application.Services.Cache;
+using Application.Services.Notification;
+using Application.Utils;
 using Infrastructure.Installers;
 using Infrastructure.IntegrationTests.Common.Mocks;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Testcontainers.MsSql;
 
 namespace Infrastructure.IntegrationTests.Common.Fixtures;
@@ -34,6 +39,34 @@ public class DatabaseFixture : IAsyncLifetime
         mediatorInstaller.InstallServices(services, Configuration);
         var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
         dbContextWrapperInstaller.InstallServices(services, Configuration);
+        var mapsterInstaller = new MapsterInstaller();
+        mapsterInstaller.InstallServices(services, Configuration);
+        var jwtSettings = new JwtSettings
+        {
+            AllowedRefreshTokensPerUser = 3,
+            RefreshTokenLifetime = TimeSpan.FromHours(1),
+            TokenLifetime = TimeSpan.FromHours(3),
+            Secret = "1234"
+        };
+        services.AddSingleton(jwtSettings);
+        var tokenValidationParameters = JwtUtils.BuildTokenValidationParameters(jwtSettings.Secret);
+        services.AddSingleton(tokenValidationParameters);
+        var identityInstaller = new IdentityInstaller();
+        identityInstaller.InstallServices(services, Configuration);
+        var refreshTokenInstaller = new RefreshTokenInstaller();
+        refreshTokenInstaller.InstallServices(services, Configuration);
+        var itemInstaller = new ItemInstaller();
+        itemInstaller.InstallServices(services, Configuration);
+        var inventoryInstaller = new InventoryInstaller();
+        inventoryInstaller.InstallServices(services, Configuration);
+        var tradeServiceInstaller = new TradeInstaller();
+        tradeServiceInstaller.InstallServices(services, Configuration);
+        services.AddScoped((_) => new Mock<IClientNotificationService>().Object);
+        var repositoriesInstaller = new RepositoriesInstaller();
+        repositoriesInstaller.InstallServices(services, Configuration);
+        var cacheServiceMock = new Mock<ICacheService>();
+        var cacheServiceImpl = cacheServiceMock.Object;
+        services.AddScoped((_) => cacheServiceImpl);
     }
 
     public async Task InitializeAsync()

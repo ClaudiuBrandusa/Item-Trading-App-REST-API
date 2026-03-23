@@ -1,4 +1,4 @@
-﻿using Item_Trading_App_REST_API.Options;
+﻿using Application.Options;
 using Application.Services.RefreshToken;
 using Application.Services.Identity;
 using Application.Behaviors.Identity.RegisterUser;
