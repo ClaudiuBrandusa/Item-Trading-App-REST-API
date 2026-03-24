@@ -210,8 +210,6 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
     {
         if (entity is (InventoryItem ownedItem, string userId))
             return _mapper.AdaptToType<InventoryItem, CachedOwnedItem>((InventoryItem)entity, (nameof(CachedOwnedItem.UserId), userId));
-        else if (entity is LockedItem lockedItem)
-            return lockedItem.Quantity;
 
         return entity;
     }

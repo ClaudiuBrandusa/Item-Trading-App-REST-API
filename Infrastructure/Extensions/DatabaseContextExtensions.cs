@@ -6,6 +6,7 @@ using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
+using Domain.Repositories.Inventories;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,7 @@ public static class DatabaseContextExtensions
         };
 
         var unitOfWorkService = serviceProvider.GetRequiredService<IUnitOfWorkService>();
+        var inventoryRepository = serviceProvider.GetRequiredService<IInventoryRepository>();
         var tradeService = serviceProvider.GetRequiredService<ITradeService>();
 
         await unitOfWorkService.ExplicitTransaction(async () =>
@@ -52,9 +54,7 @@ public static class DatabaseContextExtensions
 
                     SeedUserInventory(inventory, items);
 
-                    await databaseContext.Inventories.AddAsync(inventory);
-
-                    await databaseContext.SaveChangesAsync();
+                    await inventoryRepository.AddInventoryOrUpdateAsync(inventory);
                 }
 
                 // add trades
@@ -64,8 +64,6 @@ public static class DatabaseContextExtensions
                 var itemsToBeAdded = new string[] { items[0].ItemId, items[1].ItemId, items[2].ItemId };
 
                 await SeedTrades(tradeService, userIds[0], userIds[1], items.Select(x => (x.ItemId, x.Name)).ToArray());
-
-                var trades = databaseContext.Trades.ToArray();
 
                 return true;
             }
@@ -117,7 +115,7 @@ public static class DatabaseContextExtensions
 
         user.UpdateCashAmount(500);
 
-        var createUserResult = await userManager.CreateAsync(user, password);
+        await userManager.CreateAsync(user, password);
 
         return user;
     }

@@ -21,32 +21,39 @@ public sealed class ConvertDomainEventsToOutboxMessagesInterceptor : SaveChanges
 
         // Access all of the entries that are of type aggregate root,
         // because only the domain objects of this type can raise domain events
-        var outboxMessages = dbContext.ChangeTracker
-            .Entries<AggregateRoot>()
-            .Select(x => x.Entity)
-            .SelectMany(aggregateRoot =>
-            {
-                var domainEvents = aggregateRoot.GetDomainEvents();
-            
-                aggregateRoot.ClearDomainEvents();
+        try
+        {
+            var outboxMessages = dbContext.ChangeTracker
+                .Entries<AggregateRoot>()
+                .Select(x => x.Entity)
+                .SelectMany(aggregateRoot =>
+                {
+                    var domainEvents = aggregateRoot.GetDomainEvents();
+                
+                    aggregateRoot.ClearDomainEvents();
 
-                return domainEvents;
-            })
-            .Select(domainEvent => new OutboxMessage
-            {
-                Id = Guid.NewGuid(),
-                OccurredOnUtc = DateTime.UtcNow,
-                Type = domainEvent.GetType().Name,
-                Content = JsonConvert.SerializeObject(
-                    domainEvent,
-                    new JsonSerializerSettings
-                    {
-                        TypeNameHandling = TypeNameHandling.All
-                    })
-            })
-            .ToList();
+                    return domainEvents;
+                })
+                .Select(domainEvent => new OutboxMessage
+                {
+                    Id = Guid.NewGuid(),
+                    OccurredOnUtc = DateTime.UtcNow,
+                    Type = domainEvent.GetType().Name,
+                    Content = JsonConvert.SerializeObject(
+                        domainEvent,
+                        new JsonSerializerSettings
+                        {
+                            TypeNameHandling = TypeNameHandling.All
+                        })
+                })
+                .ToList();
 
-        dbContext.OutboxMessages.AddRange(outboxMessages);
+            dbContext.OutboxMessages.AddRange(outboxMessages);
+        }
+        catch (ArgumentNullException)
+        {
+            // something went wrong
+        }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }

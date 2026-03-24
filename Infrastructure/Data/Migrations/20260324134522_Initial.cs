@@ -67,19 +67,6 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LockedItems",
-                columns: table => new
-                {
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ItemId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Quantity = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LockedItems", x => new { x.ItemId, x.UserId });
-                });
-
-            migrationBuilder.CreateTable(
                 name: "OutboxMessages",
                 columns: table => new
                 {
@@ -466,9 +453,6 @@ namespace Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "InventoryItems");
-
-            migrationBuilder.DropTable(
-                name: "LockedItems");
 
             migrationBuilder.DropTable(
                 name: "OutboxMessages");

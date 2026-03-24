@@ -104,22 +104,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("InventoryItems");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Inventories.LockedItem", b =>
-                {
-                    b.Property<string>("ItemId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("ItemId", "UserId");
-
-                    b.ToTable("LockedItems");
-                });
-
             modelBuilder.Entity("Domain.Entities.Items.Item", b =>
                 {
                     b.Property<string>("ItemId")

@@ -62,7 +62,9 @@ public class DatabaseSeedingTests : IClassFixture<DatabaseFixture>
             Assert.NotEmpty(item.Description);
         });
         // There must be two inventories
-        var inventories = databaseContext.Inventories.ToList();
+        var inventories = databaseContext.Inventories
+            .Include(x => x.OwnedItems)
+            .ToList();
         Assert.NotEmpty(inventories);
         Assert.Equal(expectedInventoriesCount, inventories.Count);
         // Two different inventories
@@ -70,6 +72,8 @@ public class DatabaseSeedingTests : IClassFixture<DatabaseFixture>
         Assert.Equal(expectedInventoriesCount, inventoryUserIds.Count);
         // Each user has an inventory
         Assert.All(inventoryUserIds, inventoryUserId => Assert.Contains(inventoryUserId, userIds));
+        // Each inventory has at least one item with a locked quantity
+        Assert.All(inventories, inventory => Assert.Contains(inventory.OwnedItems, inventoryItem => inventoryItem.LockedAmount > 0));
         // There are a few trades
         var trades = databaseContext.Trades
             .Include(x => x.SentTrade)

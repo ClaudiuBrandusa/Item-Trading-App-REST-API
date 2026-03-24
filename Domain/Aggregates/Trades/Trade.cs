@@ -70,12 +70,40 @@ public class Trade : AggregateRoot
 
     public void AddTradeContent(TradeItem tradeContent)
     {
-        _tradeContents.Add(tradeContent);
+        var entity = FindTradeContent(tradeContent.ItemId);
+        
+        if (entity is null)
+        {
+            _tradeContents.Add(tradeContent);
+        }
+        else
+        {
+            entity.Add(tradeContent);
+        }
     }
 
     public void RemoveTradeContent(TradeItem tradeContent)
     {
-        _tradeContents.Remove(tradeContent);
+        var entity = FindTradeContent(tradeContent.ItemId);
+        
+        if (entity is null)
+        {
+            return;
+        }
+
+        _tradeContents.Remove(entity);
+    }
+
+    public void RemoveTradeContent(string itemId)
+    {
+        var entity = FindTradeContent(itemId);
+        
+        if (entity is null)
+        {
+            return;
+        }
+        
+        _tradeContents.Remove(entity);
     }
 
     public void SetResponse(bool response)
@@ -121,6 +149,8 @@ public class Trade : AggregateRoot
     }
 
     protected override object GetId() => TradeId;
+
+    private TradeItem? FindTradeContent(string itemId) => _tradeContents.FirstOrDefault(x => x.ItemId == itemId);
 
     private void SetSender(string userId)
     {

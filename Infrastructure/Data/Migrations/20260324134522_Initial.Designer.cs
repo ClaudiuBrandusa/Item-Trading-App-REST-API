@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20260317202441_initial")]
+    [Migration("20260324134522_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -107,22 +107,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("InventoryItems");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Inventories.LockedItem", b =>
-                {
-                    b.Property<string>("ItemId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("ItemId", "UserId");
-
-                    b.ToTable("LockedItems");
-                });
-
             modelBuilder.Entity("Domain.Entities.Items.Item", b =>
                 {
                     b.Property<string>("ItemId")
@@ -194,7 +178,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("TradeId");
 
-                    b.ToTable("TradeContent");
+                    b.ToTable("TradeContent", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Trades.TradeItemHistory", b =>

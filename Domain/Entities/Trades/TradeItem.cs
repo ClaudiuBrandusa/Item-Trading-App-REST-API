@@ -41,6 +41,12 @@ public class TradeItem : Entity
 
     public void UpdatePrice(int price) => Price = price;
 
+    public void Add(TradeItem tradeItem)
+    {
+        Price += tradeItem.Price;
+        Quantity += tradeItem.Quantity;
+    }
+
     protected override bool Compare(object obj)
     {
         if (obj is not TradeItem entity) return false;
