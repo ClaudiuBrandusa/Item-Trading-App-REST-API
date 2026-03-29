@@ -1,5 +1,4 @@
-﻿using Application.Behaviors.TradeItem.AddTradeItem;
-using Application.Models.TradeItems;
+﻿using Application.Models.TradeItems;
 using Domain.Entities.Trades;
 using Mapster;
 
@@ -11,12 +10,6 @@ public class TradeItemMappingConfig : IRegister
     {
         config.ForType<TradeItem, TradeItemDTO>()
             .Map(dest => dest.ItemName, src => MapContext.Current!.Parameters[nameof(TradeItemDTO.ItemName)].ToString());
-
-        config.ForType<TradeItemDTO, AddTradeItemCommand>()
-            .Map(dest => dest.TradeId, src => MapContext.Current!.Parameters[nameof(AddTradeItemCommand.TradeId)].ToString());
-
-        config.ForType<AddTradeItemCommand, TradeItem>()
-            .MapWith((AddTradeItemCommand command) => new TradeItem(command.TradeId, command.ItemId, command.Quantity, command.Price));
 
         config.ForType<TradeItemHistory, TradeItem>()
             .MapWith((TradeItemHistory entity) => new TradeItem

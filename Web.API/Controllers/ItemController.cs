@@ -3,7 +3,7 @@ using Application.Behaviors.Item.DeleteItem;
 using Application.Behaviors.Item.GetItem;
 using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.UpdateItem;
-using Application.Behaviors.TradeItem.GetTradeItemIds;
+using Application.Behaviors.Trade.GetTradeItemIds;
 using Application.Results.Items;
 using Item_Trading_App_Contracts;
 using Item_Trading_App_Contracts.Requests.Item;

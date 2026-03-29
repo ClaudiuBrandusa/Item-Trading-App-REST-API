@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace Application.Behaviors.TradeItem.ItemUsedInTrade;
+namespace Application.Behaviors.Trade.ItemUsedInTrade;
 
 public record ItemUsedInTradeQuery : IRequest<bool>
 {

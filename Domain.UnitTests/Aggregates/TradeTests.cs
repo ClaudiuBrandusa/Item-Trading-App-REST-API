@@ -145,7 +145,7 @@ public class TradeTests
         var expectedPrice = 10;
 
         var trade = new Trade(expectedSentDate, senderUserId, receiverUserId);
-
+        trade.ClearDomainEvents();
         var tradeContent = new TradeItem(trade.TradeId, expectedItemId, expectedQuantity, expectedPrice);
 
         // Act
@@ -162,6 +162,16 @@ public class TradeTests
         Assert.Equal(trade.TradeId, retrievedTradeContent.TradeId);
         Assert.Equal(expectedQuantity, retrievedTradeContent.Quantity);
         Assert.Equal(expectedPrice, retrievedTradeContent.Price);
+        var domainEvents = trade.GetDomainEvents();
+        Assert.NotNull(domainEvents);
+        Assert.Equal(1, domainEvents.Count);
+        var domainEvent = domainEvents.First();
+        Assert.NotNull(domainEvent);
+        var tradeItemAddedDomainEvent = Assert.IsAssignableFrom<TradeItemAddedDomainEvent>(domainEvent);
+        Assert.Equal(trade.TradeId, tradeItemAddedDomainEvent.TradeId);
+        Assert.Equal(tradeContent.ItemId, tradeItemAddedDomainEvent.ItemId);
+        Assert.Equal(expectedQuantity, tradeItemAddedDomainEvent.Quantity);
+        Assert.Equal(expectedPrice, tradeItemAddedDomainEvent.Price);
     }
 
     [Fact]
@@ -194,7 +204,7 @@ public class TradeTests
         Assert.Equal(expectedItemId, retrievedTradeContent.ItemId);
         Assert.Equal(trade.TradeId, retrievedTradeContent.TradeId);
         Assert.Equal(expectedQuantity * 2, retrievedTradeContent.Quantity);
-        Assert.Equal(expectedPrice * 2, retrievedTradeContent.Price);
+        Assert.Equal(expectedPrice, retrievedTradeContent.Price);
     }
 
     [Fact]

@@ -4,5 +4,5 @@ namespace Domain.DomainEvents.Trades;
 
 public sealed record TradeItemRemovedDomainEvent(
     string TradeId,
-    bool KeepCache
+    string ItemId
 ) : IDomainEvent;

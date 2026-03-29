@@ -20,7 +20,7 @@ public interface ICacheService
 
     Task<bool> AnyKey(string prefix);
 
-    Task<bool> SetContainsValue(string key, string value);
+    Task<bool?> SetContainsValue(string key, string value);
 
     Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, bool removePrefix = false);
 

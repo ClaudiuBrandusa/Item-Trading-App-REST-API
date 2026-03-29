@@ -10,17 +10,11 @@ using Application.Behaviors.Trade.CreateTrade;
 using Application.Behaviors.Trade.GetTrade;
 using Application.Behaviors.Trade.ListTrades;
 using Application.Behaviors.Trade.RespondTrade;
-using Application.Behaviors.TradeItem.GetTradeItems;
-using Application.Behaviors.TradeItem.RemoveTradeItems;
-using Application.Behaviors.TradeItemHistory.AddTradeItems;
-using Application.Behaviors.TradeItemHistory.GetTradeItems;
 using Application.Behaviors.Wallet.GetCash;
-using Application.Extensions;
 using Application.Models.TradeItems;
 using Application.Models.Trades;
 using Application.Repositories;
 using Application.Results.Inventories;
-using Application.Results.TradeItemsHistory;
 using Application.Results.Trades;
 using Application.Services.Trades;
 using Application.Services.UnitOfWork;
@@ -205,6 +199,12 @@ public class TradeServiceTests
                 return cachedTrades.Where(x => x.SenderUserId == userId).Select(x => x.TradeId).ToArray();
             });
 
+        tradeRepositoryMock.Setup(repo => repo.SaveChangesAsync())
+            .ReturnsAsync(() => 1);
+
+        tradeRepositoryMock.Setup(repo => repo.MoveTradeContentToHistory(It.IsAny<string>()))
+            .ReturnsAsync(() => true);
+
         _sender.Setup(x => x.Send(It.IsAny<IRequest<bool>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IRequest<bool> request, CancellationToken ct) =>
             {
@@ -265,26 +265,6 @@ public class TradeServiceTests
             {
                 return 500;
             });
-        _sender.Setup(x => x.Send(It.IsAny<GetTradeItemsQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((GetTradeItemsQuery request, CancellationToken ct) =>
-            {
-                return GetTradeItems(request.TradeId);
-            });
-        _sender.Setup(x => x.Send(It.IsAny<GetTradeItemsHistoryQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((GetTradeItemsHistoryQuery request, CancellationToken ct) =>
-            {
-                return currentTradeItems[request.TradeId].Select(x => new TradeItem(x.TradeId, x.ItemId, x.Quantity, x.Price)).ToArray();
-            });
-        _sender.Setup(x => x.Send(It.IsAny<AddTradeItemsHistoryCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AddTradeItemsHistoryCommand request, CancellationToken ct) =>
-            {
-                return new TradeItemHistoryResult { Success = true };
-            });
-        _sender.Setup(x => x.Send(It.IsAny<RemoveTradeItemsCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((RemoveTradeItemsCommand request, CancellationToken ct) =>
-            {
-                return true;
-            });
         _sender.Setup(x => x.Send(It.IsAny<HasItemQuantityQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((HasItemQuantityQuery request, CancellationToken ct) =>
             {
@@ -323,15 +303,32 @@ public class TradeServiceTests
 
         var inventory = GetInventory(userId);
 
-        var tradeItems = TestingData.GetTradeItems(tradeItemIds);
+        var expectedItemsCount = tradeItemIds.Length;
+        var expectedQuantity = 10;
+        var expectedPrice = 10;
 
-        tradeItems.ToList().ForEach(x => inventory.AddItem(x.ItemId, x.Quantity));
+        var tradeItemDTOs = new TradeItemDTO[expectedItemsCount];
+
+        for (int i = 0; i < expectedItemsCount; i++)
+        {
+            var itemId = tradeItemIds[i];
+
+            inventory.AddItem(itemId, expectedQuantity);
+
+            tradeItemDTOs[i] = new TradeItemDTO
+            {
+                ItemId = itemId,
+                ItemName = GetItemName(itemId),
+                Quantity = expectedQuantity,
+                Price = expectedPrice
+            };
+        }
 
         var commandStub = new CreateTradeOfferCommand
         {
             SenderUserId = userId,
             TargetUserId = receiverUserId,
-            Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
+            Items = tradeItemDTOs
         };
 
         // Act
@@ -391,7 +388,7 @@ public class TradeServiceTests
 
         var userId = User.GenerateId();
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var queryStub = new RequestTradeOfferQuery
         {
@@ -486,7 +483,7 @@ public class TradeServiceTests
 
         var userId = User.GenerateId();
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var queryStub = new RequestTradeOfferQuery
         {
@@ -645,7 +642,7 @@ public class TradeServiceTests
 
         var userId = User.GenerateId();
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new RespondTradeCommand
         {
@@ -686,7 +683,7 @@ public class TradeServiceTests
 
         var tradeItemIds = new string[] { "1", "2", "3" };
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new RespondTradeCommand
         {
@@ -714,7 +711,7 @@ public class TradeServiceTests
         var userId = User.GenerateId();
         var tradeItemIds = new string[] { "1" };
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new RespondTradeCommand
         {
@@ -743,7 +740,7 @@ public class TradeServiceTests
 
         var userId = User.GenerateId();
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new RespondTradeCommand
         {
@@ -785,7 +782,7 @@ public class TradeServiceTests
 
         var tradeItemIds = new string[] { "1", "2", "3" };
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new RespondTradeCommand
         {
@@ -813,7 +810,7 @@ public class TradeServiceTests
         var userId = User.GenerateId();
         var tradeItemIds = new string[] { "1" };
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new RespondTradeCommand
         {
@@ -842,7 +839,7 @@ public class TradeServiceTests
 
         var userId = User.GenerateId();
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new CancelTradeCommand
         {
@@ -883,7 +880,7 @@ public class TradeServiceTests
 
         var tradeItemIds = new string[] { "1", "2", "3" };
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new CancelTradeCommand
         {
@@ -923,7 +920,7 @@ public class TradeServiceTests
         var userId = User.GenerateId();
         var tradeItemIds = new string[] { "1" };
 
-        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds);
+        var tradeOfferResult = await InitTradeWithTradeItems(userId, tradeItemIds, 10, 10);
 
         var commandStub = new CancelTradeCommand
         {
@@ -971,7 +968,7 @@ public class TradeServiceTests
 
         for (int i = 0; i < numberOfTradeOffers; i++)
         {
-            var tradeOfferResult = await InitTradeWithTradeItems(senderUserId, tradeItemIds);
+            var tradeOfferResult = await InitTradeWithTradeItems(senderUserId, tradeItemIds, 10, 10);
 
             if (responded)
                 await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
@@ -992,7 +989,7 @@ public class TradeServiceTests
 
         for (int i = 0; i < numberOfTradeOffers; i++)
         {
-            var tradeOfferResult = await InitTradeWithTradeItems(senderUserId, receiverUserId, tradeItemIds);
+            var tradeOfferResult = await InitTradeWithTradeItems(senderUserId, receiverUserId, tradeItemIds, 10, 10);
 
             if (responded)
                 await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
@@ -1014,7 +1011,7 @@ public class TradeServiceTests
 
         for (int i = 0; i < numberOfTradeOffers; i++)
         {
-            var tradeOfferResult = await InitTradeWithTradeItems(senderUserId, tradeItemIds);
+            var tradeOfferResult = await InitTradeWithTradeItems(senderUserId, tradeItemIds, 10, 10);
 
             if (responded)
                 await _sut.AcceptTradeOfferAsync(new RespondTradeCommand
@@ -1029,57 +1026,67 @@ public class TradeServiceTests
         return tradeOfferIds;
     }
 
-    private async Task<TradeOfferResult> InitTradeWithTradeItems(string senderId, string receiverUserId, string[] tradeItemIds)
+    private async Task<TradeOfferResult> InitTradeWithTradeItems(string senderId, string receiverUserId, string[] tradeItemIds, int quantity, int price)
     {
         var inventory = GetInventory(senderId);
 
-        var tradeItems = TestingData.GetTradeItems(tradeItemIds);
+        var expectedItemsCount = tradeItemIds.Length;
 
-        tradeItems.ToList().ForEach(x => inventory.AddItem(x.ItemId, x.Quantity));
+        var tradeItemDTOs = new TradeItemDTO[expectedItemsCount];
+
+        for (int i = 0; i < expectedItemsCount; i++)
+        {
+            var itemId = tradeItemIds[i];
+
+            inventory.AddItem(itemId, quantity);
+
+            tradeItemDTOs[i] = new TradeItemDTO
+            {
+                ItemId = itemId,
+                ItemName = GetItemName(itemId),
+                Quantity = quantity,
+                Price = price
+            };
+        }
 
         var createTradeStub = new CreateTradeOfferCommand
         {
             SenderUserId = senderId,
             TargetUserId = receiverUserId,
-            Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
+            Items = tradeItemDTOs
         };
 
         return await InitTrade(createTradeStub);
     }
 
-    private async Task<TradeOfferResult> InitTradeWithTradeItems(string senderId, string[] tradeItemIds)
+    private async Task<TradeOfferResult> InitTradeWithTradeItems(string senderId, string[] tradeItemIds, int quantity, int price)
     {
         var inventory = GetInventory(senderId);
 
-        var tradeItems = TestingData.GetTradeItems(tradeItemIds);
+        var expectedItemsCount = tradeItemIds.Length;
 
-        tradeItems.ToList().ForEach(x => inventory.AddItem(x.ItemId, x.Quantity));
+        var tradeItemDTOs = new TradeItemDTO[expectedItemsCount];
+
+        for (int i = 0; i < expectedItemsCount; i++)
+        {
+            var itemId = tradeItemIds[i];
+
+            inventory.AddItem(itemId, quantity);
+
+            tradeItemDTOs[i] = new TradeItemDTO
+            {
+                ItemId = itemId,
+                ItemName = GetItemName(itemId),
+                Quantity = quantity,
+                Price = price
+            };
+        }
 
         var createTradeStub = new CreateTradeOfferCommand
         {
             SenderUserId = senderId,
             TargetUserId = receiverUserId,
-            Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
-        };
-
-        return await InitTrade(createTradeStub);
-    }
-
-    private async Task<TradeOfferResult> InitTradeWithTradeItems(string[] tradeItemIds)
-    {
-        var userId = User.GenerateId();
-
-        var inventory = GetInventory(userId);
-
-        var tradeItems = TestingData.GetTradeItems(tradeItemIds);
-
-        tradeItems.ToList().ForEach(x => inventory.AddItem(x.ItemId, x.Quantity));
-
-        var createTradeStub = new CreateTradeOfferCommand
-        {
-            SenderUserId = userId,
-            TargetUserId = receiverUserId,
-            Items = tradeItems.Select(x => _mapper.AdaptToType<TradeItem, TradeItemDTO>(x, (nameof(TradeItemDTO.ItemName), string.Empty)))
+            Items = tradeItemDTOs
         };
 
         return await InitTrade(createTradeStub);

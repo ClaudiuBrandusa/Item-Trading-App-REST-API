@@ -3,7 +3,7 @@ using Application.Services.Cache;
 using Domain.DomainEvents.Trades;
 using MediatR;
 
-namespace Application.Behaviors.TradeItem.RemoveTradeItems;
+namespace Application.Behaviors.Trade.RemoveTradeItems;
 
 public class TradeItemRemovedEventHandler : INotificationHandler<TradeItemRemovedDomainEvent>
 {
@@ -16,11 +16,9 @@ public class TradeItemRemovedEventHandler : INotificationHandler<TradeItemRemove
 
     public Task Handle(TradeItemRemovedDomainEvent notification, CancellationToken cancellationToken)
     {
-        if (!notification.KeepCache)
-        {
-            return _cacheService.ClearCacheKeysStartingWith(CacheKeys.TradeItem.GetTradeItemKey(notification.TradeId, string.Empty));
-        }
-
-        return Task.CompletedTask;
+        return Task.WhenAll(
+            _cacheService.ClearCacheKeyAsync(CacheKeys.TradeItem.GetTradeItemKey(notification.TradeId, notification.ItemId)),
+            _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(notification.ItemId), notification.TradeId)
+        );
     }
 }

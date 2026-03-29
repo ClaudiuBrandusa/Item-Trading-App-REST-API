@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace Application.Behaviors.TradeItem.GetTradeItemIds;
+namespace Application.Behaviors.Trade.GetTradeItemIds;
 
 public record GetTradesUsingTheItemQuery : IRequest<string[]>
 {

@@ -78,9 +78,16 @@ public class RedisCacheService : ICacheService
         return false;
     }
 
-    public Task<bool> SetContainsValue(string key, string value)
+    public async Task<bool?> SetContainsValue(string key, string value)
     {
-        return Database.SetContainsAsync(key, value);
+        var result = await Database.SetContainsAsync(key, value);
+
+        if (!result)
+        {
+            return await ContainsKey(key) ? false : null; // if key exist, then the set exist but the value is not in the set; else the set doesnt exist
+        }
+
+        return result;
     }
 
     public async Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, bool removePrefix = false)

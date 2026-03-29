@@ -75,11 +75,14 @@ public class Trade : AggregateRoot
         if (entity is null)
         {
             _tradeContents.Add(tradeContent);
+            entity = tradeContent;
         }
         else
         {
             entity.Add(tradeContent);
         }
+
+        RaiseDomainEvent(new TradeItemAddedDomainEvent(TradeId, entity.ItemId, entity.Quantity, entity.Price));
     }
 
     public void RemoveTradeContent(TradeItem tradeContent)
@@ -92,6 +95,8 @@ public class Trade : AggregateRoot
         }
 
         _tradeContents.Remove(entity);
+
+        RaiseDomainEvent(new TradeItemRemovedDomainEvent(TradeId, entity.ItemId));
     }
 
     public void RemoveTradeContent(string itemId)
@@ -104,7 +109,23 @@ public class Trade : AggregateRoot
         }
         
         _tradeContents.Remove(entity);
+
+        RaiseDomainEvent(new TradeItemRemovedDomainEvent(TradeId, entity.ItemId));
     }
+
+    public void ClearTradeContents()
+    {
+        while (_tradeContents.Count > 0)
+        {
+            var tradeContent = _tradeContents[0];
+
+            _tradeContents.RemoveAt(0);
+
+            RaiseDomainEvent(new TradeItemRemovedDomainEvent(TradeId, tradeContent.ItemId));
+        }
+    }
+
+    public TradeItem? GetTradeContent(string itemId) => _tradeContents.Find(x => x.ItemId == itemId);
 
     public void SetResponse(bool response)
     {

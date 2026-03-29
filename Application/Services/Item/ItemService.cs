@@ -8,10 +8,10 @@ using Application.Behaviors.Item.DeleteItem;
 using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Item.GetItemName;
 using Application.Behaviors.Item.GetItemDescription;
-using Application.Behaviors.TradeItem.ItemUsedInTrade;
 using Application.Repositories;
 using Application.Results.Items;
 using Domain.DomainEvents.Items;
+using Application.Behaviors.Trade.ItemUsedInTrade;
 
 namespace Application.Services.Item;
 

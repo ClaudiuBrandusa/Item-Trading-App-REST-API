@@ -13,6 +13,8 @@ public interface ITradeRepository : IRepository, IDisposable
 
     Task<Trade?> GetTradeEntityAsync(string tradeId);
 
+    Task<string[]> GetTradeIdsUsingItemAsync(string itemId);
+
     Task<SentTrade?> GetSentTradeEntityAsync(string tradeId);
 
     Task<ReceivedTrade?> GetReceivedTradeEntityAsync(string tradeId);
@@ -20,4 +22,12 @@ public interface ITradeRepository : IRepository, IDisposable
     Task<string[]> ListReceivedTradeIdsAsync(string userId);
 
     Task<string[]> ListSentTradeIdsAsync(string userId);
+
+    Task<bool> HasTradeItemAsync(string tradeId, string itemId);
+
+    Task<bool> HasTradeItemHistoryAsync(string tradeId, string itemId);
+
+    Task<bool> IsItemUsedInTrade(string itemId);
+
+    Task<bool> MoveTradeContentToHistory(string tradeId);
 }

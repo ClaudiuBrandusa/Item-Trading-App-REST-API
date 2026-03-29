@@ -43,7 +43,7 @@ public class TradeItem : Entity
 
     public void Add(TradeItem tradeItem)
     {
-        Price += tradeItem.Price;
+        Price = tradeItem.Price;
         Quantity += tradeItem.Quantity;
     }
 

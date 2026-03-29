@@ -1,5 +1,4 @@
-﻿using Application.Models.TradeItems;
-using Application.Models.Trades;
+﻿using Application.Models.Trades;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
 
@@ -21,6 +20,10 @@ public interface ICachedTradeRepository : ICachedRepository, IDisposable
 
     Task<CachedTrade?> GetCachedTradeAsync(string tradeId);
 
+    Task<string[]> GetTradeIdsUsingItemAsync(string itemId);
+
+    Task<bool> HasTradeItem(string tradeId, string itemId, bool responded = false);
+
     Task<string[]> ListReceivedTradeIdsCachedAsync(string userId);
 
     Task<string[]> ListSentTradeIdsCachedAsync(string userId);
@@ -28,4 +31,8 @@ public interface ICachedTradeRepository : ICachedRepository, IDisposable
     Task SetCacheForTrade(Trade trade);
 
     Task ClearTradeCache(string tradeId, string senderId, string receiverId, string[] tradeItemIds);
+
+    Task<bool> IsItemUsedInTrade(string itemId);
+
+    Task<bool> MoveTradeContentToHistory(string tradeId);
 }

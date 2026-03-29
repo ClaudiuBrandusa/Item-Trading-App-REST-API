@@ -3,13 +3,10 @@ using Domain.Repositories;
 using Domain.Repositories.Identity;
 using Domain.Repositories.Inventories;
 using Domain.Repositories.Items;
-using Domain.Repositories.TradeItems;
-using Domain.Repositories.TradeItemsHistory;
 using Domain.Repositories.Trades;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Repositories.Inventories;
 using Infrastructure.Repositories.Items;
-using Infrastructure.Repositories.TradeItems;
 using Infrastructure.Repositories.Trades;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,8 +22,6 @@ public class RepositoriesInstaller : IInstaller
         services.AddScoped<ICachedItemRepository, CachedItemRepository>();
         services.AddScoped<ICachedInventoryRepository, CachedInventoryRepository>();
         services.AddScoped<ICachedTradeRepository, CachedTradeRepository>();
-        services.AddScoped<ICachedTradeItemRepository, CachedTradeItemRepository>();
-        services.AddScoped<ICachedTradeItemHistoryRepository, CachedTradeItemHistoryRepository>();
 
         // repositories
         services.AddScoped<IIdentityRepository, IdentityRepository>();
@@ -35,7 +30,5 @@ public class RepositoriesInstaller : IInstaller
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<ITradeRepository, TradeRepository>();
-        services.AddScoped<ITradeItemRepository, TradeContentRepository>();
-        services.AddScoped<ITradeItemHistoryRepository, TradeItemHistoryRepository>();
     }
 }

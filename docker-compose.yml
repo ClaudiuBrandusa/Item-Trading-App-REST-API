@@ -13,6 +13,8 @@ services:
     depends_on:
       - sqlserver
       - redis
+    networks:
+      - app-network
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:latest
@@ -24,6 +26,8 @@ services:
       - '1433:1433'
     volumes:
       - sqlserverdata:/var/opt/mssql
+    networks:
+      - app-network
 
   redis:
    image: redis:latest
@@ -34,6 +38,11 @@ services:
       - "6379:6379"
    volumes:
       - redis-data:/data
+   networks:
+      - app-network
+
+networks:
+  app-network:
 
 volumes:
   sqlserverdata:

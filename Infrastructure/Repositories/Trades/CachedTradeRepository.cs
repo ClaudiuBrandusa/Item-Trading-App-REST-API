@@ -5,10 +5,8 @@ using Application.Extensions;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
 using Application.Repositories;
-using Application.Models.TradeItems;
 using Application.Models.Trades;
 using MediatR;
-using Application.Behaviors.Item.GetItemName;
 
 namespace Infrastructure.Repositories.Trades;
 
@@ -83,6 +81,32 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
         );
     }
 
+    public Task<string[]> GetTradeIdsUsingItemAsync(string itemId)
+    {
+        return _cacheService.GetSetValuesAsync(CacheKeys.UsedItem.GetUsedItemKey(itemId), async (args) =>
+        {
+            return await _repository.GetTradeIdsUsingItemAsync(itemId);
+        },
+        true);
+    }
+
+    public async Task<bool> HasTradeItem(string tradeId, string itemId, bool responded = false)
+    {
+        if (responded)
+        {
+            return await _repository.HasTradeItemHistoryAsync(tradeId, itemId);
+        }
+
+        var cacheKey = CacheKeys.TradeItem.GetTradeItemKey(tradeId, itemId);
+        
+        var keyExist = await _cacheService.ContainsKey(cacheKey);
+
+        if (keyExist)
+            return true;
+        
+        return await _repository.HasTradeItemAsync(tradeId, itemId);
+    }
+
     public Task<string[]> ListReceivedTradeIdsCachedAsync(string userId)
     {
         return _cacheService.GetEntityIdsAsync(
@@ -133,6 +157,16 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
             tasks[3 + i] = _cacheService.RemoveFromSet(CacheKeys.UsedItem.GetUsedItemKey(tradeItemIds[i]), tradeId);
 
         return Task.WhenAll(tasks);
+    }
+
+    public async Task<bool> IsItemUsedInTrade(string itemId)
+    {
+        return await _repository.IsItemUsedInTrade(itemId);
+    }
+
+    public async Task<bool> MoveTradeContentToHistory(string tradeId)
+    {
+        return await _repository.MoveTradeContentToHistory(tradeId);
     }
 
     public void Dispose() => _repository.Dispose();

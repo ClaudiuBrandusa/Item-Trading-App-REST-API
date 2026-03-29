@@ -56,11 +56,46 @@ public class TradeTests : IClassFixture<DatabaseFixture>
     }
 
     [Fact]
-    public async Task AcceptTrade_CreateTradeThenAccept_AcceptsTrade()
+    public async Task AddTradeItem_CreateNewTradeThenAddNewTradeItem_ReturnsTrade()
     {
         // Arrange
 
         (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 1);
+        var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
+        var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Sandstone", string.Empty);
+        var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, 5);
+        var tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, 10);
+
+        trade.AddTradeContent(tradeContent);
+        var tradeCreated = await _repository.AddEntityAsync(trade);
+
+        // Act
+
+        tradeContent = new TradeItem(trade.TradeId, inventoryItem.ItemId, inventoryItem.Quantity, 10);
+
+        var retrievedTrade = await _repository.GetTradeAsync(trade.TradeId);
+        retrievedTrade!.AddTradeContent(tradeContent);
+        var addTradeItemResult = await _repository.SaveChangesAsync() > 0;
+        var updatedTrade = await _repository.GetTradeAsync(retrievedTrade.TradeId);
+
+        // Assert
+
+        Assert.True(addTradeItemResult);
+        Assert.NotNull(retrievedTrade);
+        Assert.Equal(trade.SentDate, updatedTrade.SentDate);
+        Assert.Equal(trade.ResponseDate, updatedTrade.ResponseDate);
+        Assert.Equal(trade.Response, updatedTrade.Response);
+        Assert.Equal(trade.TradeId, updatedTrade.TradeId);
+        Assert.Equal(trade.TradeContents.Count, updatedTrade.TradeContents.Count);
+        Assert.All(trade.TradeContents, tc => updatedTrade.TradeContents.Contains(tc));
+    }
+
+    [Fact]
+    public async Task AcceptTrade_CreateTradeThenAccept_AcceptsTrade()
+    {
+        // Arrange
+
+        (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 2);
         var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
         var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Silver", string.Empty);
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, 5);
@@ -90,7 +125,7 @@ public class TradeTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
 
-        (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 2);
+        (var senderUser, var receiverUser) = await TestingScenarios.CreateSenderReceiverUsersPair(_serviceProvider, 3);
         var trade = TestingScenarios.CreateTrade(senderUser.Id, receiverUser.Id);
         var item = await TestingScenarios.CreateItemAsync(_serviceProvider, "Copper", string.Empty);
         var inventoryItem = await TestingScenarios.AddItemToUser(_serviceProvider, item, senderUser, 5);

@@ -1,5 +1,5 @@
 ﻿using Application.Behaviors.Item.ListItems;
-using Application.Behaviors.TradeItem.ItemUsedInTrade;
+using Application.Behaviors.Trade.ItemUsedInTrade;
 using Application.Options;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;

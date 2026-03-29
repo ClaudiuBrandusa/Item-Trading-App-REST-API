@@ -2,7 +2,6 @@
 using MapsterMapper;
 using Application.Behaviors.Inventories.AddItem;
 using Application.Behaviors.Inventories.DropItem;
-using Application.Behaviors.Inventories.HasItem;
 using Application.Behaviors.Inventories.UnlockItem;
 using Application.Behaviors.Trade.CreateTrade;
 using Application.Behaviors.Wallet.TakeCash;
@@ -12,13 +11,8 @@ using Application.Behaviors.Trade.ListTrades;
 using Application.Extensions;
 using Application.Behaviors.Trade.CancelTrade;
 using Application.Behaviors.Trade.GetTrade;
-using Application.Behaviors.TradeItemHistory.AddTradeItems;
 using Application.Behaviors.Identity.GetUsername;
 using Application.Behaviors.Item.GetItemName;
-using Application.Behaviors.TradeItem.RemoveTradeItems;
-using Application.Behaviors.TradeItem.GetTradeItems;
-using Application.Behaviors.TradeItem.HasTradeItem;
-using Application.Behaviors.Inventories.LockItem;
 using Application.Services.UnitOfWork;
 using Application.Repositories;
 using Application.Models;
@@ -29,6 +23,8 @@ using Application.Models.TradeItems;
 using Domain.DomainEvents.Trades;
 using Application.Behaviors.Inventories.LockItems;
 using Domain.Aggregates.Trades;
+using Application.Behaviors.Trade.GetTradeItemIds;
+using Application.Behaviors.Trade.ItemUsedInTrade;
 
 namespace Application.Services.Trades;
 
@@ -289,7 +285,7 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                var respondTradeResult = await RespondTradeAsync(model);
+                var respondTradeResult = await RespondTradeAsync(trade);
 
                 if (!respondTradeResult.Success)
                 {
@@ -404,7 +400,7 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                var respondTradeResult = await RespondTradeAsync(model);
+                var respondTradeResult = await RespondTradeAsync(trade);
 
                 if (!respondTradeResult.Success)
                 {
@@ -625,22 +621,23 @@ public class TradeService : ITradeService, IDisposable
 
         var senderNameTask = GetUsernameAsync(senderId);
         var receiverNameTask = GetUsernameAsync(receiverId);
-        var tradeItemsTask = _repository.GetTradeItemsAsync(trade.TradeId, trade.Response is not null);
 
         await Task.WhenAll(
             senderNameTask,
-            receiverNameTask,
-            tradeItemsTask
+            receiverNameTask
         );
 
-        var tradeItems = await tradeItemsTask;
-        var tradeItemsData = new TradeItemDTO[tradeItems.Length];
+        var tradeItemsData = new TradeItemDTO[trade.TradeContents.Count];
 
-        for (int i = 0; i < trade.TradeContents.Count; i++)
+        int i = 0;
+
+        foreach (var tradeItem in trade.TradeContents)
         {
-            string itemName = await GetItemNameAsync(tradeItems[i].ItemId);
+            string itemName = await GetItemNameAsync(tradeItem.ItemId);
 
-            tradeItemsData[i] = _mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeItems[i], (nameof(TradeItemDTO.ItemName), itemName));
+            tradeItemsData[i] = _mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeItem, (nameof(TradeItemDTO.ItemName), itemName));
+        
+            i++;
         }
 
         return new TradeOfferResult
@@ -658,28 +655,42 @@ public class TradeService : ITradeService, IDisposable
         };
     }
 
+    public async Task<string[]> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model)
+    {
+        if (string.IsNullOrEmpty(model.ItemId))
+            return Array.Empty<string>();
+
+        return await _repository.GetTradeIdsUsingItemAsync(model.ItemId);
+    }
+
+    public async Task<bool> IsItemUsedInTrade(ItemUsedInTradeQuery model)
+    {
+        if (model is null || string.IsNullOrEmpty(model.ItemId))
+            return false;
+
+        return await _repository.IsItemUsedInTrade(model.ItemId);
+    }
+
     public void Dispose()
     {
         _repository.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    private async Task<Result> RespondTradeAsync(RespondTradeCommand model)
+    private async Task<Result> RespondTradeAsync(Trade trade)
     {
-        // get trade items
-        var tradeItems = await _sender.Send(new GetTradeItemsQuery { TradeId = model.TradeId });
-
         // move trade items to the trade content history
-        var moveTradeItemsResult = await _sender.Send(new AddTradeItemsHistoryCommand { TradeId = model.TradeId, TradeItems = tradeItems });
+        var moveTradeItemsResultStatus = await _repository.MoveTradeContentToHistory(trade.TradeId);
 
-        if (!moveTradeItemsResult.Success)
+        if (!moveTradeItemsResultStatus)
             return new Result
             {
-                Errors = moveTradeItemsResult.Errors
+                Errors = new string[] { "Something went wrong while moving the trade items to the history" }
             };
 
         // clear the trade content
-        var clarTradeContentResult = await _sender.Send(new RemoveTradeItemsCommand { TradeId = model.TradeId, KeepCache = true });
+        trade.ClearTradeContents();
+        var clarTradeContentResult = await _repository.SaveChangesAsync() > 0;
 
         if (!clarTradeContentResult)
             return new Result
@@ -728,7 +739,7 @@ public class TradeService : ITradeService, IDisposable
 
         if (tradeItems.Length > 0)
         {
-            await FilterTradesByTradeItemsAsync(tradeIds, tradeItems, remainedTradeIds);
+            await FilterTradesByTradeItemsAsync(tradeIds, tradeItems, remainedTradeIds, responded);
 
             tradeIds = remainedTradeIds;
         }
@@ -736,7 +747,7 @@ public class TradeService : ITradeService, IDisposable
         return tradeIds.ToArray();
     }
 
-    private async Task FilterTradesByTradeItemsAsync(List<string> tradeIds, string[] tradeItems, List<string> remainedTradeIds)
+    private async Task FilterTradesByTradeItemsAsync(List<string> tradeIds, string[] tradeItems, List<string> remainedTradeIds, bool responded = false)
     {
         foreach (var tradeId in tradeIds)
         {
@@ -744,17 +755,10 @@ public class TradeService : ITradeService, IDisposable
 
             for (int i = 0; i < tradeItems.Length; i++)
             {
-                bool hasTradeItem = await _sender.Send(
-                    new HasTradeItemQuery
-                    {
-                        TradeId = tradeId,
-                        ItemId = tradeItems[i]
-                    }
-                );
+                keepTrade = await _repository.HasTradeItem(tradeId, tradeItems[i], responded);
 
-                if (hasTradeItem)
+                if (keepTrade)
                 {
-                    keepTrade = true;
                     break;
                 }
             }
