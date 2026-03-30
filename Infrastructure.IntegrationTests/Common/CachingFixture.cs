@@ -9,14 +9,13 @@ public class CachingFixture : IAsyncLifetime
 {
     private readonly RedisContainer _cachingContainer;
 
-    public IServiceProvider ServiceProvider;
+    public IServiceProvider? ServiceProvider;
 
-    public IConfiguration Configuration;
+    public IConfiguration? Configuration;
 
     public CachingFixture()
     {
-        _cachingContainer = new RedisBuilder()
-            .WithImage("redis:latest")
+        _cachingContainer = new RedisBuilder("redis:latest")
             .WithCleanUp(true)
             .WithPortBinding(6379, assignRandomHostPort: true)
             .Build();
@@ -24,11 +23,11 @@ public class CachingFixture : IAsyncLifetime
 
     protected virtual void RegisterServices(IServiceCollection services)
     {
-        Application.DependencyInjection.AddApplication(services, Configuration);
-        DependencyInjection.AddInfrastructure(services, Configuration);
+        Application.DependencyInjection.AddApplication(services, Configuration!);
+        DependencyInjection.AddInfrastructure(services, Configuration!);
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _cachingContainer.StartAsync();
 
@@ -46,7 +45,7 @@ public class CachingFixture : IAsyncLifetime
         ServiceProvider = services.BuildServiceProvider();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _cachingContainer.DisposeAsync();
     }

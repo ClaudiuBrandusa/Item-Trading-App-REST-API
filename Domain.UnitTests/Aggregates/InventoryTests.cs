@@ -25,7 +25,7 @@ public class InventoryTests
     }
 
     [Fact]
-    public void Constructor_AttemptToInstantiateInventoryWithInvalidUserId_ShouldThrowAnException()
+    public async Task Constructor_AttemptToInstantiateInventoryWithInvalidUserId_ShouldThrowAnException()
     {
         // Arrange
 
@@ -41,7 +41,7 @@ public class InventoryTests
 
         // Assert
 
-        Assert.ThrowsAsync<ArgumentException>(action);
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class InventoryTests
         // Assert
 
         Assert.NotNull(inventory.OwnedItems);
-        Assert.Equal(1, inventory.OwnedItems.Count);
+        Assert.Single(inventory.OwnedItems);
         var firstElement = inventory.OwnedItems.FirstOrDefault();
         Assert.NotNull(firstElement);
         Assert.Equal(itemId, firstElement.ItemId);
@@ -73,7 +73,7 @@ public class InventoryTests
     }
 
     [Fact]
-    public void AddItem_AttemptToAddItemWithInvalidDataToInventory_ShouldThrowAnException()
+    public async Task AddItem_AttemptToAddItemWithInvalidDataToInventory_ShouldThrowAnException()
     {
         // Arrange
 
@@ -101,8 +101,8 @@ public class InventoryTests
         // Assert
 
         Assert.NotNull(inventory);
-        Assert.ThrowsAsync<ArgumentException>(action1);
-        Assert.ThrowsAsync<ArgumentException>(action2);
+        await Assert.ThrowsAsync<ArgumentException>(action1);
+        await Assert.ThrowsAsync<ArgumentException>(action2);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class InventoryTests
         // Assert
 
         Assert.NotNull(inventory.OwnedItems);
-        Assert.Equal(1, inventory.OwnedItems.Count);
+        Assert.Single(inventory.OwnedItems);
         var firstElement = inventory.OwnedItems.FirstOrDefault();
         Assert.NotNull(firstElement);
         Assert.Equal(itemId, firstElement.ItemId);
@@ -154,7 +154,7 @@ public class InventoryTests
     }
 
     [Fact]
-    public void DropItem_AttemptToDropItemWithoutHavingItInInventory_ShouldThrowAnException()
+    public async Task DropItem_AttemptToDropItemWithoutHavingItInInventory_ShouldThrowAnException()
     {
         // Arrange
 
@@ -199,11 +199,11 @@ public class InventoryTests
         // Assert
 
         Assert.NotNull(inventory);
-        Assert.Equal(1, inventory.OwnedItems.Count);
-        Assert.ThrowsAsync<ArgumentException>(action1);
-        Assert.ThrowsAsync<ArgumentException>(action2);
-        Assert.ThrowsAsync<ArgumentException>(action3);
-        Assert.ThrowsAsync<ArgumentException>(action4);
+        Assert.Single(inventory.OwnedItems);
+        await Assert.ThrowsAsync<ArgumentException>(action1);
+        await Assert.ThrowsAsync<ArgumentException>(action2);
+        await Assert.ThrowsAsync<ArgumentException>(action3);
+        await Assert.ThrowsAsync<ArgumentException>(action4);
     }
 
     [Fact]

@@ -22,13 +22,11 @@ namespace Web.API.IntegrationTests.Common.Factories;
 
 public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly MsSqlContainer _dbContainer = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:latest")
+    private readonly MsSqlContainer _dbContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:latest")
             .WithPassword("YourStrong!Passw0rd")
             .Build();
 
-    private readonly RedisContainer _cacheContainer = new RedisBuilder()
-        .WithImage("redis:latest")
+    private readonly RedisContainer _cacheContainer = new RedisBuilder("redis:latest")
         .WithPortBinding(6379)
         .WithWaitStrategy(Wait.ForUnixContainer()
             .UntilExternalTcpPortIsAvailable(6379))
@@ -40,7 +38,7 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     private JwtSecurityTokenHandler _jwtSecuritytokenHandler = new();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await Task.WhenAll(
             _dbContainer.StartAsync(),
@@ -52,7 +50,7 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await conn.OpenAsync();
     }
 
-    public async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await _dbContainer.DisposeAsync().AsTask();
     }

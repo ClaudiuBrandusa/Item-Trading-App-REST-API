@@ -34,7 +34,7 @@ public class TradeTests
         Assert.Null(trade.ResponseDate);
         var domainEvents = trade.GetDomainEvents();
         Assert.NotNull(domainEvents);
-        Assert.Equal(1, domainEvents.Count);
+        Assert.Single(domainEvents);
         var domainEvent = domainEvents.First();
         Assert.NotNull(domainEvent);
         var tradeCreatedDomainEvent = Assert.IsAssignableFrom<TradeCreatedDomainEvent>(domainEvent);
@@ -71,7 +71,7 @@ public class TradeTests
         Assert.Equal(expectedResponseDate, trade.ResponseDate);
         var domainEvents = trade.GetDomainEvents();
         Assert.NotNull(domainEvents);
-        Assert.Equal(1, domainEvents.Count);
+        Assert.Single(domainEvents);
         var domainEvent = domainEvents.First();
         Assert.NotNull(domainEvent);
         var tradeCreatedDomainEvent = Assert.IsAssignableFrom<TradeCreatedDomainEvent>(domainEvent);
@@ -164,7 +164,7 @@ public class TradeTests
         Assert.Equal(expectedPrice, retrievedTradeContent.Price);
         var domainEvents = trade.GetDomainEvents();
         Assert.NotNull(domainEvents);
-        Assert.Equal(1, domainEvents.Count);
+        Assert.Single(domainEvents);
         var domainEvent = domainEvents.First();
         Assert.NotNull(domainEvent);
         var tradeItemAddedDomainEvent = Assert.IsAssignableFrom<TradeItemAddedDomainEvent>(domainEvent);

@@ -84,7 +84,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
             return Task.CompletedTask;
         };
 
-        await connection.StartAsync();
+        await connection.StartAsync(CancellationToken.None);
         
         Assert.Equal(HubConnectionState.Connected, connection.State);
         var expectedConnectionId = connection.ConnectionId;
@@ -97,7 +97,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
                 PropertyNameCaseInsensitive = true
             });
             
-            notificationTaskSource.TrySetResult(notification);
+            notificationTaskSource.TrySetResult(notification!);
         });
 
         await connectedUsersRepository.NotifyUserAsync(expectedUserId, notification);
@@ -166,7 +166,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
                         PropertyNameCaseInsensitive = true
                     });
 
-                    if (string.IsNullOrEmpty(notification.Data) && (notificationJson.Contains("Welcome!") || notificationJson.Contains("has connected!")))
+                    if (string.IsNullOrEmpty(notification!.Data) && (notificationJson.Contains("Welcome!") || notificationJson.Contains("has connected!")))
                         return; // then we received the greetings notification
 
                     tcs.TrySetResult(notification);
@@ -176,7 +176,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
         await Task.WhenAny(
             Task.WhenAll(connectedClients.Select(x => x.Connected)),
-            Task.Delay(5 * 1000)
+            Task.Delay(5 * 1000, CancellationToken.None)
         );
 
         var notificationTasks = taskCompletionSources.Select(x => x.Task).ToArray();
@@ -247,7 +247,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
         await Task.WhenAny(
             Task.WhenAll(connectedClients.Select(x => x.Connected)),
-            Task.Delay(5 * 1000)
+            Task.Delay(5 * 1000, CancellationToken.None)
         );
 
         var userIds = connectedUsersRepository.ListUserIds();
@@ -316,7 +316,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
         await Task.WhenAny(
             Task.WhenAll(connectedClients.Cast<ConnectedClient>().Select(x => x.Connected).Where(x => !x.IsCompleted)),
-            Task.Delay(5 * 1000)
+            Task.Delay(5 * 1000, CancellationToken.None)
         );
 
         var userIds = connectedUsersRepository.ListUserIds();
@@ -389,7 +389,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
                         PropertyNameCaseInsensitive = true
                     });
 
-                    if (string.IsNullOrEmpty(notification.Data) && (notificationJson.Contains("Welcome!") || notificationJson.Contains("has connected!")))
+                    if (string.IsNullOrEmpty(notification!.Data) && (notificationJson.Contains("Welcome!") || notificationJson.Contains("has connected!")))
                         return;
 
                     connectedClient.ReceivedBag.Add(receivedBagKey, notification);
@@ -400,7 +400,7 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
         await Task.WhenAny(
             Task.WhenAll(connectedClients.Select(x => x.Connected)),
-            Task.Delay(5 * 1000)
+            Task.Delay(5 * 1000, CancellationToken.None)
         );
 
         var userIds = connectedUsersRepository.ListUserIds();
@@ -440,6 +440,6 @@ public class ConnectedUsersTests : IClassFixture<HubFixture>
 
     public class NotificationMock
     {
-        public string Data { get; set; }
+        public string Data { get; set; } = string.Empty;
     }
 }

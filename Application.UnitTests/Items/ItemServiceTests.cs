@@ -317,7 +317,7 @@ public class ItemServiceTests
         // Assert
 
         Assert.True(getItemResult.Success, "The result should be successful");
-        Assert.Equal(getItemResult.ItemId, item_id);
+        Assert.Equal(item_id, getItemResult.ItemId);
     }
 
     [Fact(DisplayName = "Get item without creating it first")]
@@ -362,7 +362,7 @@ public class ItemServiceTests
         // Assert
 
         Assert.NotNull(getItemNameResult);
-        Assert.Equal(getItemNameResult, DEFAULT_ITEM_NAME);
+        Assert.Equal(DEFAULT_ITEM_NAME, getItemNameResult);
     }
 
     [Fact(DisplayName = "Get item description")]

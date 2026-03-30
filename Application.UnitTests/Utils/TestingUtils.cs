@@ -84,7 +84,7 @@ public static class TestingUtils
         var cacheServiceMock = new Mock<ICacheService>();
 
         cacheServiceMock.Setup(service => service.GetCacheValueAsync(It.IsAny<string>()))
-            .ReturnsAsync(() => null);
+            .ReturnsAsync(() => null!);
 
         return cacheServiceMock;
     }

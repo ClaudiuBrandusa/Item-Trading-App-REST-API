@@ -17,14 +17,13 @@ public class DatabaseFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _dbContainer;
 
-    public IServiceProvider ServiceProvider;
+    public IServiceProvider? ServiceProvider;
 
-    public IConfiguration Configuration;
+    public IConfiguration? Configuration;
 
     public DatabaseFixture()
     {
-        _dbContainer = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:latest")
+        _dbContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:latest")
             .WithPassword("YourStrong!Passw0rd")
             .Build();
     }
@@ -32,15 +31,15 @@ public class DatabaseFixture : IAsyncLifetime
     protected virtual void RegisterServices(IServiceCollection services)
     {
         var dbInstaller = new DbInstaller();
-        dbInstaller.InstallServices(services, Configuration);
+        dbInstaller.InstallServices(services, Configuration!);
         var unitOfWorkInstaller = new UnitOfWorkInstaller();
-        unitOfWorkInstaller.InstallServices(services, Configuration);
+        unitOfWorkInstaller.InstallServices(services, Configuration!);
         var mediatorInstaller = new MediatorInstaller();
-        mediatorInstaller.InstallServices(services, Configuration);
+        mediatorInstaller.InstallServices(services, Configuration!);
         var dbContextWrapperInstaller = new DatabaseContextWrapperInstaller();
-        dbContextWrapperInstaller.InstallServices(services, Configuration);
+        dbContextWrapperInstaller.InstallServices(services, Configuration!);
         var mapsterInstaller = new MapsterInstaller();
-        mapsterInstaller.InstallServices(services, Configuration);
+        mapsterInstaller.InstallServices(services, Configuration!);
         var jwtSettings = new JwtSettings
         {
             AllowedRefreshTokensPerUser = 3,
@@ -52,24 +51,24 @@ public class DatabaseFixture : IAsyncLifetime
         var tokenValidationParameters = JwtUtils.BuildTokenValidationParameters(jwtSettings.Secret);
         services.AddSingleton(tokenValidationParameters);
         var identityInstaller = new IdentityInstaller();
-        identityInstaller.InstallServices(services, Configuration);
+        identityInstaller.InstallServices(services, Configuration!);
         var refreshTokenInstaller = new RefreshTokenInstaller();
-        refreshTokenInstaller.InstallServices(services, Configuration);
+        refreshTokenInstaller.InstallServices(services, Configuration!);
         var itemInstaller = new ItemInstaller();
-        itemInstaller.InstallServices(services, Configuration);
+        itemInstaller.InstallServices(services, Configuration!);
         var inventoryInstaller = new InventoryInstaller();
-        inventoryInstaller.InstallServices(services, Configuration);
+        inventoryInstaller.InstallServices(services, Configuration!);
         var tradeServiceInstaller = new TradeInstaller();
-        tradeServiceInstaller.InstallServices(services, Configuration);
+        tradeServiceInstaller.InstallServices(services, Configuration!);
         services.AddScoped((_) => new Mock<IClientNotificationService>().Object);
         var repositoriesInstaller = new RepositoriesInstaller();
-        repositoriesInstaller.InstallServices(services, Configuration);
+        repositoriesInstaller.InstallServices(services, Configuration!);
         var cacheServiceMock = new Mock<ICacheService>();
         var cacheServiceImpl = cacheServiceMock.Object;
         services.AddScoped((_) => cacheServiceImpl);
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _dbContainer.StartAsync();
 
@@ -91,7 +90,7 @@ public class DatabaseFixture : IAsyncLifetime
         await context.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _dbContainer.DisposeAsync();
     }

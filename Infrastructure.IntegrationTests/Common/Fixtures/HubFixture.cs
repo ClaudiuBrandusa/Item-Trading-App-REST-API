@@ -24,7 +24,7 @@ public class HubFixture : IAsyncLifetime
     public TestServer Server { get; private set; } = null!;
     public IHost Host { get; private set; } = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         Host = await new HostBuilder()
             .ConfigureWebHost(web =>
@@ -69,7 +69,7 @@ public class HubFixture : IAsyncLifetime
         Server = Host.GetTestServer();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await Host.StopAsync();
         Server.Dispose();

@@ -61,7 +61,6 @@ public class NotificationStrategiesTests
     public async Task NotifyAllUsersStrategy_ShouldCallTheCorrectMethodFromTheRepository()
     {
         // Arrange
-        const string expectedUserId = "userId";
         var sut = new NotifyAllUsersStrategy();
         var notificationMock = new Notification<MessageContent>()
         {

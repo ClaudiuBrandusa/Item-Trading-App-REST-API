@@ -68,7 +68,7 @@ public class IdentityServiceTests
             {
                 var refreshToken = refreshTokens.FirstOrDefault(x => x.Token == refreshTokenId);
 
-                if (refreshToken == null) return new RefreshTokenResult();
+                if (refreshToken is null) return new RefreshTokenResult();
 
                 return new RefreshTokenResult
                 {

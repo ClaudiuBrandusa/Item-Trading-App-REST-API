@@ -53,7 +53,7 @@ namespace Domain.UnitTests.Entities
 
             // Act
 
-            var action = () => item = new Item(expectedName);
+            var action = () => item = new Item(expectedName!);
 
             // Assert
 
@@ -129,7 +129,7 @@ namespace Domain.UnitTests.Entities
 
             // Act
 
-            var action = () => item.UpdateItemName(updatedName);
+            var action = () => item.UpdateItemName(updatedName!);
 
             // Assert
 

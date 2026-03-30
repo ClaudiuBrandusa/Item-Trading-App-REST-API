@@ -8,8 +8,8 @@ public class NotificationValidator
     private string expectedNotificationType = string.Empty;
     private string expectedCategory = string.Empty;
     private string expectedId = string.Empty;
-    private object expectedCustomData = null;
-    private object expectedContent = null;
+    private object? expectedCustomData;
+    private object? expectedContent;
     private DateTime expectedDateTime = DateTime.MinValue;
 
     public NotificationValidator HasNotificationType(string expectedNotificationType)
@@ -18,7 +18,7 @@ public class NotificationValidator
         return this;
     }
 
-    public NotificationValidator HasContent(string expectedCategory, string expectedId, object expectedCustomData = null)
+    public NotificationValidator HasContent(string expectedCategory, string expectedId, object? expectedCustomData = null)
     {
         this.expectedCategory = expectedCategory;
         this.expectedId = expectedId;

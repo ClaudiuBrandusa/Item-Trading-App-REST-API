@@ -16,12 +16,11 @@ namespace Web.API.IntegrationTests.Common.Factories;
 
 public class DbOnlyTestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly MsSqlContainer _dbContainer = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:latest")
+    private readonly MsSqlContainer _dbContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:latest")
             .WithPassword("YourStrong!Passw0rd")
             .Build();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _dbContainer.StartAsync();
 
@@ -30,7 +29,7 @@ public class DbOnlyTestAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         await conn.OpenAsync();
     }
 
-    public async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await _dbContainer.DisposeAsync().AsTask();
     }
