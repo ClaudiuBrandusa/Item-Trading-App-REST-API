@@ -15,10 +15,6 @@ public interface ITradeRepository : IRepository, IDisposable
 
     Task<string[]> GetTradeIdsUsingItemAsync(string itemId);
 
-    Task<SentTrade?> GetSentTradeEntityAsync(string tradeId);
-
-    Task<ReceivedTrade?> GetReceivedTradeEntityAsync(string tradeId);
-
     Task<string[]> ListReceivedTradeIdsAsync(string userId);
 
     Task<string[]> ListSentTradeIdsAsync(string userId);

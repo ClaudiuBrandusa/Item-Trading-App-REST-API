@@ -1,5 +1,4 @@
-﻿using Application.Models.Trades;
-using Domain.Aggregates.Trades;
+﻿using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
 
 namespace Application.Repositories;
@@ -17,8 +16,6 @@ public interface ICachedTradeRepository : ICachedRepository, IDisposable
     /// Returns the response of the trade. Will return null if the trade was not yet responded.
     /// </summary>
     Task<bool?> GetTradeResponseAsync(string tradeId);
-
-    Task<CachedTrade?> GetCachedTradeAsync(string tradeId);
 
     Task<string[]> GetTradeIdsUsingItemAsync(string itemId);
 

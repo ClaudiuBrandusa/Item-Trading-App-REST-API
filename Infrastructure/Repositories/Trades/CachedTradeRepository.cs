@@ -6,19 +6,16 @@ using Domain.Aggregates.Trades;
 using Domain.Entities.Trades;
 using Application.Repositories;
 using Application.Models.Trades;
-using MediatR;
 
 namespace Infrastructure.Repositories.Trades;
 
 public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
 {
     private readonly ITradeRepository _repository;
-    private readonly ISender _sender;
 
-    public CachedTradeRepository(ITradeRepository repository, ICacheService cacheService, ISender sender) : base(repository, cacheService)
+    public CachedTradeRepository(ITradeRepository repository, ICacheService cacheService) : base(repository, cacheService)
     {
         _repository = repository;
-        _sender = sender;
     }
 
     public async Task<Trade?> GetTradeAsync(string tradeId)
@@ -50,36 +47,6 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
     }
 
     public Task<TradeItem[]> GetTradeItemsAsync(string tradeId, bool responded) => _repository.GetTradeItemsAsync(tradeId, responded);
-
-    public Task<CachedTrade?> GetCachedTradeAsync(string tradeId)
-    {
-        return _cacheService.GetEntityReferenceAsync(
-            GetTradeCacheKey(tradeId),
-            async (args) =>
-            {
-                var tradeTask = _repository.GetTradeEntityAsync(tradeId);
-                var sentTradeTask = _repository.GetSentTradeEntityAsync(tradeId);
-                var receivedTradeTask = _repository.GetReceivedTradeEntityAsync(tradeId);
-
-                var trade = await tradeTask;
-
-                if (trade is null) return null;
-
-                var tradeItems = await _repository.GetTradeItemsAsync(trade.TradeId, trade.Response.HasValue /* if trade.Response has value, then it means it is a responded trade */ );
-
-                return new CachedTrade(
-                    trade.TradeId,
-                    (await sentTradeTask)?.SenderId ?? "",
-                    (await receivedTradeTask)?.ReceiverId ?? "",
-                    trade.SentDate,
-                    trade.Response,
-                    trade.ResponseDate,
-                    tradeItems
-                );
-            },
-            true
-        );
-    }
 
     public Task<string[]> GetTradeIdsUsingItemAsync(string itemId)
     {

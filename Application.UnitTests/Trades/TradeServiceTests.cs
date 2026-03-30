@@ -97,12 +97,6 @@ public class TradeServiceTests
                 return trade;
             });
 
-        tradeRepositoryMock.Setup(repo => repo.GetCachedTradeAsync(It.IsAny<string>()))
-            .ReturnsAsync((string tradeId) =>
-            {
-                return GetCachedTrade(tradeId) ?? default;
-            });
-
         tradeRepositoryMock.Setup(repo => repo.GetTradeResponseAsync(It.IsAny<string>()))
             .ReturnsAsync((string tradeId) =>
             {

@@ -67,28 +67,6 @@ public class TradeRepository : RepositoryBase, ITradeRepository
             .ToArrayAsync();
     }
 
-    public async Task<SentTrade?> GetSentTradeEntityAsync(string tradeId)
-    {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var sentTradeEntity = await GetSentTradeQuery(dbContext, tradeId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
-
-        return sentTradeEntity;
-    }
-
-    public async Task<ReceivedTrade?> GetReceivedTradeEntityAsync(string tradeId)
-    {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var receivedTradeEntity = await GetReceivedTradeQuery(dbContext, tradeId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
-
-        return receivedTradeEntity;
-    }
-
     public Task<string[]> ListReceivedTradeIdsAsync(string userId)
     {
         return context.ReceivedTrades
