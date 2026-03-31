@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Identity.RefreshToken;
 
-public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, AuthenticationResult>
+public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, Result<AuthenticationResult>>
 {
     private readonly IIdentityService _identityService;
 
@@ -13,7 +13,7 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, Authenti
         _identityService = identityService;
     }
 
-    public Task<AuthenticationResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    public Task<Result<AuthenticationResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         return _identityService.RefreshTokenAsync(request);
     }

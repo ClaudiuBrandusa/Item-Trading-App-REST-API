@@ -18,21 +18,20 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
         _jwtSettings = jwtSettings;
     }
 
-    public async Task<RefreshTokenResult> GenerateRefreshTokenAsync(string userId, string jti)
+    public async Task<Result<RefreshTokenResult>> GenerateRefreshTokenAsync(string userId, string jti)
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(jti))
-            return new RefreshTokenResult { Errors = new[] { "Invalid input data" } };
+            return Result<RefreshTokenResult>.Failure("Invalid input data");
 
         var user = await _repository.GetUserAsync(userId);
 
         if (user is null)
-            return new RefreshTokenResult { Errors = new[] { "User not found" } };
+            return Result<RefreshTokenResult>.Failure("User not found");
 
         var refreshToken = await _repository.GenerateRefreshTokenAsync(user.Id, jti, _jwtSettings.RefreshTokenLifetime);
         
-        return new RefreshTokenResult
+        return Result<RefreshTokenResult>.Success(new RefreshTokenResult
         {
-            Success = true,
             Token = refreshToken.Token,
             UserId = refreshToken.UserId,
             Used = refreshToken.Used,
@@ -40,20 +39,17 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
             ExpiryDate = refreshToken.ExpiryDate,
             JwtId = refreshToken.JwtId,
             Invalidated = refreshToken.Invalidated
-        };
+        });
     }
 
-    public async Task<RefreshTokenResult> GetRefreshTokenAsync(string refreshTokenId)
+    public async Task<Result<RefreshTokenResult>> GetRefreshTokenAsync(string refreshTokenId)
     {
         var refreshToken = await _repository.GetRefreshTokenAsync(refreshTokenId);
 
         if (refreshToken is null)
-            return new RefreshTokenResult
-            {
-                Errors = new string[] { "Something went wrong" }
-            };
+            return Result<RefreshTokenResult>.Failure("Something went wrong");
 
-        return new RefreshTokenResult
+        return Result<RefreshTokenResult>.Success(new RefreshTokenResult
         {
             Token = refreshToken.Token,
             UserId = refreshToken.UserId,
@@ -61,9 +57,8 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
             ExpiryDate = refreshToken.ExpiryDate,
             Invalidated = refreshToken.Invalidated,
             Used = refreshToken.Used,
-            JwtId = refreshToken.JwtId,
-            Success = true
-        };
+            JwtId = refreshToken.JwtId
+        });
     }
 
     public Task<bool> RemoveRefreshTokenAsync(string refreshTokenId)
@@ -78,21 +73,17 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
         await ClearOldRefreshTokens();
     }
 
-    public async Task<RefreshTokenResult> GetRecentRefreshTokenAsync(string userId, string jti)
+    public async Task<Result<RefreshTokenResult>> GetRecentRefreshTokenAsync(string userId, string jti)
     {
         var lastRefreshToken = await _repository.GetLastRefreshTokenAsync(userId, jti);
 
         if (lastRefreshToken is null)
         {
-            return new RefreshTokenResult
-            {
-                Errors = new[] { "No refresh token found" }
-            };
+            return Result<RefreshTokenResult>.Failure("No refresh token found");
         }
 
-        return new RefreshTokenResult
+        return Result<RefreshTokenResult>.Success(new RefreshTokenResult
         {
-            Success = true,
             Token = lastRefreshToken.Token,
             UserId = userId,
             CreationDate = lastRefreshToken.CreationDate,
@@ -100,7 +91,7 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
             Used = lastRefreshToken.Used,
             JwtId = lastRefreshToken.JwtId,
             Invalidated = lastRefreshToken.Invalidated
-        };
+        });
     }
 
     private async Task ClearExpiredRefreshTokens()

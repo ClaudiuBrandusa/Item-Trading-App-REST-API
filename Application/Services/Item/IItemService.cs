@@ -14,27 +14,27 @@ public interface IItemService
     /// <summary>
     /// Creates a new item
     /// </summary>
-    Task<FullItemResult> CreateItemAsync(CreateItemCommand model);
+    Task<Result<FullItemResult>> CreateItemAsync(CreateItemCommand model);
 
     /// <summary>
     /// Updates the item
     /// </summary>
-    Task<FullItemResult> UpdateItemAsync(UpdateItemCommand model);
+    Task<Result<FullItemResult>> UpdateItemAsync(UpdateItemCommand model);
 
     /// <summary>
     /// Deletes an item
     /// </summary>
-    Task<DeleteItemResult> DeleteItemAsync(DeleteItemCommand model);
+    Task<Result<DeleteItemResult>> DeleteItemAsync(DeleteItemCommand model);
 
     /// <summary>
     /// Returns details about an item
     /// </summary>
-    Task<FullItemResult> GetItemAsync(GetItemQuery model);
+    Task<Result<FullItemResult>> GetItemAsync(GetItemQuery model);
 
     /// <summary>
     /// Enlists all the current items
     /// </summary>
-    Task<ItemsResult> ListItemsAsync(ListItemsQuery model);
+    Task<Result<ItemsResult>> ListItemsAsync(ListItemsQuery model);
 
     /// <summary>
     /// Returns the item's name

@@ -14,37 +14,37 @@ public interface ITradeService
     /// <summary>
     /// Creates the trade offer
     /// </summary>
-    public Task<TradeOfferResult> CreateTradeOfferAsync(CreateTradeOfferCommand model);
+    public Task<Result<TradeOfferResult>> CreateTradeOfferAsync(CreateTradeOfferCommand model);
 
     /// <summary>
     /// Returns a trade offer
     /// </summary>
-    public Task<TradeOfferResult> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
+    public Task<Result<TradeOfferResult>> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer);
 
     /// <summary>
     /// Returns the trade offers
     /// </summary>
-    public Task<TradeOffersResult> GetTradeOffersAsync(ListTradesQuery model);
+    public Task<Result<TradeOffersResult>> GetTradeOffersAsync(ListTradesQuery model);
 
     /// <summary>
     /// Accepts the trade offer
     /// </summary>
-    public Task<TradeOfferResult> AcceptTradeOfferAsync(RespondTradeCommand model);
+    public Task<Result<TradeOfferResult>> AcceptTradeOfferAsync(RespondTradeCommand model);
 
     /// <summary>
     /// Rejects the trade offer
     /// </summary>
-    public Task<TradeOfferResult> RejectTradeOfferAsync(RespondTradeCommand model);
+    public Task<Result<TradeOfferResult>> RejectTradeOfferAsync(RespondTradeCommand model);
 
     /// <summary>
     /// Cancels the trade offer
     /// </summary>
-    public Task<TradeOfferResult> CancelTradeOfferAsync(CancelTradeCommand model);
+    public Task<Result<TradeOfferResult>> CancelTradeOfferAsync(CancelTradeCommand model);
 
     /// <summary>
     /// Retrieves the trade ids of the trades using the given item id
     /// </summary>
-    public Task<string[]> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model);
+    public Task<Result<string[]>> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model);
 
     /// <summary>
     /// Decides if the given item is used in any trade

@@ -15,6 +15,7 @@ using Domain.Entities.Identity;
 using Domain.Aggregates.Inventories;
 using Application.Results.Items;
 using Application.Repositories;
+using Application.Models.Common;
 
 namespace Application_UnitTests.Inventories;
 
@@ -38,10 +39,10 @@ public class InventoryServiceTests
             {
                 return Task.CompletedTask;
             });
-        senderMock.Setup(x => x.Send(It.IsAny<IRequest<FullItemResult>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IRequest<FullItemResult> request, CancellationToken ct) =>
+        senderMock.Setup(x => x.Send(It.IsAny<IRequest<Result<FullItemResult>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IRequest<Result<FullItemResult>> request, CancellationToken ct) =>
             {
-                return new FullItemResult { ItemId = DEFAULT_ITEM_ID, ItemName = "Item", ItemDescription = "Some description", Success = true };
+                return Result<FullItemResult>.Success(new FullItemResult { ItemId = DEFAULT_ITEM_ID, ItemName = "Item", ItemDescription = "Some description" });
             });
         senderMock.Setup(x => x.Send(It.IsAny<IRequest<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IRequest<string> request, CancellationToken ct) =>
@@ -152,8 +153,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(quantity, result.Quantity);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(quantity, retrievedContent.Quantity);
     }
 
     [Theory(DisplayName = "Add item to inventory with invalid quantity")]
@@ -176,8 +179,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful");
-        Assert.Equal(0, result.Quantity);
+        Assert.False(result.IsSuccess, "The result should be unsuccessful");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "Drop item from inventory")]
@@ -209,8 +213,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success == quantityToAdd >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
-        Assert.Equal(quantityToAdd - quantityToDrop, result.Quantity);
+        Assert.True(result.IsSuccess == quantityToAdd >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(quantityToAdd - quantityToDrop, retrievedContent.Quantity);
     }
 
     [Theory(DisplayName = "Drop item from inventory with invalid data")]
@@ -243,7 +249,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "You should not be able to drop more than you have");
+        Assert.False(result.IsSuccess, "You should not be able to drop more than you have");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "Drop item from inventory with locked quantity")]
@@ -285,8 +293,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success == freeQuantity >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
-        Assert.Equal(freeQuantity - quantityToDrop, result.Quantity);
+        Assert.True(result.IsSuccess == freeQuantity >= quantityToDrop, "You should only drop the amount that is less than or equal to the amount you have");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(freeQuantity - quantityToDrop, retrievedContent.Quantity);
     }
 
     [Fact(DisplayName = "Drop item from inventory with bigger locked quantity than the held quantity")]
@@ -329,8 +339,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "You should only drop the amount that is less than or equal to the amount you have");
-        Assert.Equal(0, result.Quantity);
+        Assert.False(result.IsSuccess, "You should only drop the amount that is less than or equal to the amount you have");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "Has item inventory")]
@@ -340,14 +351,14 @@ public class InventoryServiceTests
     {
         // Arrange
 
-        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        var tmpResult = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
         });
 
-        string item_id = tmp.ItemId;
+        string item_id = tmpResult.Content!.ItemId;
 
         var queryStub = new HasItemQuantityQuery
         {
@@ -373,14 +384,14 @@ public class InventoryServiceTests
         int quantityToBeAdded = 1;
         int quantityToBeChecked = 2;
 
-        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        var tmpResult = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
         });
 
-        string itemId = tmp.ItemId;
+        string itemId = tmpResult.Content!.ItemId;
 
         var queryStub = new HasItemQuantityQuery
         {
@@ -405,14 +416,14 @@ public class InventoryServiceTests
     {
         // Arrange
 
-        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        var tmpResult = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
         });
 
-        string item_id = tmp.ItemId;
+        string item_id = tmpResult.Content!.ItemId;
 
         var queryStub = new HasItemQuantityQuery
         {
@@ -458,14 +469,14 @@ public class InventoryServiceTests
     {
         // Arrange
 
-        var tmp = await _sut.AddItemAsync(new AddInventoryItemCommand
+        var tmpResult = await _sut.AddItemAsync(new AddInventoryItemCommand
         {
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
         });
 
-        string item_id = tmp.ItemId;
+        string item_id = tmpResult.Content!.ItemId;
 
         var queryStub = new GetInventoryItemQuery
         {
@@ -479,8 +490,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(result.ItemId, DEFAULT_ITEM_ID);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(DEFAULT_ITEM_ID, retrievedContent.ItemId);
     }
 
     [Fact(DisplayName = "Get item from inventory without adding the item in the inventory")]
@@ -500,7 +513,9 @@ public class InventoryServiceTests
 
         // Assert
         
-        Assert.False(result.Success, "The result should be unsuccessful because the item has not been added to the inventory");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because the item has not been added to the inventory");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "List inventory items")]
@@ -530,8 +545,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.True(result.ItemsId.All(x => itemIds.Contains(x)), "The result should contain all of the inserted itemIds");
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.True(retrievedContent.ItemsId.All(x => itemIds.Contains(x)), "The result should contain all of the inserted itemIds");
     }
 
     [Fact(DisplayName = "List inventory items without adding items")]
@@ -551,8 +568,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Empty(result.ItemsId);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Empty(retrievedContent.ItemsId);
     }
 
     [Fact(DisplayName = "Lock item")]
@@ -584,10 +603,12 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(quantityAdded - quantityLocked, result.Quantity);
-        Assert.Equal(DEFAULT_USER_ID, result.UserId);
-        Assert.Equal(DEFAULT_ITEM_ID, result.ItemId);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(quantityAdded - quantityLocked, retrievedContent.Quantity);
+        Assert.Equal(DEFAULT_USER_ID, retrievedContent.UserId);
+        Assert.Equal(DEFAULT_ITEM_ID, retrievedContent.ItemId);
     }
 
     [Fact(DisplayName = "Lock bigger quantity of item")]
@@ -617,7 +638,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful because it cannot lock more items than it has added");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because it cannot lock more items than it has added");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "Lock invalid quantity of item")]
@@ -647,7 +670,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful because the quantity to be locked is invalid");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because the quantity to be locked is invalid");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Fact(DisplayName = "Lock item without adding the item")]
@@ -668,7 +693,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful because no item has been added to the inventory");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because no item has been added to the inventory");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "Lock and unlock item")]
@@ -705,10 +732,12 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(quantityAdded - quantityLocked + quantityUnlocked, result.Quantity);
-        Assert.Equal(DEFAULT_USER_ID, result.UserId);
-        Assert.Equal(DEFAULT_ITEM_ID, result.ItemId);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(quantityAdded - quantityLocked + quantityUnlocked, retrievedContent.Quantity);
+        Assert.Equal(DEFAULT_USER_ID, retrievedContent.UserId);
+        Assert.Equal(DEFAULT_ITEM_ID, retrievedContent.ItemId);
     }
 
     [Fact(DisplayName = "Lock and unlock more than it was locked")]
@@ -749,7 +778,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful because you cannot unlock more than it was locked");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because you cannot unlock more than it was locked");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Fact(DisplayName = "Lock and unlock item without adding the item")]
@@ -781,7 +812,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Theory(DisplayName = "Get locked amount")]
@@ -817,9 +850,11 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(quantityLocked, result.Amount);
-        Assert.Equal(DEFAULT_ITEM_ID, result.ItemId);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(quantityLocked, retrievedContent.Amount);
+        Assert.Equal(DEFAULT_ITEM_ID, retrievedContent.ItemId);
     }
 
     [Fact(DisplayName = "Get locked amount without adding the item to the inventory")]
@@ -839,7 +874,9 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.Equal(0, result.Amount);
+        Assert.True(result.IsSuccess);
+        var retrievedContent = result.Content!;
+        Assert.Equal(0, retrievedContent.Amount);
     }
 
     [Theory(DisplayName = "List users that own the item")]
@@ -867,7 +904,10 @@ public class InventoryServiceTests
 
         // Assert
 
-        Assert.True(result.UserIds.All(x => userIds.Contains(x)), "The result must contain all the user ids of every user created");
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.True(retrievedContent.UserIds.All(x => userIds.Contains(x)), "The result must contain all the user ids of every user created");
     }
 
     #region Utils

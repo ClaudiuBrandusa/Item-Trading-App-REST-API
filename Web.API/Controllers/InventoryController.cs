@@ -60,7 +60,7 @@ public class InventoryController : BaseController
         if (string.IsNullOrEmpty(itemId))
             return BadRequest(new FailedResponse
             {
-                Errors = new[] { "Item ID was not provided" }
+                Errors = ["Item ID was not provided"]
             });
 
         var model = AdaptToType<string, GetInventoryItemQuery>(itemId, (nameof(GetInventoryItemQuery.UserId), UserId));

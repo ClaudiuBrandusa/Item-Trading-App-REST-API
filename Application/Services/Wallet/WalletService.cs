@@ -28,22 +28,18 @@ public class WalletService : IWalletService
         return user.Cash;
     }
 
-    public async Task<WalletResult> GetWalletAsync(GetUserWalletQuery model)
+    public async Task<Result<WalletResult>> GetWalletAsync(GetUserWalletQuery model)
     {
         var user = await GetUser(model.UserId);
 
         if (user is null)
-            return new WalletResult
-            {
-                Errors = new[] { "User not found" }
-            };
+            return Result<WalletResult>.Failure("User not found");
 
-        return new WalletResult
+        return Result<WalletResult>.Success(new WalletResult
         {
             UserId = model.UserId,
-            Cash = user.Cash,
-            Success = true
-        };
+            Cash = user.Cash
+        });
     }
 
     public async Task<bool> GiveCashAsync(GiveCashCommand model)
@@ -80,32 +76,25 @@ public class WalletService : IWalletService
         return true;
     }
 
-    public async Task<WalletResult> UpdateWalletAsync(UpdateWalletCommand model)
+    public async Task<Result<WalletResult>> UpdateWalletAsync(UpdateWalletCommand model)
     {
         var user = await GetUser(model.UserId);
 
         if (user is null)
-            return new WalletResult
-            {
-                Errors = new[] { "User not found" }
-            };
+            return Result<WalletResult>.Failure("User not found");
 
         if (model.Quantity < 0)
-            return new WalletResult
-            {
-                Errors = new[] { "You cannot have a negative balance" }
-            };
+            return Result<WalletResult>.Failure("You cannot have a negative balance");
 
         user.UpdateCashAmount(model.Quantity);
 
         await _userRepository.UpdateUserAsync(user);
 
-        return new WalletResult
+        return Result<WalletResult>.Success(new WalletResult
         {
             UserId = model.UserId,
-            Cash = model.Quantity,
-            Success = true
-        };
+            Cash = model.Quantity
+        });
     }
 
     private Task<User?> GetUser(string userId) => _userRepository.GetUserByIdAsync(userId);

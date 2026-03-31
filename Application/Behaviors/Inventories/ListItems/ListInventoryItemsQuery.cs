@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.ListItems;
 
-public record ListInventoryItemsQuery : IRequest<ItemsResult>
+public record ListInventoryItemsQuery : IRequest<Result<ItemsResult>>
 {
     public string UserId { get; set; } = string.Empty;
 

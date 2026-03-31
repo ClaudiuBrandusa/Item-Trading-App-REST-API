@@ -73,9 +73,11 @@ public class WalletServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result has to be successful");
-        Assert.Equal(DEFAULT_USER_ID, result.UserId);
-        Assert.Equal(DEFAULT_CASH_VALUE, result.Cash);
+        Assert.True(result.IsSuccess, "The result has to be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(DEFAULT_USER_ID, retrievedContent.UserId);
+        Assert.Equal(DEFAULT_CASH_VALUE, retrievedContent.Cash);
     }
 
     [Fact(DisplayName = "Get wallet without creating an user first")]
@@ -91,7 +93,9 @@ public class WalletServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful because no user was created first");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because no user was created first");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Fact(DisplayName = "Update wallet")]
@@ -123,9 +127,11 @@ public class WalletServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result has to be successful");
-        Assert.Equal(DEFAULT_USER_ID, result.UserId);
-        Assert.Equal(newCashAmount, result.Cash);
+        Assert.True(result.IsSuccess, "The result has to be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(DEFAULT_USER_ID, retrievedContent.UserId);
+        Assert.Equal(newCashAmount, retrievedContent.Cash);
     }
 
     [Fact(DisplayName = "Update wallet without creating an user first")]
@@ -147,7 +153,9 @@ public class WalletServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful because no user was created first");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful because no user was created first");
+        Assert.NotEmpty(result.Error!);
+        Assert.Null(result.Content);
     }
 
     [Fact(DisplayName = "Get user cash amount")]

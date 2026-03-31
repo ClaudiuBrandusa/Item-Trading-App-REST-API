@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Trade.ListTrades;
 
-public record ListTradesQuery : IRequest<TradeOffersResult>
+public record ListTradesQuery : IRequest<Result<TradeOffersResult>>
 {
     public string UserId { get; set; } = string.Empty;
 

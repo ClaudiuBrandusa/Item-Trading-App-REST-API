@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Item.UpdateItem;
 
-public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, FullItemResult>
+public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, Result<FullItemResult>>
 {
     private readonly IItemService _itemService;
 
@@ -13,7 +13,7 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, FullItemResu
         _itemService = itemService;
     }
 
-    public Task<FullItemResult> Handle(UpdateItemCommand request, CancellationToken cancellationToken)
+    public Task<Result<FullItemResult>> Handle(UpdateItemCommand request, CancellationToken cancellationToken)
     {
         return _itemService.UpdateItemAsync(request);
     }

@@ -1,8 +1,9 @@
-﻿using Application.Models;
-using Application.Extensions;
+﻿using Application.Extensions;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using Application.Models.Common;
+using Item_Trading_App_Contracts.Responses.Base;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -25,24 +26,30 @@ public class BaseController : Controller
         return _mapper.AdaptToType<T, R>(request, parameters);
     }
 
-    protected ObjectResult MapResult<InputType, SucceededType, FailedType>(InputType result)
-        where InputType : Result
+    protected ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result)
         where SucceededType : class
-        where FailedType : class
+        where FailedType : FailedResponse
     {
-        return result.Success ?
-            Ok(_mapper.From(result).AdaptToType<SucceededType>()) :
-            BadRequest(_mapper.From(result).AdaptToType<FailedType>());
+        if (result.IsSuccess)
+        {
+            return Ok(_mapper.From(result.Content).AdaptToType<SucceededType>());
+        }
+
+        var response = new FailedResponse { Errors = [result.Error]};
+
+        if (typeof(FailedType) == typeof(FailedResponse))
+            return BadRequest(response);
+
+        return BadRequest(_mapper.From(response).AdaptToType<FailedType>());
     }
 
-    protected ObjectResult MapResult<InputType, SucceededType, FailedType>(InputType result, params (string, object)[] parameters)
-        where InputType : Result
+    protected ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, params (string, object)[] parameters)
         where SucceededType : class
         where FailedType : class
     {
-        if (result.Success)
+        if (result.IsSuccess)
         {
-            var builder = _mapper.From(result);
+            var builder = _mapper.From(result.Content!);
 
             if (parameters is not null)
                 foreach (var parameter in parameters)
@@ -54,7 +61,7 @@ public class BaseController : Controller
         }
         else
         {
-            return BadRequest(_mapper.From(result).AdaptToType<FailedType>());
+            return BadRequest(_mapper.From(result.Error).AdaptToType<FailedType>());
         }
     }
 }

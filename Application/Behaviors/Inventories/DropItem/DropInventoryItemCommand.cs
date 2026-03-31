@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.DropItem;
 
-public record DropInventoryItemCommand : IRequest<QuantifiedItemResult>
+public record DropInventoryItemCommand : IRequest<Result<QuantifiedItemResult>>
 {
     public required string UserId { get; set; }
 

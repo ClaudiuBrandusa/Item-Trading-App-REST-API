@@ -26,8 +26,10 @@ public class ItemDeletedEventHandler : INotificationHandler<ItemDeletedDomainEve
         return Task.WhenAll(
             Task.Run(async () =>
             {
-                var usersOwningTheItem = await _mediator.Send(new GetUserIdsOwningItemQuery { ItemId = notification.ItemId });
-                await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = notification.ItemId, UserIds = usersOwningTheItem.UserIds });
+                var usersOwningTheItemResult = await _mediator.Send(new GetUserIdsOwningItemQuery { ItemId = notification.ItemId });
+                if (!usersOwningTheItemResult.IsSuccess)
+                    return;
+                await _mediator.Send(new RemoveItemFromUsersCommand { ItemId = notification.ItemId, UserIds = usersOwningTheItemResult.Content!.UserIds });
             }, cancellationToken),
             _clientNotificationService.SendDeletedNotificationAsync(
                 notificationStrategy,

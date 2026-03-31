@@ -2,9 +2,9 @@
 
 public class CachedTradeItem
 {
-    public string TradeId { get; set; }
+    public required string TradeId { get; set; }
 
-    public string ItemId { get; set; }
+    public required string ItemId { get; set; }
 
     public int Quantity { get; set; }
 

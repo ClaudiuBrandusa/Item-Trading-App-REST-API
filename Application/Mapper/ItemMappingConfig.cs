@@ -18,7 +18,7 @@ public class ItemMappingConfig : IRegister
 
         config.ForType<UpdateItemCommand, Item>()
             .MapWith((UpdateItemCommand command) => new Item(
-                MapContext.Current!.Parameters[nameof(Item.ItemId)].ToString(),
+                MapContext.Current!.Parameters[nameof(Item.ItemId)].ToString()!,
                 command.ItemName,
                 command.ItemDescription
             ));

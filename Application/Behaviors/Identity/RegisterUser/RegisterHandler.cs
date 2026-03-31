@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Identity.RegisterUser;
 
-public class RegisterHandler : IRequestHandler<RegisterCommand, AuthenticationResult>
+public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthenticationResult>>
 {
     private readonly IIdentityService _identityService;
 
@@ -13,7 +13,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, AuthenticationRe
         _identityService = identityService;
     }
 
-    public Task<AuthenticationResult> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public Task<Result<AuthenticationResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         return _identityService.RegisterAsync(request);
     }

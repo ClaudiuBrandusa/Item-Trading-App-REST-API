@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Item.ListItems;
 
-public record ListItemsQuery : IRequest<ItemsResult>
+public record ListItemsQuery : IRequest<Result<ItemsResult>>
 {
     public string SearchString { get; set; } = string.Empty;
 }

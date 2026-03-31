@@ -4,7 +4,7 @@ using Application.Results.Inventories;
 
 namespace Application.Behaviors.Inventories.LockItems;
 
-public class LockItemsHandler : IRequestHandler<LockItemsCommand, LockItemsResult>
+public class LockItemsHandler : IRequestHandler<LockItemsCommand, Result<LockItemsResult>>
 {
     private readonly IInventoryService _inventoryService;
 
@@ -13,7 +13,7 @@ public class LockItemsHandler : IRequestHandler<LockItemsCommand, LockItemsResul
         _inventoryService = inventoryService;
     }
 
-    public Task<LockItemsResult> Handle(LockItemsCommand request, CancellationToken cancellationToken)
+    public Task<Result<LockItemsResult>> Handle(LockItemsCommand request, CancellationToken cancellationToken)
     {
         return _inventoryService.LockItemsAsync(request);
     }

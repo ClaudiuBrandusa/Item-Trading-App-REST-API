@@ -13,6 +13,7 @@ using Domain.Entities.Identity;
 using Application.Results.RefreshToken;
 using Application.Utils;
 using Domain.Repositories.Identity;
+using Application.Models.Common;
 
 namespace Application_UnitTests.Identity;
 
@@ -51,16 +52,15 @@ public class IdentityServiceTests
                 refreshTokens.Add(refreshToken);
                 identityRepositoryMock.Object.AddEntityAsync(refreshToken).Wait();
                 
-                return new RefreshTokenResult
+                return Result<RefreshTokenResult>.Success(new RefreshTokenResult
                 {
-                    Success = true,
                     Token = refreshToken.Token,
                     UserId = userId,
                     Used = refreshToken.Used,
                     CreationDate = refreshToken.CreationDate,
                     ExpiryDate = refreshToken.ExpiryDate,
                     Invalidated = refreshToken.Invalidated
-                };
+                });
             });
 
         refreshTokenServiceMock.Setup(repo => repo.GetRefreshTokenAsync(It.IsAny<string>()))
@@ -68,11 +68,10 @@ public class IdentityServiceTests
             {
                 var refreshToken = refreshTokens.FirstOrDefault(x => x.Token == refreshTokenId);
 
-                if (refreshToken is null) return new RefreshTokenResult();
+                if (refreshToken is null) return Result<RefreshTokenResult>.Failure("Something went wrong");
 
-                return new RefreshTokenResult
+                return Result<RefreshTokenResult>.Success(new RefreshTokenResult
                 {
-                    Success = true,
                     Token = refreshToken.Token,
                     JwtId = refreshToken.JwtId,
                     UserId = refreshToken.UserId,
@@ -80,7 +79,7 @@ public class IdentityServiceTests
                     CreationDate = refreshToken.CreationDate,
                     ExpiryDate = refreshToken.ExpiryDate,
                     Invalidated = refreshToken.Invalidated
-                };
+                });
             });
 
         identityRepositoryMock.Setup(repo => repo.CreateUserAsync(It.IsAny<User>(), It.IsAny<string>()))
@@ -158,9 +157,11 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.False(string.IsNullOrEmpty(result.Token), "The token must not be empty");
-        Assert.False(string.IsNullOrEmpty(result.RefreshToken), "The refresh token must not be empty");
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.False(string.IsNullOrEmpty(retrievedContent.Token), "The token must not be empty");
+        Assert.False(string.IsNullOrEmpty(retrievedContent.RefreshToken), "The refresh token must not be empty");
     }
 
     [Theory(DisplayName = "Register user with invalid data")]
@@ -184,7 +185,7 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful");
     }
 
     [Fact(DisplayName = "Login user")]
@@ -215,9 +216,11 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.False(string.IsNullOrEmpty(result.Token), "The token must not be empty");
-        Assert.False(string.IsNullOrEmpty(result.RefreshToken), "The refresh token must not be empty");
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.False(string.IsNullOrEmpty(retrievedContent.Token), "The token must not be empty");
+        Assert.False(string.IsNullOrEmpty(retrievedContent.RefreshToken), "The refresh token must not be empty");
     }
 
 
@@ -247,7 +250,7 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful");
     }
 
     [Fact(DisplayName = "Refresh token")]
@@ -269,8 +272,8 @@ public class IdentityServiceTests
 
         var refreshTokenCommandStub = new RefreshTokenCommand
         {
-            Token = registerResult.Token,
-            RefreshToken = registerResult.RefreshToken
+            Token = registerResult.Content!.Token,
+            RefreshToken = registerResult.Content.RefreshToken
         };
 
         // Act
@@ -279,9 +282,11 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.False(string.IsNullOrEmpty(result.Token), "The token must not be empty");
-        Assert.False(string.IsNullOrEmpty(result.RefreshToken), "The refresh token must not be empty");
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.False(string.IsNullOrEmpty(retrievedContent.Token), "The token must not be empty");
+        Assert.False(string.IsNullOrEmpty(retrievedContent.RefreshToken), "The refresh token must not be empty");
     }
 
 
@@ -301,10 +306,19 @@ public class IdentityServiceTests
 
         var registerResult = await _sut.RegisterAsync(registerCommandStub);
 
+        var token = string.Empty;
+        var refreshToken = string.Empty;
+
+        if (registerResult.IsSuccess)
+        {
+            token = registerResult.Content!.Token;
+            refreshToken = registerResult.Content.RefreshToken;
+        }
+
         var refreshTokenCommandStub = new RefreshTokenCommand
         {
-            Token = registerResult.Token,
-            RefreshToken = registerResult.RefreshToken
+            Token = token,
+            RefreshToken = refreshToken
         };
 
         // Act
@@ -313,7 +327,7 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.False(result.Success, "The result should be unsuccessful");
+        Assert.False(result.IsSuccess, "The result should be unsuccessful");
     }
 
     [Fact(DisplayName = "Get username")]
@@ -397,8 +411,10 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Equal(count - 1, result.UsersId.Count());
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Equal(count - 1, retrievedContent.UsersId.Count());
     }
 
     [Theory(DisplayName = "List users with invalid data")]
@@ -432,8 +448,10 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The result should be successful");
-        Assert.Empty(result.UsersId);
+        Assert.True(result.IsSuccess, "The result should be successful");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content;
+        Assert.Empty(retrievedContent.UsersId);
     }
 
     #region Utils

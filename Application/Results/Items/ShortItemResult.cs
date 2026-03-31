@@ -1,8 +1,6 @@
-﻿using Application.Models;
+﻿namespace Application.Results.Items;
 
-namespace Application.Results.Items;
-
-public record ShortItemResult : Result
+public record ShortItemResult
 {
     public string ItemId { get; set; } = string.Empty;
 

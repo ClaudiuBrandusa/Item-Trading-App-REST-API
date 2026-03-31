@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Item.ListItems;
 
-public class ListItemsHandler : IRequestHandler<ListItemsQuery, ItemsResult>
+public class ListItemsHandler : IRequestHandler<ListItemsQuery, Result<ItemsResult>>
 {
     private readonly IItemService _itemService;
 
@@ -13,7 +13,7 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, ItemsResult>
         _itemService = itemService;
     }
 
-    public Task<ItemsResult> Handle(ListItemsQuery request, CancellationToken cancellationToken)
+    public Task<Result<ItemsResult>> Handle(ListItemsQuery request, CancellationToken cancellationToken)
     {
         return _itemService.ListItemsAsync(request);
     }

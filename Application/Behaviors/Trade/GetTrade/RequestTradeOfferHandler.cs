@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Trade.GetTrade;
 
-public class RequestTradeOfferHandler : IRequestHandler<RequestTradeOfferQuery, TradeOfferResult>
+public class RequestTradeOfferHandler : IRequestHandler<RequestTradeOfferQuery, Result<TradeOfferResult>>
 {
     private readonly ITradeService _tradeService;
 
@@ -13,7 +13,7 @@ public class RequestTradeOfferHandler : IRequestHandler<RequestTradeOfferQuery, 
         _tradeService = tradeService;
     }
 
-    public Task<TradeOfferResult> Handle(RequestTradeOfferQuery request, CancellationToken cancellationToken)
+    public Task<Result<TradeOfferResult>> Handle(RequestTradeOfferQuery request, CancellationToken cancellationToken)
     {
         return _tradeService.GetTradeOfferAsync(request);
     }

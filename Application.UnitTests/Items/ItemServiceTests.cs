@@ -78,7 +78,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.True(addItemResult.Success, "The item creation should be successful");
+        Assert.True(addItemResult.IsSuccess, "The item creation should be successful");
     }
 
     [Fact(DisplayName = "Create a new item without sender user id")]
@@ -100,7 +100,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.False(addItemResult.Success, "It should not be allowed to create an item without a sender user id");
+        Assert.False(addItemResult.IsSuccess, "It should not be allowed to create an item without a sender user id");
     }
 
     [Fact(DisplayName = "Create a new item without a name")]
@@ -122,7 +122,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.False(addItemResult.Success, "It should not be allowed to create an item without a name");
+        Assert.False(addItemResult.IsSuccess, "It should not be allowed to create an item without a name");
     }
 
     [Fact(DisplayName = "Create a new item without description")]
@@ -146,8 +146,10 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.True(addItemResult.Success, "The item creation should be successful");
-        Assert.Equal(itemDescription, addItemResult.ItemDescription);
+        Assert.True(addItemResult.IsSuccess, "The item creation should be successful");
+        Assert.NotNull(addItemResult.Content);
+        var retrievedContent = addItemResult.Content!;
+        Assert.Equal(itemDescription, retrievedContent.ItemDescription);
     }
 
     [Fact(DisplayName = "Update item")]
@@ -165,7 +167,7 @@ public class ItemServiceTests
         // add one item
         var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
-        string item_id = addItemResult.ItemId;
+        string item_id = addItemResult.Content!.ItemId;
 
         string newItemName = DEFAULT_ITEM_NAME + "_Updated";
         string newDescription = DEFAULT_ITEM_DESCRIPTION + "_Updated";
@@ -184,9 +186,11 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.True(updateItemResult.Success, "The item update should be successful");
-        Assert.Equal(newItemName, updateItemResult.ItemName);
-        Assert.Equal(newDescription, updateItemResult.ItemDescription);
+        Assert.True(updateItemResult.IsSuccess, "The item update should be successful");
+        Assert.NotNull(updateItemResult.Content);
+        var retrievedContent = updateItemResult.Content!;
+        Assert.Equal(newItemName, retrievedContent.ItemName);
+        Assert.Equal(newDescription, retrievedContent.ItemDescription);
     }
 
     [Fact(DisplayName = "Update item without creating the item first")]
@@ -211,7 +215,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.False(updateItemResult.Success, "The item update should be unsuccessful because no item was created first");
+        Assert.False(updateItemResult.IsSuccess, "The item update should be unsuccessful because no item was created first");
     }
 
     [Fact(DisplayName = "Delete Item")]
@@ -229,7 +233,7 @@ public class ItemServiceTests
         // add one item
         var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
-        string item_id = addItemResult.ItemId;
+        string item_id = addItemResult.Content!.ItemId;
 
         var commandStub = new DeleteItemCommand { ItemId = item_id, UserId = DEFAULT_USER_ID };
 
@@ -239,7 +243,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.True(deleteItemResult.Success, "The item should had been deleted");
+        Assert.True(deleteItemResult.IsSuccess, "The item should had been deleted");
     }
 
     [Fact(DisplayName = "Delete Item without creating the item")]
@@ -261,7 +265,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.False(deleteItemResult.Success, "The item should not have been deleted because it should not exist");
+        Assert.False(deleteItemResult.IsSuccess, "The item should not have been deleted because it should not exist");
     }
 
     [Fact(DisplayName = "List items")]
@@ -287,9 +291,13 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.True(result.Success, "The response should be a success");
-        Assert.True(result.ItemsId.ToList().Count > 0, "There should be at least one item");
-        Assert.True(result.ItemsId.Contains(addItemResult.ItemId), "The list should contain the itemId that was received while inserting the item");
+        Assert.True(result.IsSuccess, "The response should be a success");
+        Assert.NotNull(result.Content);
+        var retrievedContent = result.Content!;
+        Assert.NotNull(retrievedContent.ItemsId);
+        var retrievedCollection = retrievedContent.ItemsId.ToList();
+        Assert.True(retrievedCollection.Count > 0, "There should be at least one item");
+        Assert.True(retrievedCollection.Contains(addItemResult.Content!.ItemId), "The list should contain the itemId that was received while inserting the item");
     }
 
     [Fact(DisplayName = "Get item")]
@@ -306,7 +314,7 @@ public class ItemServiceTests
             ItemDescription = DEFAULT_ITEM_DESCRIPTION
         });
 
-        string item_id = addItemResult.ItemId;
+        string item_id = addItemResult.Content!.ItemId;
 
         var queryStub = new GetItemQuery { ItemId = item_id };
 
@@ -316,8 +324,10 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.True(getItemResult.Success, "The result should be successful");
-        Assert.Equal(item_id, getItemResult.ItemId);
+        Assert.True(getItemResult.IsSuccess, "The result should be successful");
+        Assert.NotNull(addItemResult.Content);
+        var retrievedContent = addItemResult.Content!;
+        Assert.Equal(item_id, retrievedContent.ItemId);
     }
 
     [Fact(DisplayName = "Get item without creating it first")]
@@ -335,7 +345,7 @@ public class ItemServiceTests
 
         // Assert
 
-        Assert.False(getItemResult.Success, "The result should be unsuccessful because no item was created");
+        Assert.False(getItemResult.IsSuccess, "The result should be unsuccessful because no item was created");
     }
 
     [Fact(DisplayName = "Get item name")]
@@ -353,7 +363,7 @@ public class ItemServiceTests
         // add one item
         var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
-        var queryStub = new GetItemNameQuery { ItemId = addItemResult.ItemId };
+        var queryStub = new GetItemNameQuery { ItemId = addItemResult.Content!.ItemId };
 
         // Act
 
@@ -380,7 +390,7 @@ public class ItemServiceTests
         // add one item
         var addItemResult = await _sut.CreateItemAsync(createItemStub);
 
-        var queryStub = new GetItemDescriptionQuery { ItemId = addItemResult.ItemId };
+        var queryStub = new GetItemDescriptionQuery { ItemId = addItemResult.Content!.ItemId };
 
         // Act
 

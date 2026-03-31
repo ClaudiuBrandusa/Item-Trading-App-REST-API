@@ -72,7 +72,7 @@ public class IdentityController : BaseController
         if (string.IsNullOrEmpty(userId))
             return BadRequest(new FailedResponse
             {
-                Errors = new[] { "Invalid user id" }
+                Errors = ["Invalid user id"]
             });
 
         string userName = await _mediator.Send(new GetUsernameQuery { UserId = userId });

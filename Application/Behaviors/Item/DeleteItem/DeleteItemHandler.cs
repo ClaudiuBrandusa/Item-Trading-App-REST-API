@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Item.DeleteItem;
 
-public class DeleteItemHandler : IRequestHandler<DeleteItemCommand, DeleteItemResult>
+public class DeleteItemHandler : IRequestHandler<DeleteItemCommand, Result<DeleteItemResult>>
 {
     private readonly IItemService _itemService;
 
@@ -13,7 +13,7 @@ public class DeleteItemHandler : IRequestHandler<DeleteItemCommand, DeleteItemRe
         _itemService = itemService;
     }
 
-    public Task<DeleteItemResult> Handle(DeleteItemCommand request, CancellationToken cancellationToken)
+    public Task<Result<DeleteItemResult>> Handle(DeleteItemCommand request, CancellationToken cancellationToken)
     {
         return _itemService.DeleteItemAsync(request);
     }

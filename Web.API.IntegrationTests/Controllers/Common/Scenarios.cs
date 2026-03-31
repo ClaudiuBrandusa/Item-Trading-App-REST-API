@@ -71,7 +71,7 @@ public static class Scenarios
 
         var lockItemResult = await mediator.Send(command);
 
-        return lockItemResult.Success;
+        return lockItemResult.IsSuccess;
     }
 
     public static async Task<TradeOfferSuccessResponse> CreateTrade(TradeController controller, string receiverUserId, ItemWithPrice[] tradeItems)

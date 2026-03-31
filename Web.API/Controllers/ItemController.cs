@@ -34,7 +34,7 @@ public class ItemController : BaseController
         if (string.IsNullOrEmpty(itemId))
             return BadRequest(new FailedResponse
             {
-                Errors = new[] { "Item ID not provided" }
+                Errors = ["Item ID not provided"]
             });
 
         var model = new GetItemQuery { ItemId = itemId };
@@ -61,7 +61,7 @@ public class ItemController : BaseController
 
         var results = await _mediator.Send(model);
 
-        return Ok(new TradesUsingTheItemResponse { ItemId = itemId, TradeIds = results });
+        return Ok(new TradesUsingTheItemResponse { ItemId = itemId, TradeIds = results.Content });
     }
 
     [HttpPost(Endpoints.Item.Create)]

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.ListUsersOwningItem;
 
-public record GetUserIdsOwningItemQuery : IRequest<UsersOwningItem>
+public record GetUserIdsOwningItemQuery : IRequest<Result<UsersOwningItem>>
 {
     public required string ItemId { get; set; }
 }

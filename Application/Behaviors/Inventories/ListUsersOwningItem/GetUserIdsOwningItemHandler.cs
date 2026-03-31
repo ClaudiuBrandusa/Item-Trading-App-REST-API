@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.ListUsersOwningItem;
 
-public class GetUserIdsOwningItemHandler : IRequestHandler<GetUserIdsOwningItemQuery, UsersOwningItem>
+public class GetUserIdsOwningItemHandler : IRequestHandler<GetUserIdsOwningItemQuery, Result<UsersOwningItem>>
 {
     private readonly IInventoryService _inventoryService;
 
@@ -13,7 +13,7 @@ public class GetUserIdsOwningItemHandler : IRequestHandler<GetUserIdsOwningItemQ
         _inventoryService = inventoryService;
     }
 
-    public Task<UsersOwningItem> Handle(GetUserIdsOwningItemQuery request, CancellationToken cancellationToken)
+    public Task<Result<UsersOwningItem>> Handle(GetUserIdsOwningItemQuery request, CancellationToken cancellationToken)
     {
         return _inventoryService.GetUsersOwningThisItemAsync(request);
     }

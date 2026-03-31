@@ -8,6 +8,6 @@ public class IdentityMappingConfig : IRegister
     public void Register(TypeAdapterConfig config)
     {
         config.ForType<string, ListUsersQuery>()
-            .MapWith(str => new ListUsersQuery { SearchString = str, UserId = MapContext.Current!.Parameters[nameof(ListUsersQuery.UserId)].ToString() });
+            .MapWith(str => new ListUsersQuery { SearchString = str, UserId = MapContext.Current!.Parameters![nameof(ListUsersQuery.UserId)]!.ToString()! });
     }
 }

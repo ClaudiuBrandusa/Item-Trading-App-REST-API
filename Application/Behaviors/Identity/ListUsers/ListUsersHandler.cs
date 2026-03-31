@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Identity.ListUsers;
 
-public class ListUsersHandler : IRequestHandler<ListUsersQuery, UsersResult>
+public class ListUsersHandler : IRequestHandler<ListUsersQuery, Result<UsersResult>>
 {
     private readonly IIdentityService _identityService;
 
@@ -13,7 +13,7 @@ public class ListUsersHandler : IRequestHandler<ListUsersQuery, UsersResult>
         _identityService = identityService;
     }
 
-    public Task<UsersResult> Handle(ListUsersQuery request, CancellationToken cancellationToken)
+    public Task<Result<UsersResult>> Handle(ListUsersQuery request, CancellationToken cancellationToken)
     {
         return _identityService.ListUsers(request);
     }

@@ -1,8 +1,6 @@
-﻿using Application.Models;
+﻿namespace Application.Results.Trades;
 
-namespace Application.Results.Trades;
-
-public record TradeOffersResult : Result
+public record TradeOffersResult
 {
     public IEnumerable<string> SentTradeOfferIds { get; set; } = Array.Empty<string>();
 

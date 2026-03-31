@@ -1,8 +1,6 @@
-﻿using Application.Models;
+﻿namespace Application.Results.TradeItemsHistory;
 
-namespace Application.Results.TradeItemsHistory;
-
-public record TradeItemHistoryResult : Result
+public record TradeItemHistoryResult
 {
     public string TradeId { get; set; } = string.Empty;
 }

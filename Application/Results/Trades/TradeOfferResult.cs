@@ -1,9 +1,8 @@
-﻿using Application.Models;
-using Application.Models.TradeItems;
+﻿using Application.Models.TradeItems;
 
 namespace Application.Results.Trades;
 
-public record TradeOfferResult : Result
+public record TradeOfferResult
 {
     public string TradeId { get; set; } = string.Empty;
 

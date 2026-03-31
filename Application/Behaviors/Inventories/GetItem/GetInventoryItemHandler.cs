@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.GetItem;
 
-public class GetInventoryItemHandler : IRequestHandler<GetInventoryItemQuery, QuantifiedItemResult>
+public class GetInventoryItemHandler : IRequestHandler<GetInventoryItemQuery, Result<QuantifiedItemResult>>
 {
     private readonly IInventoryService _inventoryService;
 
@@ -13,7 +13,7 @@ public class GetInventoryItemHandler : IRequestHandler<GetInventoryItemQuery, Qu
         _inventoryService = inventoryService;
     }
 
-    public Task<QuantifiedItemResult> Handle(GetInventoryItemQuery request, CancellationToken cancellationToken)
+    public Task<Result<QuantifiedItemResult>> Handle(GetInventoryItemQuery request, CancellationToken cancellationToken)
     {
         return _inventoryService.GetItemAsync(request);
     }

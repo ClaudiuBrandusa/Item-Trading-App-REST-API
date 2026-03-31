@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.LockItem;
 
-public record LockItemCommand : IRequest<LockItemResult>
+public record LockItemCommand : IRequest<Result<LockItemResult>>
 {
     public string UserId { get; set; } = string.Empty;
 

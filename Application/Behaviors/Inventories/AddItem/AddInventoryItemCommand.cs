@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.AddItem;
 
-public record AddInventoryItemCommand : IRequest<QuantifiedItemResult>
+public record AddInventoryItemCommand : IRequest<Result<QuantifiedItemResult>>
 {
     public string UserId { get; set; } = string.Empty;
 

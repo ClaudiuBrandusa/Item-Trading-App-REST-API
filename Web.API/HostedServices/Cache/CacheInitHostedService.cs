@@ -31,7 +31,7 @@ public class CacheInitHostedService : IHostedService
         var mediator = scope.ServiceProvider.GetService<IMediator>();
 
         // using listItems from the item service will set the cache if it is a miss
-        var itemsId = (await mediator.Send(new ListItemsQuery(), cancellationToken)).ItemsId.ToArray();
+        var itemsId = (await mediator.Send(new ListItemsQuery(), cancellationToken)).Content!.ItemsId.ToArray();
 
         // init used items
         for (int i = 0; i < itemsId.Length; i++)

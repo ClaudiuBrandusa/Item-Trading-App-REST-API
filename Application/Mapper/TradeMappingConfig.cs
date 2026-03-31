@@ -19,14 +19,14 @@ public class TradeMappingConfig : IRegister
 
     private static ListTradesQuery BuildListTradesQuery(string userId)
     {
-        MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.Responded), out object responded);
-        MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.TradeDirection), out object tradeDirection);
+        MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.Responded), out var responded);
+        MapContext.Current!.Parameters.TryGetValue(nameof(ListTradesQuery.TradeDirection), out var tradeDirection);
 
         return new ListTradesQuery
         {
             UserId = userId,
-            TradeItemIds = MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)] as string[],
-            Responded = responded is not null && bool.Parse(responded.ToString()),
+            TradeItemIds = (MapContext.Current!.Parameters[nameof(ListTradesQuery.TradeItemIds)]! as string[])!,
+            Responded = responded is not null && bool.Parse(responded.ToString()!),
             TradeDirection = tradeDirection is null ? TradeDirection.All : (TradeDirection) tradeDirection
         };
     }

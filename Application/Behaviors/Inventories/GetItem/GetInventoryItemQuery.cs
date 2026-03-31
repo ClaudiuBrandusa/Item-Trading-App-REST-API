@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.GetItem;
 
-public record GetInventoryItemQuery : IRequest<QuantifiedItemResult>
+public record GetInventoryItemQuery : IRequest<Result<QuantifiedItemResult>>
 {
     public required string UserId { get; set; }
 

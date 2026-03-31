@@ -1,8 +1,6 @@
-﻿using Application.Models;
+﻿namespace Application.Results.Inventories;
 
-namespace Application.Results.Inventories;
-
-public record LockedItemAmountResult : Result
+public record LockedItemAmountResult
 {
     public string ItemId { get; set; } = string.Empty;
 

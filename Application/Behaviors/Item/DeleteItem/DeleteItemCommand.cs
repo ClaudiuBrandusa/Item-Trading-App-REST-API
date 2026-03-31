@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Item.DeleteItem;
 
-public record DeleteItemCommand : IRequest<DeleteItemResult>
+public record DeleteItemCommand : IRequest<Result<DeleteItemResult>>
 {
     public required string ItemId { get; set; }
 

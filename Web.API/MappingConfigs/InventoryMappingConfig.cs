@@ -1,5 +1,6 @@
 ﻿using Application.Behaviors.Inventories.AddItem;
 using Application.Behaviors.Inventories.DropItem;
+using Application.Models.Common;
 using Application.Results.Inventories;
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Inventory;
@@ -15,9 +16,9 @@ public class InventoryMappingConfig : IRegister
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(AddInventoryItemCommand.UserId)])
             .Map(dest => dest.Notify, src => MapContext.Current!.Parameters[nameof(AddInventoryItemCommand.Notify)]);
 
-        config.ForType<QuantifiedItemResult, AddItemFailedResponse>()
+        config.ForType<Result<QuantifiedItemResult>, AddItemFailedResponse>()
             .IgnoreNonMapped(true)
-            .Map(dest => dest.Errors, src => src.Errors);
+            .Map(dest => dest.Errors, src => new string[] { src.Error });
 
         config.ForType<DropItemRequest, DropInventoryItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(DropInventoryItemCommand.UserId)])

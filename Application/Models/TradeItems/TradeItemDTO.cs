@@ -2,9 +2,9 @@
 
 public class TradeItemDTO
 {
-    public string ItemId { get; set; }
+    public required string ItemId { get; set; }
 
-    public string ItemName { get; set; }
+    public string? ItemName { get; set; }
 
     public int Quantity { get; set; }
 

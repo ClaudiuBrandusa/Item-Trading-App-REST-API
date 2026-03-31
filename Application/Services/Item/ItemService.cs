@@ -30,139 +30,98 @@ public class ItemService : IItemService, IDisposable
         _mapper = mapper;
     }
 
-    public async Task<FullItemResult> CreateItemAsync(CreateItemCommand model)
+    public async Task<Result<FullItemResult>> CreateItemAsync(CreateItemCommand model)
     {
         if (model is null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.ItemName))
-            return new FullItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<FullItemResult>.Failure("Something went wrong");
 
         var item = _mapper.AdaptToType<CreateItemCommand, Domain.Entities.Items.Item>(model, (nameof(Domain.Entities.Items.Item.ItemId), Domain.Entities.Items.Item.GenerateId()));
 
         if (!await _repository.AddEntityAsync(item))
-            return new FullItemResult
-            {
-                Errors = new[] { "Unable to add this item" }
-            };
+            return Result<FullItemResult>.Failure("Unable to add this item");
 
         await _publisher.Publish(new ItemCreatedDomainEvent(item, model.SenderUserId));
         
-        return new FullItemResult
+        return Result<FullItemResult>.Success(new FullItemResult
         {
             ItemId = item.ItemId,
             ItemName = item.Name,
-            ItemDescription = item.Description,
-            Success = true
-        };
+            ItemDescription = item.Description
+        });
     }
 
-    public async Task<FullItemResult> UpdateItemAsync(UpdateItemCommand model)
+    public async Task<Result<FullItemResult>> UpdateItemAsync(UpdateItemCommand model)
     {
         if (model is null || string.IsNullOrEmpty(model.ItemName))
-            return new FullItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<FullItemResult>.Failure("Something went wrong");
 
         var item = await _repository.GetItemEntityAsync(model.ItemId, false);
 
         if (item is null)
-            return new FullItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<FullItemResult>.Failure("Something went wrong");
 
         item.UpdateItemName(model.ItemName);
         item.UpdateItemDescription(model.ItemDescription);
 
         if (!await _repository.UpdateEntityAsync(item))
-            return new FullItemResult
-            {
-                ItemId = item.ItemId,
-                ItemName = item.Name,
-                ItemDescription = item.Description,
-                Errors = new[] { "Unable to update item" }
-            };
+            return Result<FullItemResult>.Failure("Unable to update item");
 
         await _publisher.Publish(new ItemUpdatedDomainEvent(item, model.SenderUserId));
         
-        return new FullItemResult
+        return Result<FullItemResult>.Success(new FullItemResult
         {
             ItemId = item.ItemId,
             ItemName = item.Name,
-            ItemDescription = item.Description,
-            Success = true
-        };
+            ItemDescription = item.Description
+        });
     }
 
-    public async Task<DeleteItemResult> DeleteItemAsync(DeleteItemCommand model)
+    public async Task<Result<DeleteItemResult>> DeleteItemAsync(DeleteItemCommand model)
     {
         if (string.IsNullOrEmpty(model.ItemId))
-            return new DeleteItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<DeleteItemResult>.Failure("Something went wrong");
 
         var isUsedInATrade = await _sender.Send(new ItemUsedInTradeQuery { ItemId = model.ItemId });
 
         if (isUsedInATrade)
-            return new DeleteItemResult
-            {
-                Errors = new[] { "Unable to delete an item that is used in a trade" }
-            };
+            return Result<DeleteItemResult>.Failure("Unable to delete an item that is used in a trade");
 
         var item = await _repository.GetItemEntityAsync(model.ItemId, false);
 
         if (item is null)
-            return new DeleteItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<DeleteItemResult>.Failure("Something went wrong");
 
         if (!await _repository.RemoveEntityAsync(item))
-            return new DeleteItemResult
-            {
-                Errors = new[] { "Unable to remove item" }
-            };
+            return Result<DeleteItemResult>.Failure("Unable to remove item");
 
         await _publisher.Publish(new ItemDeletedDomainEvent(model.ItemId, model.UserId));
 
-        return new DeleteItemResult
+        return Result<DeleteItemResult>.Success(new DeleteItemResult
         {
             ItemId = model.ItemId,
-            ItemName = item.Name,
-            Success = true
-        };
+            ItemName = item.Name
+        });
     }
 
-    public async Task<FullItemResult> GetItemAsync(GetItemQuery model)
+    public async Task<Result<FullItemResult>> GetItemAsync(GetItemQuery model)
     {
         if (string.IsNullOrEmpty(model.ItemId))
-            return new FullItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<FullItemResult>.Failure("Something went wrong");
 
         var item = await _repository.GetItemEntityAsync(model.ItemId);
 
         if (item is null)
-            return new FullItemResult
-            {
-                ItemId = model.ItemId,
-                Errors = new[] { "Item not found" }
-            };
+            return Result<FullItemResult>.Failure("Item not found");
 
-        return new FullItemResult
+        return Result<FullItemResult>.Success(new FullItemResult
         {
             ItemId = item.ItemId,
             ItemName = item.Name,
-            ItemDescription = item.Description,
-            Success = true
-        };
+            ItemDescription = item.Description
+        });
     }
 
-    public async Task<ItemsResult> ListItemsAsync(ListItemsQuery model)
+    public async Task<Result<ItemsResult>> ListItemsAsync(ListItemsQuery model)
     {
         var items = await _repository.ListItemsAsync();
 
@@ -173,11 +132,10 @@ public class ItemService : IItemService, IDisposable
                                                        .ToLower()))
                 .ToArray();
 
-        return new ItemsResult
+        return Result<ItemsResult>.Success(new ItemsResult
         {
-            ItemsId = items.Select(i => i.ItemId),
-            Success = true
-        };
+            ItemsId = items.Select(i => i.ItemId)
+        });
     }
 
     public async Task<string> GetItemNameAsync(GetItemNameQuery model)

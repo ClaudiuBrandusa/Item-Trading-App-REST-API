@@ -51,33 +51,23 @@ public class InventoryService : IInventoryService, IDisposable
         return amount >= model.Quantity;
     }
 
-    public async Task<QuantifiedItemResult> AddItemAsync(AddInventoryItemCommand model)
+    public async Task<Result<QuantifiedItemResult>> AddItemAsync(AddInventoryItemCommand model)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
         if (model.Quantity < 0)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "You cannot add a negative amount of an item" }
-            };
+            return Result<QuantifiedItemResult>.Failure("You cannot add a negative amount of an item");
                     
         else if (model.Quantity == 0)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "You cannot add an amount of 0 in your inventory" }
-            };
+            return Result<QuantifiedItemResult>.Failure("You cannot add an amount of 0 in your inventory");
 
-        var itemData = await _sender.Send(new GetItemQuery { ItemId = model.ItemId });
+        var itemDataResult = await _sender.Send(new GetItemQuery { ItemId = model.ItemId });
 
-        if (itemData is null || !itemData.Success)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Item not found" }
-            };
+        if (!itemDataResult.IsSuccess)
+            return Result<QuantifiedItemResult>.Failure("Item not found");
+
+        var itemData = itemDataResult.Content!;
 
         bool modified;
 
@@ -88,181 +78,135 @@ public class InventoryService : IInventoryService, IDisposable
         modified = await _repository.AddInventoryAsync(inventory);
 
         if (!modified)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
-        return new QuantifiedItemResult
+        return Result<QuantifiedItemResult>.Success(new QuantifiedItemResult
         {
             ItemId = model.ItemId,
             ItemName = itemData.ItemName,
             ItemDescription = itemData.ItemDescription,
-            Quantity = inventory.GetItemFreeAmount(model.ItemId),
-            Success = true
-        };
+            Quantity = inventory.GetItemFreeAmount(model.ItemId)
+        });
     }
 
-    public async Task<QuantifiedItemResult> DropItemAsync(DropInventoryItemCommand model)
+    public async Task<Result<QuantifiedItemResult>> DropItemAsync(DropInventoryItemCommand model)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
         if (model.Quantity < 0)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "You cannot drop a negative amount of an item" }
-            };
+            return Result<QuantifiedItemResult>.Failure("You cannot drop a negative amount of an item");
         else if (model.Quantity == 0)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "You cannot drop an amount of 0 from your inventory" }
-            };
+            return Result<QuantifiedItemResult>.Failure("You cannot drop an amount of 0 from your inventory");
 
         var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
         if (inventory is null)
-            return new QuantifiedItemResult
-                {
-                    Errors = new[] { "Something went wrong" }
-                };
+            return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
         if (!inventory.ItemIds.Contains(model.ItemId))
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Item is not part of the inventory" }
-            };
-
+            return Result<QuantifiedItemResult>.Failure("Item is not part of the inventory");
         try
         {
             inventory.DropItem(model.ItemId, model.Quantity);
         }
         catch (ArgumentException ex)
         {
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { ex.Message }
-            };
+            return Result<QuantifiedItemResult>.Failure(ex.Message);
         }
 
         bool modified = await _repository.DropItemAsync(inventory, model.ItemId, model.Quantity);
 
         if (!modified)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
-        return new QuantifiedItemResult
+        return Result<QuantifiedItemResult>.Success(new QuantifiedItemResult
         {
             ItemId = model.ItemId,
             ItemName = await _sender.Send(new GetItemNameQuery { ItemId = model.ItemId }),
-            Quantity = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId),
-            Success = true
-        };
+            Quantity = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId)
+        });
     }
 
-    public async Task<QuantifiedItemResult> GetItemAsync(GetInventoryItemQuery model)
+    public async Task<Result<QuantifiedItemResult>> GetItemAsync(GetInventoryItemQuery model)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
         int amount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
-        var lockedAmount = await GetLockedAmountAsync(_mapper.AdaptToType<GetInventoryItemQuery, GetInventoryItemLockedAmountQuery>(model));
+        var lockedAmountResult = await GetLockedAmountAsync(_mapper.AdaptToType<GetInventoryItemQuery, GetInventoryItemLockedAmountQuery>(model));
 
-        if (amount == 0 && lockedAmount.Amount == 0)
-            return new QuantifiedItemResult
-            {
-                Errors = new[] { "You do not own this item" }
-            };
+        if (!lockedAmountResult.IsSuccess)
+            return Result<QuantifiedItemResult>.Failure(lockedAmountResult.Error!);
 
-        var itemData = await _sender.Send(new GetItemQuery { ItemId = model.ItemId });
+        if (amount == 0 && lockedAmountResult.Content!.Amount == 0)
+            return Result<QuantifiedItemResult>.Failure("You do not own this item");
 
-        return new QuantifiedItemResult
+        var itemDataResult = await _sender.Send(new GetItemQuery { ItemId = model.ItemId });
+
+        if (!itemDataResult.IsSuccess)
+            return Result<QuantifiedItemResult>.Failure(itemDataResult.Error!);
+
+        var itemData = itemDataResult.Content!;
+
+        return Result<QuantifiedItemResult>.Success(new QuantifiedItemResult
         {
             ItemId = model.ItemId,
             ItemName = itemData.ItemName,
             ItemDescription = itemData.ItemDescription,
-            Quantity = amount,
-            Success = true
-        };
+            Quantity = amount
+        });
     }
 
-    public async Task<ItemsResult> ListItemsAsync(ListInventoryItemsQuery model)
+    public async Task<Result<ItemsResult>> ListItemsAsync(ListInventoryItemsQuery model)
     {
         if (string.IsNullOrEmpty(model.UserId))
-            return new ItemsResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<ItemsResult>.Failure("Something went wrong");
 
         var itemIds = await FilterInventoryItems(model.UserId, model.SearchString);
 
-        return new ItemsResult
+        return Result<ItemsResult>.Success(new ItemsResult
         {
-            Success = true,
             ItemsId = itemIds
-        };
+        });
     }
 
-    public async Task<LockItemResult> LockItemAsync(LockItemCommand model)
+    public async Task<Result<LockItemResult>> LockItemAsync(LockItemCommand model)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
-            return new LockItemResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
+            return Result<LockItemResult>.Failure("Invalid input data");
 
         int amount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
         if (amount < model.Quantity)
-            return new LockItemResult
-            {
-                Errors = new[] { "You do not own enough of this item" }
-            };
+            return Result<LockItemResult>.Failure("You do not own enough of this item");
 
         var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
         inventory.LockItem(model.ItemId, model.Quantity);
 
         if (!await _repository.LockItemAsync(inventory, model.ItemId, model.Quantity))
-            return new LockItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<LockItemResult>.Failure("Something went wrong");
         else
             amount -= model.Quantity;
 
-        return new LockItemResult
+        return Result<LockItemResult>.Success(new LockItemResult
         {
             UserId = model.UserId,
             ItemId = model.ItemId,
-            Quantity = amount,
-            Success = true
-        };
+            Quantity = amount
+        });
     }
 
-    public async Task<LockItemsResult> LockItemsAsync(LockItemsCommand model)
+    public async Task<Result<LockItemsResult>> LockItemsAsync(LockItemsCommand model)
     {
         if (string.IsNullOrEmpty(model.UserId) || model.Items is null || model.Items.Length == 0)
-            return new LockItemsResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
+            return Result<LockItemsResult>.Failure("Invalid input data");
 
         var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
         if (inventory is null)
-            return new LockItemsResult
-            {
-                Errors = new [] { "Something went wrong" }
-            };
+            return Result<LockItemsResult>.Failure("Something went wrong");
 
         var items = new TradeItemDTO[model.Items.Length];
 
@@ -281,34 +225,25 @@ public class InventoryService : IInventoryService, IDisposable
             }
             catch (ArgumentException ex)
             {
-                return new LockItemsResult
-                {
-                    Errors = new [] { ex.Message }
-                };
+                return Result<LockItemsResult>.Failure(ex.Message);
             }
         }
 
-        if (!await _repository.LockItemsAsync(inventory, model.Items))
-            return new LockItemsResult
-                {
-                    Errors = new [] { "Something went wrong" }
-                };
-
-        return new LockItemsResult
+        foreach (var item in items)
         {
-            UserId = model.UserId,
-            Items = items,
-            Success = true
-        };
+            item.ItemName = await _sender.Send(new GetItemNameQuery { ItemId = item.ItemId });
+        }
+
+        if (!await _repository.LockItemsAsync(inventory, model.Items))
+            return Result<LockItemsResult>.Failure("Something went wrong");
+
+        return Result<LockItemsResult>.Success(new LockItemsResult(model.UserId, items));
     }
 
-    public async Task<LockItemResult> UnlockItemAsync(UnlockItemCommand model)
+    public async Task<Result<LockItemResult>> UnlockItemAsync(UnlockItemCommand model)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
-            return new LockItemResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
+            return Result<LockItemResult>.Failure("Invalid input data");
 
         var inventory = await _repository.LoadInventoryAsync(model.UserId);
 
@@ -318,10 +253,7 @@ public class InventoryService : IInventoryService, IDisposable
         }
         catch (ArgumentException ex)
         {
-            return new LockItemResult
-            {
-                Errors = new[] { ex.Message }
-            };
+            return Result<LockItemResult>.Failure(ex.Message);
         }
 
         bool modified = false;
@@ -336,55 +268,44 @@ public class InventoryService : IInventoryService, IDisposable
         }
 
         if (!modified)
-            return new LockItemResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<LockItemResult>.Failure("Something went wrong");
 
         var freeItemAmount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
 
-        return new LockItemResult
+        return Result<LockItemResult>.Success(new LockItemResult
         {
             ItemId = model.ItemId,
             UserId = model.UserId,
-            Quantity = freeItemAmount,
-            Success = true
-        };
+            Quantity = freeItemAmount
+        });
     }
 
-    public async Task<LockedItemAmountResult> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model)
+    public async Task<Result<LockedItemAmountResult>> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
-            return new LockedItemAmountResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
+            return Result<LockedItemAmountResult>.Failure("Invalid input data");
 
         int lockedAmount = await _repository.GetAmountOfLockedItemAsync(model.UserId, model.ItemId);
 
         var itemName = await _sender.Send(new GetItemNameQuery { ItemId = model.ItemId });
 
         if (string.IsNullOrEmpty(itemName))
-            return new LockedItemAmountResult
-            {
-                Errors = new[] { "Item not found" }
-            };
+            return Result<LockedItemAmountResult>.Failure("Item not found");
 
-        return new LockedItemAmountResult
+        return Result<LockedItemAmountResult>.Success(new LockedItemAmountResult
         {
             ItemId = model.ItemId,
             ItemName = itemName,
-            Amount = lockedAmount,
-            Success = true
-        };
+            Amount = lockedAmount
+        });
     }
 
-    public async Task<UsersOwningItem> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model) =>
-        new UsersOwningItem
+    public async Task<Result<UsersOwningItem>> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model) =>
+        Result<UsersOwningItem>.Success(new UsersOwningItem
         {
             UserIds = await _repository.ListUsersThatOwnItemAsync(model.ItemId),
             ItemId = model.ItemId
-        };
+        });
 
     public async Task RemoveItemCacheAsync(RemoveItemFromUsersCommand model)
     {

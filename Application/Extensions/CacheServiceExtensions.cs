@@ -119,7 +119,7 @@ public static class CacheServiceExtensions
 
         var cached = await service.GetCacheValueAsync<CachedType>(cacheKey);
 
-        EntityType entity = null;
+        EntityType? entity;
 
         if (isNullable && cached is null || !await service.ContainsKey(cacheKey))
         {

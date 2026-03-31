@@ -12,12 +12,12 @@ public interface IWalletService
     /// <summary>
     /// Returns the wallet of the given user
     /// </summary>
-    Task<WalletResult> GetWalletAsync(GetUserWalletQuery model);
+    Task<Result<WalletResult>> GetWalletAsync(GetUserWalletQuery model);
 
     /// <summary>
     /// Updates the user's cash value. The amount will overwrite the current cash value.
     /// </summary>
-    Task<WalletResult> UpdateWalletAsync(UpdateWalletCommand model);
+    Task<Result<WalletResult>> UpdateWalletAsync(UpdateWalletCommand model);
 
     /// <summary>
     /// Returns the user's cash value

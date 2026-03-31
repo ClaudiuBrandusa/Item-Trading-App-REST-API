@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Identity.RefreshToken;
 
-public record RefreshTokenCommand : IRequest<AuthenticationResult>
+public record RefreshTokenCommand : IRequest<Result<AuthenticationResult>>
 {
     public string Token { get; set; } = string.Empty;
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Trade.CancelTrade;
 
-public record CancelTradeCommand : IRequest<TradeOfferResult>
+public record CancelTradeCommand : IRequest<Result<TradeOfferResult>>
 {
     public required string UserId { get; set; }
 

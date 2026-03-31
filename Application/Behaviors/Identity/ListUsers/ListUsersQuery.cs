@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Identity.ListUsers;
 
-public record ListUsersQuery : IRequest<UsersResult>
+public record ListUsersQuery : IRequest<Result<UsersResult>>
 {
     public string SearchString { get; set; } = string.Empty;
 

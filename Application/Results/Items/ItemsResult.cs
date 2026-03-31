@@ -1,8 +1,6 @@
-﻿using Application.Models;
+﻿namespace Application.Results.Items;
 
-namespace Application.Results.Items;
-
-public record ItemsResult : Result
+public record ItemsResult
 {
     public IEnumerable<string> ItemsId { get; set; } = Array.Empty<string>();
 }

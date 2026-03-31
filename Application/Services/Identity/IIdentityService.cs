@@ -12,17 +12,17 @@ public interface IIdentityService
     /// <summary>
     /// Registers the user only if the input data is valid
     /// </summary>
-    Task<AuthenticationResult> RegisterAsync(RegisterCommand model);
+    Task<Result<AuthenticationResult>> RegisterAsync(RegisterCommand model);
 
     /// <summary>
     /// Connects the user if the input data matches with a registered account
     /// </summary>
-    Task<AuthenticationResult> LoginAsync(LoginCommand model);
+    Task<Result<AuthenticationResult>> LoginAsync(LoginCommand model);
 
     /// <summary>
     /// Refreshes the user's token only if it has expired
     /// </summary>
-    Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenCommand model);
+    Task<Result<AuthenticationResult>> RefreshTokenAsync(RefreshTokenCommand model);
 
     /// <summary>
     /// Returns the username with the given user id
@@ -32,5 +32,5 @@ public interface IIdentityService
     /// <summary>
     /// Returns a list with all of the users besides the user requesting the service
     /// </summary>
-    Task<UsersResult> ListUsers(ListUsersQuery model);
+    Task<Result<UsersResult>> ListUsers(ListUsersQuery model);
 }

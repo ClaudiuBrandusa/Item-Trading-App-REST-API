@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Wallet.UpdateWallet;
 
-public class UpdateWalletHandler : IRequestHandler<UpdateWalletCommand, WalletResult>
+public class UpdateWalletHandler : IRequestHandler<UpdateWalletCommand, Result<WalletResult>>
 {
     private readonly IWalletService _walletService;
 
@@ -13,7 +13,7 @@ public class UpdateWalletHandler : IRequestHandler<UpdateWalletCommand, WalletRe
         _walletService = walletService;
     }
 
-    public Task<WalletResult> Handle(UpdateWalletCommand request, CancellationToken cancellationToken)
+    public Task<Result<WalletResult>> Handle(UpdateWalletCommand request, CancellationToken cancellationToken)
     {
         return _walletService.UpdateWalletAsync(request);
     }

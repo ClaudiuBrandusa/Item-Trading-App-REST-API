@@ -32,21 +32,15 @@ public class IdentityService : IIdentityService, IDisposable
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<AuthenticationResult> RegisterAsync(RegisterCommand model)
+    public async Task<Result<AuthenticationResult>> RegisterAsync(RegisterCommand model)
     {
         var user = await _repository.GetUserByNameAsync(model.Username);
 
         if (user is not null)
-            return new AuthenticationResult
-            {
-                Errors = new[] { "User with this username already exists" }
-            };
+            return Result<AuthenticationResult>.Failure("User with this username already exists");
 
         if (string.IsNullOrEmpty(model.Username) || string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
-            return new AuthenticationResult
-            {
-                Errors = new[] { "Invalid input data" }
-            };
+            return Result<AuthenticationResult>.Failure("Invalid input data");
 
         var newUser = new User
         {
@@ -58,51 +52,44 @@ public class IdentityService : IIdentityService, IDisposable
         var createdUser = await _repository.CreateUserAsync(newUser, model.Password);
 
         if (!createdUser.Succeeded)
-            return new AuthenticationResult
-            {
-                Errors = createdUser.Errors.Select(x => x.Description)
-            };
+            return Result<AuthenticationResult>.Failure(createdUser.Errors.Select(x => x.Description).FirstOrDefault()!);
 
         return await GetToken(newUser.Id);
     }
 
-    public async Task<AuthenticationResult> LoginAsync(LoginCommand model)
+    public async Task<Result<AuthenticationResult>> LoginAsync(LoginCommand model)
     {
         var user = await _repository.GetUserByNameAsync(model.Username);
 
         if (user is null)
-            return new AuthenticationResult
-            {
-                Errors = new[] { "User does not exist" }
-            };
+            return Result<AuthenticationResult>.Failure("User does not exist");
 
         var userMatchPassword = await _repository.CheckPasswordAsync(user, model.Password);
 
         if (!userMatchPassword)
-            return new AuthenticationResult
-            {
-                Errors = new[] { "Username or password is wrong" }
-            };
+            return Result<AuthenticationResult>.Failure("Username or password is wrong");
 
         return await GetToken(user.Id);
     }
 
-    public async Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenCommand model)
+    public async Task<Result<AuthenticationResult>> RefreshTokenAsync(RefreshTokenCommand model)
     {
         var validatedToken = GetPrincipalFromToken(model.Token);
 
         if (validatedToken is null)
-            return new AuthenticationResult { Errors = new[] { "Invalid token" } };
+            return Result<AuthenticationResult>.Failure("Invalid token");
 
         var jti = validatedToken.GetJwtId();
         
-        var storedRefreshToken = await _refreshTokenService.GetRefreshTokenAsync(model.RefreshToken);
+        var storedRefreshTokenResult = await _refreshTokenService.GetRefreshTokenAsync(model.RefreshToken);
 
-        if (storedRefreshToken is null)
-            return new AuthenticationResult { Errors = new[] { "This refresh token does not exist" } };
+        if (!storedRefreshTokenResult.IsSuccess)
+            return Result<AuthenticationResult>.Failure("This refresh token does not exist");
+
+        var storedRefreshToken = storedRefreshTokenResult.Content!;
 
         if (!Equals(storedRefreshToken.JwtId, jti))
-            return new AuthenticationResult { Errors = new[] { "This refresh token does not match the JWT" } };
+            return Result<AuthenticationResult>.Failure("This refresh token does not match the JWT");
 
         var expiryDateUnix = long.Parse(validatedToken.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
 
@@ -110,15 +97,15 @@ public class IdentityService : IIdentityService, IDisposable
             .AddSeconds(expiryDateUnix);
 
         if (DateTime.UtcNow > storedRefreshToken.ExpiryDate)
-            return new AuthenticationResult { Errors = new[] { "This refresh token has expired" } };
+            return Result<AuthenticationResult>.Failure("This refresh token has expired");
 
         if (storedRefreshToken.Invalidated)
-            return new AuthenticationResult { Errors = new[] { "This refresh token has been invalidated" } };
+            return Result<AuthenticationResult>.Failure("This refresh token has been invalidated");
 
         var user = await _repository.GetUserByIdAsync(validatedToken.Claims.Single(x => x.Type == "id").Value);
 
         if (user is null)
-            return new AuthenticationResult { Errors = new[] { "User not found" } };
+            return Result<AuthenticationResult>.Failure("User not found");
 
         return await GetToken(user.Id);
     }
@@ -131,24 +118,20 @@ public class IdentityService : IIdentityService, IDisposable
         return _repository.GetUsernameAsync(model.UserId);
     }
 
-    public async Task<UsersResult> ListUsers(ListUsersQuery model)
+    public async Task<Result<UsersResult>> ListUsers(ListUsersQuery model)
     {
         var list = await _repository.ListUsersAsync(model.SearchString);
 
         if (list is null)
-            return new UsersResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+            return Result<UsersResult>.Failure("Something went wrong");
 
         if (list.Contains(model.UserId))
             list.Remove(model.UserId);
 
-        return new UsersResult
+        return Result<UsersResult>.Success(new UsersResult
         {
-            UsersId = list,
-            Success = true
-        };
+            UsersId = list
+        });
     }
 
     public void Dispose()
@@ -184,36 +167,27 @@ public class IdentityService : IIdentityService, IDisposable
     private static bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken) =>
         validatedToken is JwtSecurityToken jwtSecurityToken && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
 
-    private async Task<AuthenticationResult> GetToken(string userId)
+    private async Task<Result<AuthenticationResult>> GetToken(string userId)
     {
         var user = await _repository.GetUserByIdAsync(userId);
 
         if (user is null)
-            return new AuthenticationResult { Errors = new[] { "User not found" } };
+            return Result<AuthenticationResult>.Failure("User not found");
 
         var tokenHandler = CreateJwtSecurityTokenHandler(user);
         
         var expirationTime = DateTimeUtils.DateTimeWithTimeSpanFromUtcNow(_jwtSettings.TokenLifetime);
 
-        var tokenDescriptor = await CreateSecurityTokenDescriptor(user, expirationTime);//JwtUtils.CreateSecurityTokenDescriptor(claims, expirationTime, signingCredentials);
+        var tokenDescriptor = await CreateSecurityTokenDescriptor(user, expirationTime);
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
 
-        var refreshToken = await GetRefreshToken(userId, token.Id);
+        var refreshTokenResult = await GetRefreshToken(userId, token.Id);
 
-        if (refreshToken is null)
-            return new AuthenticationResult
-            {
-                Errors = new[] { "Something went wrong" }
-            };
+        if (!refreshTokenResult.IsSuccess)
+            return Result<AuthenticationResult>.Failure("Something went wrong");
 
-        return new AuthenticationResult
-        {
-            Success = true,
-            Token = tokenHandler.WriteToken(token),
-            RefreshToken = refreshToken.Token,
-            ExpirationDateTime = expirationTime
-        };
+        return Result<AuthenticationResult>.Success(new AuthenticationResult(tokenHandler.WriteToken(token), refreshTokenResult.Content!.Token, expirationTime));
     }
 
     private JwtSecurityTokenHandler CreateJwtSecurityTokenHandler(User user)
@@ -240,11 +214,11 @@ public class IdentityService : IIdentityService, IDisposable
         return JwtUtils.CreateSecurityTokenDescriptor(claims, expirationTime, signingCredentials);
     }
 
-    private async Task<RefreshTokenResult> GetRefreshToken(string userId, string jti)
+    private async Task<Result<RefreshTokenResult>> GetRefreshToken(string userId, string jti)
     {
         var refreshToken = await _refreshTokenService.GetRecentRefreshTokenAsync(userId, jti);
 
-        if (refreshToken is not null && refreshToken.Success)
+        if (refreshToken is not null && refreshToken.IsSuccess)
             return refreshToken;
 
         return await _refreshTokenService.GenerateRefreshTokenAsync(userId, jti);

@@ -39,7 +39,7 @@ public class WalletController : BaseController
         if (request is null)
             return BadRequest(new FailedResponse
             {
-                Errors = new[] { "Something went wrong" }
+                Errors = ["Something went wrong"]
             });
 
         var model = AdaptToType<UpdateWalletRequest, UpdateWalletCommand>(request, (nameof(UpdateWalletCommand.UserId), UserId));

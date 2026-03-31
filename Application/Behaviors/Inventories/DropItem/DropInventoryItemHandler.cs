@@ -4,7 +4,7 @@ using Application.Results.Inventories;
 
 namespace Application.Behaviors.Inventories.DropItem;
 
-public class DropInventoryItemHandler : IRequestHandler<DropInventoryItemCommand, QuantifiedItemResult>
+public class DropInventoryItemHandler : IRequestHandler<DropInventoryItemCommand, Result<QuantifiedItemResult>>
 {
     private readonly IInventoryService _inventoryService;
 
@@ -13,7 +13,7 @@ public class DropInventoryItemHandler : IRequestHandler<DropInventoryItemCommand
         _inventoryService = inventoryService;
     }
 
-    public Task<QuantifiedItemResult> Handle(DropInventoryItemCommand request, CancellationToken cancellationToken)
+    public Task<Result<QuantifiedItemResult>> Handle(DropInventoryItemCommand request, CancellationToken cancellationToken)
     {
         return _inventoryService.DropItemAsync(request);
     }

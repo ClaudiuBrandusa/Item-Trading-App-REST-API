@@ -43,7 +43,7 @@ public class InventoryMappingConfig : IRegister
             .MapWith((InventoryItem ownedItem) => new CachedOwnedItem
             {
                 ItemId = ownedItem.ItemId,
-                UserId = MapContext.Current!.Parameters[nameof(CachedOwnedItem.UserId)]!.ToString(),
+                UserId = MapContext.Current!.Parameters[nameof(CachedOwnedItem.UserId)]!.ToString()!,
                 Quantity = ownedItem.Quantity
             });
 

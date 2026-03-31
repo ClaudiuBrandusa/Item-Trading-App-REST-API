@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Behaviors.Identity.LoginUser;
 
-public record LoginCommand : IRequest<AuthenticationResult>
+public record LoginCommand : IRequest<Result<AuthenticationResult>>
 {
     public string Username { get; set; } = string.Empty;
 

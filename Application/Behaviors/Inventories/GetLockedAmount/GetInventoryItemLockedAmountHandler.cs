@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Inventories.GetLockedAmount;
 
-public class GetInventoryItemLockedAmountHandler : IRequestHandler<GetInventoryItemLockedAmountQuery, LockedItemAmountResult>
+public class GetInventoryItemLockedAmountHandler : IRequestHandler<GetInventoryItemLockedAmountQuery, Result<LockedItemAmountResult>>
 {
     private readonly IInventoryService _inventoryService;
 
@@ -13,7 +13,7 @@ public class GetInventoryItemLockedAmountHandler : IRequestHandler<GetInventoryI
         _inventoryService = inventoryService;
     }
 
-    public Task<LockedItemAmountResult> Handle(GetInventoryItemLockedAmountQuery request, CancellationToken cancellationToken)
+    public Task<Result<LockedItemAmountResult>> Handle(GetInventoryItemLockedAmountQuery request, CancellationToken cancellationToken)
     {
         return _inventoryService.GetLockedAmountAsync(request);
     }

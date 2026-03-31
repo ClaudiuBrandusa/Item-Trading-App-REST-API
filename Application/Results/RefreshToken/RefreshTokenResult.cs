@@ -1,8 +1,6 @@
-﻿using Application.Models;
+﻿namespace Application.Results.RefreshToken;
 
-namespace Application.Results.RefreshToken;
-
-public record RefreshTokenResult : Result
+public record RefreshTokenResult
 {
     public string Token { get; set; } = string.Empty;
 

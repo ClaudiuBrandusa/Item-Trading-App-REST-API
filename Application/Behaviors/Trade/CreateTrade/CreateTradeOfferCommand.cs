@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Behaviors.Trade.CreateTrade;
 
-public record CreateTradeOfferCommand : IRequest<TradeOfferResult>
+public record CreateTradeOfferCommand : IRequest<Result<TradeOfferResult>>
 {
     public required string SenderUserId { get; set; }
 
