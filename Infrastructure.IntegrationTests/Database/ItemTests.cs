@@ -3,7 +3,6 @@ using Domain.Repositories.Items;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.IntegrationTests.Database;
 public class ItemTests : IClassFixture<DatabaseFixture>
@@ -12,7 +11,7 @@ public class ItemTests : IClassFixture<DatabaseFixture>
 
     public ItemTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
+        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
         _repository = new ItemRepository(dbContextWrapper);
     }
 
@@ -113,7 +112,7 @@ public class ItemTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
-        var dbContextWrapper = dbFixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
+        var dbContextWrapper = dbFixture.GetService<IDatabaseContextWrapper>();
         var repository = new ItemRepository(dbContextWrapper);
 
         string baseItemName = "ItemName";

@@ -52,7 +52,7 @@ public class HubContextWrapperTests
         groupManagerMock.Setup(x => x.AddToGroupAsync(expectedConnectionId, expectedGroupName, default))
             .Returns(Task.CompletedTask);
 
-        await sut.AddToGroupAsync(expectedConnectionId, expectedGroupName);
+        await sut.AddToGroupAsync(expectedConnectionId, expectedGroupName, CancellationToken.None);
 
         groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedGroupName, default), Times.Once);
     }
@@ -68,7 +68,7 @@ public class HubContextWrapperTests
         groupManagerMock.Setup(x => x.RemoveFromGroupAsync(expectedConnectionId, expectedGroupName, default))
             .Returns(Task.CompletedTask);
 
-        await sut.RemoveFromGroupAsync(expectedConnectionId, expectedGroupName);
+        await sut.RemoveFromGroupAsync(expectedConnectionId, expectedGroupName, CancellationToken.None);
 
         groupManagerMock.Verify(x => x.RemoveFromGroupAsync(expectedConnectionId, expectedGroupName, default), Times.Once);
     }
@@ -91,7 +91,7 @@ public class HubContextWrapperTests
 
         var notificationMock = new { };
 
-        await sut.AddToGroupAsync(expectedConnectionId, expectedGroupName);
+        await sut.AddToGroupAsync(expectedConnectionId, expectedGroupName, CancellationToken.None);
         await sut.NotifyUserAsync(expectedConnectionId, notificationMock);
 
         groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedGroupName, default), Times.Once);
@@ -117,7 +117,7 @@ public class HubContextWrapperTests
 
         var notificationMock = new { };
 
-        await sut.AddToGroupAsync(expectedConnectionId, expectedGroupName);
+        await sut.AddToGroupAsync(expectedConnectionId, expectedGroupName, CancellationToken.None);
         await sut.NotifyUsersAsync(expectedGroupNames, notificationMock);
 
         groupManagerMock.Verify(x => x.AddToGroupAsync(expectedConnectionId, expectedGroupName, default), Times.Once);

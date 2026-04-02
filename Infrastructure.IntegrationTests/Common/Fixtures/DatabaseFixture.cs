@@ -103,4 +103,10 @@ public class DatabaseFixture : IAsyncLifetime
 
         return dbFixture;
     }
+
+    public T GetService<T>()
+        where T : notnull
+    {
+        return ServiceProvider!.GetRequiredService<T>();
+    }
 }

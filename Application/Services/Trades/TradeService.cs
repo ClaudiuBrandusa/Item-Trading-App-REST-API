@@ -311,7 +311,14 @@ public class TradeService : ITradeService, IDisposable
         {
             try
             {
-                var trade = await _repository.GetTradeAsync(model.TradeId)!;
+                var trade = await _repository.GetTradeAsync(model.TradeId);
+
+                if (trade is null)
+                {
+                    taskCompletionSource.SetResult("Invalid trade id. Trade doesn't exist");
+
+                    return false;
+                }
 
                 var senderId = trade.GetSenderId();
                 var receiverId = trade.GetReceiverId();
@@ -407,11 +414,18 @@ public class TradeService : ITradeService, IDisposable
         {
             try
             {
-                var tmp = await _repository.GetTradeAsync(model.TradeId)!;
+                var trade = await _repository.GetTradeAsync(model.TradeId)!;
 
-                result.SenderId = tmp.GetSenderId();
-                result.ReceiverId = tmp.GetReceiverId();
-                result.CreationDate = tmp.SentDate;
+                if (trade is null)
+                {
+                    taskCompletionSource.SetResult("Invalid trade id. Trade doesn't exist");
+
+                    return false;
+                }
+
+                result.SenderId = trade.GetSenderId();
+                result.ReceiverId = trade.GetReceiverId();
+                result.CreationDate = trade.SentDate;
 
                 if (!Equals(result.SenderId, model.UserId))
                 {
@@ -419,7 +433,7 @@ public class TradeService : ITradeService, IDisposable
                     return false;
                 }
 
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(tmp);
+                var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
 
                 if (!unlockTradeItemsResult.IsSuccess)
                 {
@@ -429,7 +443,7 @@ public class TradeService : ITradeService, IDisposable
 
                 var tradeItems = new List<TradeItemDTO>();
 
-                foreach (var tradeContent in tmp.TradeContents)
+                foreach (var tradeContent in trade.TradeContents)
                 {
                     var itemName = await GetItemNameAsync(tradeContent.ItemId);
                 
@@ -444,7 +458,7 @@ public class TradeService : ITradeService, IDisposable
 
                 result.Items = tradeItems;
 
-                if (!await _repository.RemoveEntityAsync(tmp))
+                if (!await _repository.RemoveEntityAsync(trade))
                 {
                     taskCompletionSource.SetResult("Something went wrong");
                     return false;

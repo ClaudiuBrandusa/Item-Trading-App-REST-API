@@ -30,7 +30,9 @@ public class Trade : AggregateRoot
     private Trade() { }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public Trade(DateTime sentDate, string senderId, string receiverId)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     {
         TradeId = GenerateId();
         SentDate = sentDate;
@@ -50,7 +52,9 @@ public class Trade : AggregateRoot
         Response = response;
     }
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public Trade(string tradeId, DateTime sentDate, string senderId, string receiverId)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     {
         TradeId = tradeId;
         SentDate = sentDate;

@@ -1,6 +1,5 @@
 ﻿using Application.Services.ConnectedUsers;
 using Item_Trading_App_Contracts.Notifications;
-using Item_Trading_App_Contracts.Notifications.Content;
 
 namespace Application.Utils.Notifications.Strategies;
 
@@ -13,7 +12,7 @@ public class NotifyAllUsersExceptStrategy : INotifyUserStrategy
         _exceptedUserId = exceptedUserId;
     }
 
-    public async Task Notify<T>(Notification<T> notification, IConnectedUsersRepository connectedUsersRepository) where T : NotificationContent
+    public async Task Notify(IClientNotification notification, IConnectedUsersRepository connectedUsersRepository)
     {
         var userIds = connectedUsersRepository.ListUserIds().Where(x => x != _exceptedUserId).ToArray();
         

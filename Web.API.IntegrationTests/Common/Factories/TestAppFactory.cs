@@ -61,10 +61,10 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
-                options.DefaultChallengeScheme = TestAuthHandler.Scheme;
+                options.DefaultAuthenticateScheme = TestAuthHandler.AuthSchemeName;
+                options.DefaultChallengeScheme = TestAuthHandler.AuthSchemeName;
             })
-            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, _ => { });
+            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthSchemeName, _ => { });
 
             services.AddAuthorization();
 

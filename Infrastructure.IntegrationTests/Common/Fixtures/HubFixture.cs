@@ -37,11 +37,11 @@ public class HubFixture : IAsyncLifetime
 
                        services.AddAuthentication(options =>
                        {
-                           options.DefaultAuthenticateScheme = HeaderAuthHandler.Scheme;
-                           options.DefaultChallengeScheme = HeaderAuthHandler.Scheme;
+                           options.DefaultAuthenticateScheme = HeaderAuthHandler.AuthSchemeName;
+                           options.DefaultChallengeScheme = HeaderAuthHandler.AuthSchemeName;
                        })
                         .AddScheme<AuthenticationSchemeOptions, HeaderAuthHandler>(
-                            HeaderAuthHandler.Scheme, _ => { });
+                            HeaderAuthHandler.AuthSchemeName, _ => { });
 
                        services.AddAuthorization();
 

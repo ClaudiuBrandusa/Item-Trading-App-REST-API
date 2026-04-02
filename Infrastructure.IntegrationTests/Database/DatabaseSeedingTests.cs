@@ -3,7 +3,6 @@ using Infrastructure.Extensions;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.IntegrationTests.Database;
 
@@ -14,8 +13,8 @@ public class DatabaseSeedingTests : IClassFixture<DatabaseFixture>
 
     public DatabaseSeedingTests(DatabaseFixture fixture)
     {
-        databaseContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        serviceProvider = fixture.ServiceProvider;
+        databaseContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        serviceProvider = fixture.ServiceProvider!;
     }
 
     [Fact(DisplayName = "Seed database")]

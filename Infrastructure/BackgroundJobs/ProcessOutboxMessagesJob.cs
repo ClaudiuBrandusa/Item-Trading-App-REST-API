@@ -33,6 +33,11 @@ public sealed class ProcessOutboxMessagesJob : IJob
 		foreach (var outboxMessage in messages)
 		{
 			var json = JsonNode.Parse(outboxMessage.Content);
+
+			if (json is null)
+			{
+				continue;
+			}
 			
 			if (!json.AsObject().TryGetPropertyValue("$type", out var typeJson))
 			{
@@ -40,6 +45,12 @@ public sealed class ProcessOutboxMessagesJob : IJob
 			}
 			var typeName = typeJson!.GetValue<string>();
 			var type = Type.GetType(typeName);
+
+			if (type is null)
+			{
+				continue;
+			}
+
 			var domainEvent = JsonSerializer.Deserialize(outboxMessage.Content, type) as IDomainEvent;
 				
 			if (domainEvent is null)

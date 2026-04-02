@@ -23,8 +23,6 @@ public class TradeTests
         // Assert
 
         Assert.NotEmpty(trade.TradeId);
-        Assert.NotNull(trade.SentTrade);
-        Assert.NotNull(trade.ReceivedTrade);
         Assert.Equal(expectedSentDate, trade.SentDate);
         Assert.Equal(senderUserId, trade.SenderId);
         Assert.Equal(receiverUserId, trade.ReceiverId);
@@ -32,11 +30,9 @@ public class TradeTests
         Assert.Equal(0, trade.GetTotalPrice());
         Assert.Null(trade.Response);
         Assert.Null(trade.ResponseDate);
-        var domainEvents = trade.GetDomainEvents();
-        Assert.NotNull(domainEvents);
+        var domainEvents = trade.GetDomainEvents()!;
         Assert.Single(domainEvents);
         var domainEvent = domainEvents.First();
-        Assert.NotNull(domainEvent);
         var tradeCreatedDomainEvent = Assert.IsAssignableFrom<TradeCreatedDomainEvent>(domainEvent);
         Assert.Equal(trade.TradeId, tradeCreatedDomainEvent.TradeId);
         Assert.Equal(receiverUserId, tradeCreatedDomainEvent.ReceiverId);
@@ -60,8 +56,6 @@ public class TradeTests
         // Assert
 
         Assert.NotEmpty(trade.TradeId);
-        Assert.NotNull(trade.SentTrade);
-        Assert.NotNull(trade.ReceivedTrade);
         Assert.Equal(expectedSentDate, trade.SentDate);
         Assert.Equal(senderUserId, trade.SenderId);
         Assert.Equal(receiverUserId, trade.ReceiverId);
@@ -70,10 +64,8 @@ public class TradeTests
         Assert.Equal(expectedResponse, trade.Response);
         Assert.Equal(expectedResponseDate, trade.ResponseDate);
         var domainEvents = trade.GetDomainEvents();
-        Assert.NotNull(domainEvents);
         Assert.Single(domainEvents);
         var domainEvent = domainEvents.First();
-        Assert.NotNull(domainEvent);
         var tradeCreatedDomainEvent = Assert.IsAssignableFrom<TradeCreatedDomainEvent>(domainEvent);
         Assert.Equal(trade.TradeId, tradeCreatedDomainEvent.TradeId);
         Assert.Equal(receiverUserId, tradeCreatedDomainEvent.ReceiverId);
@@ -96,8 +88,6 @@ public class TradeTests
         // Assert
 
         Assert.Equal(expectedTradeId, trade.TradeId);
-        Assert.NotNull(trade.SentTrade);
-        Assert.NotNull(trade.ReceivedTrade);
         Assert.Equal(expectedSentDate, trade.SentDate);
         Assert.Equal(senderUserId, trade.SenderId);
         Assert.Equal(receiverUserId, trade.ReceiverId);
@@ -106,7 +96,6 @@ public class TradeTests
         Assert.Null(trade.Response);
         Assert.Null(trade.ResponseDate);
         var domainEvents = trade.GetDomainEvents();
-        Assert.NotNull(domainEvents);
         Assert.Empty(domainEvents);
     }
 
@@ -154,19 +143,15 @@ public class TradeTests
 
         // Assert
 
-        Assert.NotEmpty(trade.TradeContents);
         Assert.Single(trade.TradeContents);
         var retrievedTradeContent = trade.TradeContents.First();
-        Assert.NotNull(retrievedTradeContent);
         Assert.Equal(expectedItemId, retrievedTradeContent.ItemId);
         Assert.Equal(trade.TradeId, retrievedTradeContent.TradeId);
         Assert.Equal(expectedQuantity, retrievedTradeContent.Quantity);
         Assert.Equal(expectedPrice, retrievedTradeContent.Price);
         var domainEvents = trade.GetDomainEvents();
-        Assert.NotNull(domainEvents);
         Assert.Single(domainEvents);
         var domainEvent = domainEvents.First();
-        Assert.NotNull(domainEvent);
         var tradeItemAddedDomainEvent = Assert.IsAssignableFrom<TradeItemAddedDomainEvent>(domainEvent);
         Assert.Equal(trade.TradeId, tradeItemAddedDomainEvent.TradeId);
         Assert.Equal(tradeContent.ItemId, tradeItemAddedDomainEvent.ItemId);
@@ -197,10 +182,8 @@ public class TradeTests
 
         // Assert
 
-        Assert.NotEmpty(trade.TradeContents);
         Assert.Single(trade.TradeContents);
         var retrievedTradeContent = trade.TradeContents.First();
-        Assert.NotNull(retrievedTradeContent);
         Assert.Equal(expectedItemId, retrievedTradeContent.ItemId);
         Assert.Equal(trade.TradeId, retrievedTradeContent.TradeId);
         Assert.Equal(expectedQuantity * 2, retrievedTradeContent.Quantity);

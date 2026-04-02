@@ -31,7 +31,7 @@ public class NotificationHubTests : IClassFixture<DbOnlyTestAppFactory>
             tcs.TrySetResult(msg);
         });
 
-        await connection.StartAsync();
+        await connection.StartAsync(CancellationToken.None);
 
         var service = _factory.Services.GetRequiredService<IConnectedUsersRepository>();
 
@@ -58,7 +58,7 @@ public class NotificationHubTests : IClassFixture<DbOnlyTestAppFactory>
             tcs.TrySetResult(msg);
         });
 
-        await connection.StartAsync();
+        await connection.StartAsync(CancellationToken.None);
 
         var received = await tcs.Task;
         Assert.NotEmpty(received);

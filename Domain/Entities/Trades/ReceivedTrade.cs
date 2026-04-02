@@ -11,10 +11,10 @@ public class ReceivedTrade : Entity
     public string ReceiverId { get; private set; }
 
     [JsonIgnore]
-    public virtual Trade Trade { get; private set; }
+    public virtual Trade? Trade { get; private set; }
 
     [JsonIgnore]
-    public virtual User User { get; private set; }
+    public virtual User? User { get; private set; }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private ReceivedTrade() { }

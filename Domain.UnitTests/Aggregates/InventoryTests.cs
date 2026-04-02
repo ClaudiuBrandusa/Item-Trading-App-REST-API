@@ -20,7 +20,6 @@ public class InventoryTests
         // Assert
 
         Assert.Equal(userId, inventory.UserId);
-        Assert.NotNull(inventory.OwnedItems);
         Assert.Empty(inventory.OwnedItems);
     }
 
@@ -60,10 +59,8 @@ public class InventoryTests
 
         // Assert
 
-        Assert.NotNull(inventory.OwnedItems);
         Assert.Single(inventory.OwnedItems);
-        var firstElement = inventory.OwnedItems.FirstOrDefault();
-        Assert.NotNull(firstElement);
+        var firstElement = inventory.OwnedItems.FirstOrDefault()!;
         Assert.Equal(itemId, firstElement.ItemId);
         Assert.Equal(expectedQuantity, firstElement.Quantity);
         var domainEvents = inventory.GetDomainEvents();
@@ -87,22 +84,18 @@ public class InventoryTests
         var action1 = () =>
         {
             inventory.AddItem(string.Empty, expectedQuantity);
-
-            return Task.CompletedTask;
         };
 
         var action2 = () =>
         {
             inventory.AddItem(itemId, 0);
-
-            return Task.CompletedTask;
         };
 
         // Assert
 
         Assert.NotNull(inventory);
-        await Assert.ThrowsAsync<ArgumentException>(action1);
-        await Assert.ThrowsAsync<ArgumentException>(action2);
+        Assert.Throws<ArgumentException>(action1);
+        Assert.Throws<ArgumentException>(action2);
     }
 
     [Fact]
@@ -122,7 +115,6 @@ public class InventoryTests
 
         // Assert
 
-        Assert.NotNull(inventory.OwnedItems);
         Assert.Empty(inventory.OwnedItems);
     }
 
@@ -145,10 +137,8 @@ public class InventoryTests
 
         // Assert
 
-        Assert.NotNull(inventory.OwnedItems);
         Assert.Single(inventory.OwnedItems);
-        var firstElement = inventory.OwnedItems.FirstOrDefault();
-        Assert.NotNull(firstElement);
+        var firstElement = inventory.OwnedItems.FirstOrDefault()!;
         Assert.Equal(itemId, firstElement.ItemId);
         Assert.Equal(remainedQuantity, firstElement.Quantity);
     }
@@ -171,39 +161,30 @@ public class InventoryTests
         var action1 = () =>
         {
             inventory.DropItem(string.Empty, expectedQuantity);
-
-            return Task.CompletedTask;
         };
 
         var action2 = () =>
         {
             inventory.DropItem(unusedItemId, 0);
-
-            return Task.CompletedTask;
         };
 
         var action3 = () =>
         {
             inventory.DropItem(unusedItemId, expectedQuantity);
-
-            return Task.CompletedTask;
         };
 
         var action4 = () =>
         {
             inventory.DropItem(itemId, expectedQuantity + 2);
-
-            return Task.CompletedTask;
         };
 
         // Assert
 
-        Assert.NotNull(inventory);
         Assert.Single(inventory.OwnedItems);
-        await Assert.ThrowsAsync<ArgumentException>(action1);
-        await Assert.ThrowsAsync<ArgumentException>(action2);
-        await Assert.ThrowsAsync<ArgumentException>(action3);
-        await Assert.ThrowsAsync<ArgumentException>(action4);
+        Assert.Throws<ArgumentException>(action1);
+        Assert.Throws<ArgumentException>(action2);
+        Assert.Throws<ArgumentException>(action3);
+        Assert.Throws<ArgumentException>(action4);
     }
 
     [Fact]
@@ -228,11 +209,10 @@ public class InventoryTests
 
         // Act
 
-        var retrievedItemIds = inventory.ItemIds.ToArray();
+        var retrievedItemIds = inventory.ItemIds.ToArray()!;
 
         // Assert
 
-        Assert.NotNull(retrievedItemIds);
         Assert.Equal(itemsAmount, retrievedItemIds.Length);
         Assert.All(expectedItemIds, expectedItemId => retrievedItemIds.Contains(expectedItemId));
     }

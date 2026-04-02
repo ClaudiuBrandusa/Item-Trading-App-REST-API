@@ -183,7 +183,7 @@ public class IdentityRepositoryTests
         // Assert
 
         Assert.True(userUpdatedResult, "User should have been updated");
-        Assert.Equal(userMock.Id, userResult.Id);
+        Assert.Equal(userMock.Id, userResult!.Id);
         Assert.Equal(userMock.UserName, userResult.UserName);
         Assert.Equal(userMock.Email, userResult.Email);
     }

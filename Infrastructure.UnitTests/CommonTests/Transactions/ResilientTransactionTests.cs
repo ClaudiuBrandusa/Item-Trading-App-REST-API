@@ -39,7 +39,7 @@ public class ResilientTransactionTests
 
     internal class MockData
     {
-        public string Data { get; set; }
+        public required string Data { get; set; }
     }
 
     [Fact(DisplayName = "Execute a transaction that will be committed")]
@@ -91,7 +91,7 @@ public class ResilientTransactionTests
 
         await transaction.ExecuteAsync(() =>
         {
-            object x = null;
+            object? x = null;
             x!.ToString();
             return Task.FromResult(true);
         });
@@ -212,7 +212,7 @@ public class ResilientTransactionTests
 
         var result = await transaction.ExecuteAsync<MockData>(async (taskCompletionSource) =>
         {
-            object x = null;
+            object? x = null;
             x!.ToString();
             return true;
         });

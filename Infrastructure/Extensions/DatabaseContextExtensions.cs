@@ -67,7 +67,7 @@ public static class DatabaseContextExtensions
 
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Console.WriteLine("Failed to seed the database");
                 return false;

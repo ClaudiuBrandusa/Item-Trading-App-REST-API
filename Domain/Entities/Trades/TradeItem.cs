@@ -16,10 +16,10 @@ public class TradeItem : Entity
     public int Price { get; private set; }
 
     [JsonIgnore]
-    public virtual Item Item { get; private set; }
+    public virtual Item? Item { get; private set; }
 
     [JsonIgnore]
-    public virtual Trade Trade { get; private set; }
+    public virtual Trade? Trade { get; private set; }
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private TradeItem() { }

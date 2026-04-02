@@ -8,7 +8,7 @@ namespace Web.API.IntegrationTests.Common.Auth;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public const string Scheme = "TestScheme";
+    public const string AuthSchemeName = "TestScheme";
 
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -33,7 +33,7 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         if (!string.IsNullOrWhiteSpace(role))
             claims.Add(new Claim(ClaimTypes.Role, role));
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme));
-        return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme)));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, AuthSchemeName));
+        return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, AuthSchemeName)));
     }
 }

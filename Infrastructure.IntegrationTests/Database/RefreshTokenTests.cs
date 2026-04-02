@@ -6,7 +6,6 @@ using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -23,10 +22,10 @@ public class RefreshTokenTests : IClassFixture<DatabaseFixture>
 
     public RefreshTokenTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var userManager = fixture.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        var userManager = fixture.GetService<UserManager<User>>();
         _repository = new RefreshTokenRepository(dbContextWrapper, userManager);
-        _serviceProvider = fixture.ServiceProvider;
+        _serviceProvider = fixture.ServiceProvider!;
     }
 
     [Fact]
@@ -110,9 +109,9 @@ public class RefreshTokenTests : IClassFixture<DatabaseFixture>
         // Arrange
 
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
-        var serviceProvider = dbFixture.ServiceProvider;
-        var dbContextWrapper = serviceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var userManager = dbFixture.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var dbContextWrapper = dbFixture.GetService<IDatabaseContextWrapper>();
+        var userManager = dbFixture.GetService<UserManager<User>>();
+        var serviceProvider = dbFixture.ServiceProvider!;
         var repository = new RefreshTokenRepository(dbContextWrapper, userManager);
 
         var users = await TestingScenarios.CreateUsers(serviceProvider, DEFAULT_USER_NAME, 3, 3);

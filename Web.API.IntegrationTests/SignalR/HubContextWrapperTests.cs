@@ -30,7 +30,7 @@ public class HubContextWrapperTests : IClassFixture<DbOnlyTestAppFactory>
             tcs.TrySetResult(msg);
         });
 
-        await connection.StartAsync();
+        await connection.StartAsync(CancellationToken.None);
 
         var service = _factory.Services.GetRequiredService<IHubContextWrapper>();
 

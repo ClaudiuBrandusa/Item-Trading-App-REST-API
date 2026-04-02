@@ -31,10 +31,6 @@ public abstract class RepositoryBase : IRepository, IDisposable
         catch (InvalidOperationException)
         {
         }
-        catch (Exception ex)
-        {
-            
-        }
         finally
         {
             DatabaseContextWrapper.DisposeDatabaseContext(context);

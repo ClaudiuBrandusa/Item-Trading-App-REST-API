@@ -1001,7 +1001,7 @@ public class TradeServiceTests
                     UserId = receiverUserId
                 });
 
-            tradeOfferIds.Add(tradeOfferResult.Content.TradeId);
+            tradeOfferIds.Add(tradeOfferResult.Content!.TradeId);
         }
 
         return tradeOfferIds;

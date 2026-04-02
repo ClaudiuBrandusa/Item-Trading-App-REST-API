@@ -60,7 +60,7 @@ public class TradeRepositoryTests
             await _sut.AddEntityAsync(tradeMock);
         }
 
-        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync();
+        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync(CancellationToken.None);
 
         // Act
 
@@ -83,10 +83,10 @@ public class TradeRepositoryTests
         {
             var tradeMock = new Trade(DateTime.UtcNow, DEFAULT_SENDER_ID, DEFAULT_RECEIVER_ID);
 
-            var createdTradeResult = await _sut.AddEntityAsync(tradeMock);
+            await _sut.AddEntityAsync(tradeMock);
         }
 
-        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync();
+        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync(CancellationToken.None);
 
         // Act
 

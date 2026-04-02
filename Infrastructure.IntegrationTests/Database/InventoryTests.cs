@@ -7,7 +7,6 @@ using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Inventories;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.IntegrationTests.Database;
 public class InventoryTests : IClassFixture<DatabaseFixture>
@@ -17,9 +16,9 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
 
     public InventoryTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
+        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
         _repository = new InventoryRepository(dbContextWrapper);
-        _serviceProvider = fixture.ServiceProvider;
+        _serviceProvider = fixture.ServiceProvider!;
     }
 
     [Fact]

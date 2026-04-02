@@ -8,15 +8,14 @@ namespace Infrastructure.IntegrationTests.Common.Mocks;
 
 public sealed class HeaderAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public const string Scheme = "HeaderTestAuth";
+    public const string AuthSchemeName = "HeaderTestAuth";
     public const string HeaderUserId = "x-user-id";
     public const string HeaderUserName = "x-test-user";
 
     public HeaderAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder,
-        ISystemClock systemClock) : base(options, logger, encoder, systemClock)
+        UrlEncoder encoder) : base(options, logger, encoder)
     { }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -35,9 +34,9 @@ public sealed class HeaderAuthHandler : AuthenticationHandler<AuthenticationSche
         if (!string.IsNullOrWhiteSpace(userName))
             claims.Add(new Claim(ClaimTypes.Name, userName));
 
-        var identity = new ClaimsIdentity(claims, Scheme);
+        var identity = new ClaimsIdentity(claims, AuthSchemeName);
         var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, Scheme);
+        var ticket = new AuthenticationTicket(principal, AuthSchemeName);
 
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }

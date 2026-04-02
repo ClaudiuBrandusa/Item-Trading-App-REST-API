@@ -62,7 +62,7 @@ public static class Utils
         where R : FailedResponse
     {
         var objectResult = result as ObjectResult;
-        return new ApiResponse<T,R>(objectResult);
+        return new ApiResponse<T,R>(objectResult!);
     }
     
     public static OkObjectResult? AssertActionResultAsOkObjectResult(IActionResult? actionResult)

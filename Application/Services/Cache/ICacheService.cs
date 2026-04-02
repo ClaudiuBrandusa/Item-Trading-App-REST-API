@@ -4,7 +4,7 @@ public interface ICacheService
 {
     Task<string> GetCacheValueAsync(string key);
 
-    Task<T> GetCacheValueAsync<T>(string key);
+    Task<T?> GetCacheValueAsync<T>(string key);
 
     Task<long> CountSetMembers(string key);
 

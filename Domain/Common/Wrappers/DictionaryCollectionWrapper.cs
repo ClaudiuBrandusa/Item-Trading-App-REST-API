@@ -7,6 +7,7 @@ namespace Domain.Common.Wrappers;
 /// </summary>
 public class DictionaryCollectionWrapper<TKey, TEntity>
     : ICollection<TEntity>, IReadOnlyCollection<TEntity>
+    where TKey : notnull
     where TEntity : class
 {
     private readonly Dictionary<TKey, TEntity> _dict;

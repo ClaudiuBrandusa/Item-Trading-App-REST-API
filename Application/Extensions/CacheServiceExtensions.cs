@@ -113,13 +113,13 @@ public static class CacheServiceExtensions
         return entity;
     }
 
-    public static async Task<EntityType?> GetEntityReferenceAsync<CachedType, EntityType>(this ICacheService service, string cacheKey, Func<object[], Task<EntityType>> readFromDb, Func<EntityType, CachedType> convertEntityToCachedEntity, Func<CachedType, EntityType> convertCachedEntityToEntity, bool setCache = false, params object[] args) where EntityType : class
+    public static async Task<EntityType?> GetEntityReferenceAsync<CachedType, EntityType>(this ICacheService service, string cacheKey, Func<object[], Task<EntityType?>> readFromDb, Func<EntityType, CachedType> convertEntityToCachedEntity, Func<CachedType, EntityType> convertCachedEntityToEntity, bool setCache = false, params object[] args) where EntityType : class
     {
         var isNullable = !typeof(EntityType).IsValueType || Nullable.GetUnderlyingType(typeof(EntityType)) != null;
 
         var cached = await service.GetCacheValueAsync<CachedType>(cacheKey);
 
-        EntityType? entity;
+        EntityType? entity = null;
 
         if (isNullable && cached is null || !await service.ContainsKey(cacheKey))
         {
@@ -128,7 +128,7 @@ public static class CacheServiceExtensions
             if (setCache && entity is not null)
                 await service.SetCacheValueAsync(cacheKey, convertEntityToCachedEntity(entity));
         }
-        else
+        else if (cached is not null)
         {
             entity = convertCachedEntityToEntity(cached);
         }

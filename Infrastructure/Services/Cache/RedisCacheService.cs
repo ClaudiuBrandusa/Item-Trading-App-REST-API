@@ -23,7 +23,7 @@ public class RedisCacheService : ICacheService
         return (await Database.StringGetAsync(key)).ToString();
     }
 
-    public async Task<T> GetCacheValueAsync<T>(string key)
+    public async Task<T?> GetCacheValueAsync<T>(string key)
     {
         var value = await GetCacheValueAsync(key);
 
@@ -94,15 +94,21 @@ public class RedisCacheService : ICacheService
     {
         var dictionary = new Dictionary<string, T>();
         var endPoints = _connectionMultiplexer.GetEndPoints();
-
+        
         foreach (var endpoint in endPoints)
         {
             IServer server = _connectionMultiplexer.GetServer(endpoint);
             var keys = server.KeysAsync(Database.Database, $"{prefix}*");
             await foreach (var key in keys)
             {
-                var value = await GetCacheValueAsync(key);
-                dictionary.Add(removePrefix ? key.ToString().Replace(prefix, string.Empty) : key, typeof(T) == typeof(string) ? (T)(value as object) : JsonSerializer.Deserialize<T>(value));
+                var value = await GetCacheValueAsync(key!);
+                var dictionaryKey = removePrefix ? key.ToString().Replace(prefix, string.Empty) : key.ToString();
+                var dictionaryValue = typeof(T) == typeof(string) ? (T)(value as object) : JsonSerializer.Deserialize<T>(value);
+
+                if (dictionaryValue is null)
+                    continue;
+
+                dictionary.Add(dictionaryKey, dictionaryValue!);
             }
         }
 
@@ -113,7 +119,10 @@ public class RedisCacheService : ICacheService
     {
         var members = await Database.SetMembersAsync(key);
 
-        return members.ToStringArray();
+        if (members is null)
+            return Array.Empty<string>();
+
+        return members.ToStringArray()!;
     }
 
     public Task ClearCacheKeyAsync(string key) =>
@@ -142,15 +151,6 @@ public class RedisCacheService : ICacheService
 
         await HandleEmptySet(length, key);
     }
-
-    /*public async Task RemoveFromSet(string key, RedisValue[] values)
-    {
-        await Database.SetRemoveAsync(key, values);
-
-        long length = await CountSetMembers(key);
-
-        await HandleEmptySet(length, key);
-    }*/
 
     private Task HandleEmptySet(long length, string key)
     {

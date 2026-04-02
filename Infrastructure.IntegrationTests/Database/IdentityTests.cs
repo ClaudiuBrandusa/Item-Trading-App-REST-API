@@ -4,7 +4,6 @@ using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.IntegrationTests.Database;
 
@@ -14,8 +13,8 @@ public class IdentityTests : IClassFixture<DatabaseFixture>
 
     public IdentityTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var userManager = fixture.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        var userManager = fixture.GetService<UserManager<User>>();
         _repository = new IdentityRepository(dbContextWrapper, userManager);
     }
 
@@ -216,8 +215,8 @@ public class IdentityTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
-        var dbContextWrapper = dbFixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var userManager = dbFixture.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var dbContextWrapper = dbFixture.GetService<IDatabaseContextWrapper>();
+        var userManager = dbFixture.GetService<UserManager<User>>();
         var repository = new IdentityRepository(dbContextWrapper, userManager);
 
         int expectedUsersCount = 5;

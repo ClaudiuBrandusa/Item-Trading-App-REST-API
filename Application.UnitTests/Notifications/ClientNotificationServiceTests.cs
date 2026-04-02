@@ -1,4 +1,5 @@
-﻿using Application.Services.ConnectedUsers;
+﻿using Application.Constants;
+using Application.Services.ConnectedUsers;
 using Application.Utils.Notifications;
 using Application_UnitTests.Notifications.Helpers;
 using Infrastructure.Services.Notification;
@@ -22,16 +23,16 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedNotificationType = "data_created";
+        var expectedNotificationType = NotificationTypes.Created;
         var expectedId = string.Empty;
 
         await sut.SendCreatedNotificationAsync(nus, expectedCategoryType, expectedId);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
             .HasContent(expectedCategoryType, expectedId);
 
-        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentWithCustomData>>((notification) => validator.Validate(notification)), repo), Times.Once);
+        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContent>>((notification) => validator.Validate(notification)), repo), Times.Once);
     }
 
     [Fact]
@@ -47,17 +48,19 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedNotificationType = "data_created";
+        var expectedNotificationType = NotificationTypes.Created;
         var expectedId = string.Empty;
-        var expectedCustomData = new { };
+        var expectedCustomData = new MockData { Value = 123 };
+        var customDataType = expectedCustomData.GetType();
 
         await sut.SendCreatedNotificationAsync(nus, expectedCategoryType, expectedId, expectedCustomData);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
-            .HasContent(expectedCategoryType, expectedId, expectedCustomData);
+            .HasContent(expectedCategoryType, expectedId)
+            .HasCustomDataValidationRule((data) => data is not null && data.Value == expectedCustomData.Value);
 
-        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentWithCustomData>>((notification) => validator.Validate(notification)), repo), Times.Once);
+        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentJson>>((notification) => validator.Validate(notification)), repo), Times.Once);
     }
 
 
@@ -75,12 +78,12 @@ public class ClientNotificationServiceTests
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
         var expectedDateTime = DateTime.UtcNow;
-        var expectedNotificationType = "information";
+        var expectedNotificationType = NotificationTypes.Information;
         var expectedId = string.Empty;
 
         await sut.SendMessageNotificationAsync(nus, expectedCategoryType, expectedDateTime);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
             .HasMessageContent(expectedCategoryType, expectedDateTime);
 
@@ -100,16 +103,16 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedNotificationType = "data_changed";
+        var expectedNotificationType = NotificationTypes.Changed;
         var expectedId = string.Empty;
 
         await sut.SendUpdatedNotificationAsync(nus, expectedCategoryType, expectedId);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
             .HasContent(expectedCategoryType, expectedId);
 
-        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentWithCustomData>>((notification) => validator.Validate(notification)), repo), Times.Once);
+        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContent>>((notification) => validator.Validate(notification)), repo), Times.Once);
     }
 
     [Fact]
@@ -125,17 +128,18 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedNotificationType = "data_changed";
+        var expectedNotificationType = NotificationTypes.Changed;
         var expectedId = string.Empty;
-        var expectedCustomData = new { };
+        var expectedCustomData = new MockData { Value = 123 };
 
         await sut.SendUpdatedNotificationAsync(nus, expectedCategoryType, expectedId, expectedCustomData);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
-            .HasContent(expectedCategoryType, expectedId, expectedCustomData);
+            .HasContent(expectedCategoryType, expectedId)
+            .HasCustomDataValidationRule((data) => data is not null && data.Value == expectedCustomData.Value);
 
-        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentWithCustomData>>((notification) => validator.Validate(notification)), repo), Times.Once);
+        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentJson>>((notification) => validator.Validate(notification)), repo), Times.Once);
     }
 
     [Fact]
@@ -151,16 +155,16 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedNotificationType = "data_deleted";
+        var expectedNotificationType = NotificationTypes.Deleted;
         var expectedId = string.Empty;
 
         await sut.SendDeletedNotificationAsync(nus, expectedCategoryType, expectedId);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
             .HasContent(expectedCategoryType, expectedId);
 
-        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentWithCustomData>>((notification) => validator.Validate(notification)), repo), Times.Once);
+        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContent>>((notification) => validator.Validate(notification)), repo), Times.Once);
     }
 
     [Fact]
@@ -176,21 +180,27 @@ public class ClientNotificationServiceTests
 
         var nus = nusMock.Object;
         var expectedCategoryType = string.Empty;
-        var expectedNotificationType = "data_deleted";
+        var expectedNotificationType = NotificationTypes.Deleted;
         var expectedId = string.Empty;
-        var expectedCustomData = new { };
+        var expectedCustomData = new MockData { Value = 123 };
 
         await sut.SendDeletedNotificationAsync(nus, expectedCategoryType, expectedId, expectedCustomData);
 
-        var validator = SetValidator()
+        var validator = SetValidator<MockData>()
             .HasNotificationType(expectedNotificationType)
-            .HasContent(expectedCategoryType, expectedId, expectedCustomData);
+            .HasContent(expectedCategoryType, expectedId)
+            .HasCustomDataValidationRule((data) => data is not null && data.Value == expectedCustomData.Value);
 
-        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentWithCustomData>>((notification) => validator.Validate(notification)), repo), Times.Once);
+        nusMock.Verify(x => x.Notify(It.Is<Notification<ModifiedContentJson>>((notification) => validator.Validate(notification)), repo), Times.Once);
     }
 
-    private static NotificationValidator SetValidator()
+    public class MockData
     {
-        return new NotificationValidator();
+        public int Value { get; set; }
+    }
+
+    private static NotificationValidator<T> SetValidator<T>()
+    {
+        return new NotificationValidator<T>();
     }
 }

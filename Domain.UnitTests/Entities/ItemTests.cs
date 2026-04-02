@@ -18,8 +18,7 @@ namespace Domain.UnitTests.Entities
 
             // Assert
 
-            Assert.NotNull(item);
-            Assert.True(!string.IsNullOrEmpty(item.ItemId));
+            Assert.NotEmpty(item.ItemId);
             Assert.Equal(expectedName, item.Name);
             Assert.Equal(expectedDescription, item.Description);
         }
@@ -37,8 +36,7 @@ namespace Domain.UnitTests.Entities
 
             // Assert
 
-            Assert.NotNull(item);
-            Assert.True(!string.IsNullOrEmpty(item.ItemId));
+            Assert.NotEmpty(item.ItemId);
             Assert.Equal(expectedName, item.Name);
             Assert.Empty(item.Description);
         }

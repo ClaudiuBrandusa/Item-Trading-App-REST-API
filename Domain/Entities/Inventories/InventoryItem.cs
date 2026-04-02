@@ -14,7 +14,9 @@ public class InventoryItem : Entity
 
     public int FreeAmount => Quantity - LockedAmount;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     private InventoryItem() { } // EF Core
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public InventoryItem(string userId, string itemId, int quantity, int lockedAmount = 0)
     {

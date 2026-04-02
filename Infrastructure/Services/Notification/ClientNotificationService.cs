@@ -4,6 +4,8 @@ using Item_Trading_App_Contracts.Notifications.Content;
 using Item_Trading_App_Contracts.Notifications;
 using Application.Services.ConnectedUsers;
 using Application.Utils.Notifications;
+using System.Text.Json.Nodes;
+using System.Text.Json;
 
 namespace Infrastructure.Services.Notification;
 
@@ -18,7 +20,7 @@ public class ClientNotificationService : IClientNotificationService
 
     public Task SendCreatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
-        var notification = CreateModifiedNotificationObject(NotificationTypes.Created, categoryType, id, customData);
+        var notification = CreateModifiedNotification(NotificationTypes.Created, categoryType, id, customData);
 
         return nus.Notify(notification, _connectedUsersRepository);
     }
@@ -32,14 +34,14 @@ public class ClientNotificationService : IClientNotificationService
 
     public Task SendUpdatedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
-        var notification = CreateModifiedNotificationObject(NotificationTypes.Changed, categoryType, id, customData);
+        var notification = CreateModifiedNotification(NotificationTypes.Changed, categoryType, id, customData);
 
         return nus.Notify(notification, _connectedUsersRepository);
     }
 
     public Task SendDeletedNotificationAsync(INotifyUserStrategy nus, string categoryType, string id, object? customData = null)
     {
-        var notification = CreateModifiedNotificationObject(NotificationTypes.Deleted, categoryType, id, customData);
+        var notification = CreateModifiedNotification(NotificationTypes.Deleted, categoryType, id, customData);
 
         return nus.Notify(notification, _connectedUsersRepository);
     }
@@ -57,18 +59,25 @@ public class ClientNotificationService : IClientNotificationService
         };
     }
 
-    private static Notification<ModifiedContent> CreateModifiedNotificationObject(string notificationType, string categoryType, string id)
+    private static IClientNotification CreateModifiedNotification(string notificationType, string categoryType, string id, object? customData)
     {
-        return CreateModifiedNotification(notificationType, categoryType, id);
-    }
+        if (customData is not null)
+        {
+            var jsonNode = JsonNode.Parse(JsonSerializer.Serialize(customData));
 
-    private static Notification<ModifiedContentWithCustomData> CreateModifiedNotificationObject(string notificationType, string categoryType, string id, object customData)
-    {
-        return CreateModifiedNotification(notificationType, categoryType, id, customData);
-    }
+            if (jsonNode is not null)
+                return new Notification<ModifiedContentJson>
+                {
+                    Type = notificationType,
+                    Content = new ModifiedContentJson
+                    {
+                        Category = categoryType,
+                        Id = id,
+                        Content = jsonNode
+                    }
+                };
+        }
 
-    private static Notification<ModifiedContent> CreateModifiedNotification(string notificationType, string categoryType, string id)
-    {
         return new Notification<ModifiedContent>
         {
             Type = notificationType,
@@ -76,20 +85,6 @@ public class ClientNotificationService : IClientNotificationService
             {
                 Category = categoryType,
                 Id = id
-            }
-        };
-    }
-
-    private static Notification<ModifiedContentWithCustomData> CreateModifiedNotification(string notificationType, string categoryType, string id, object customData)
-    {
-        return new Notification<ModifiedContentWithCustomData>
-        {
-            Type = notificationType,
-            Content = new ModifiedContentWithCustomData
-            {
-                Category = categoryType,
-                Id = id,
-                CustomData = customData
             }
         };
     }

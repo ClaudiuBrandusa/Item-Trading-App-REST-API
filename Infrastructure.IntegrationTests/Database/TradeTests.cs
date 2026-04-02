@@ -8,7 +8,6 @@ using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Trades;
 using Infrastructure.Services.DatabaseContextWrapper;
 using MediatR;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.IntegrationTests.Database;
 
@@ -19,10 +18,10 @@ public class TradeTests : IClassFixture<DatabaseFixture>
 
     public TradeTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.ServiceProvider.GetRequiredService<IDatabaseContextWrapper>();
-        var sender = fixture.ServiceProvider.GetRequiredService<ISender>();
+        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        var sender = fixture.GetService<ISender>();
         _repository = new TradeRepository(dbContextWrapper, sender);
-        _serviceProvider = fixture.ServiceProvider;
+        _serviceProvider = fixture.ServiceProvider!;
     }
 
     [Fact]
@@ -82,7 +81,7 @@ public class TradeTests : IClassFixture<DatabaseFixture>
 
         Assert.True(addTradeItemResult);
         Assert.NotNull(retrievedTrade);
-        Assert.Equal(trade.SentDate, updatedTrade.SentDate);
+        Assert.Equal(trade.SentDate, updatedTrade!.SentDate);
         Assert.Equal(trade.ResponseDate, updatedTrade.ResponseDate);
         Assert.Equal(trade.Response, updatedTrade.Response);
         Assert.Equal(trade.TradeId, updatedTrade.TradeId);
