@@ -40,7 +40,7 @@ public class ItemService : IItemService, IDisposable
         if (!await _repository.AddEntityAsync(item))
             return Result<FullItemResult>.Failure("Unable to add this item");
 
-        await _publisher.Publish(new ItemCreatedDomainEvent(item, model.SenderUserId));
+        await _publisher.Publish(new ItemCreatedDomainEvent(item.ItemId, model.SenderUserId));
         
         return Result<FullItemResult>.Success(new FullItemResult
         {
@@ -66,7 +66,7 @@ public class ItemService : IItemService, IDisposable
         if (!await _repository.UpdateEntityAsync(item))
             return Result<FullItemResult>.Failure("Unable to update item");
 
-        await _publisher.Publish(new ItemUpdatedDomainEvent(item, model.SenderUserId));
+        await _publisher.Publish(new ItemUpdatedDomainEvent(item.ItemId, model.SenderUserId));
         
         return Result<FullItemResult>.Success(new FullItemResult
         {

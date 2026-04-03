@@ -3,7 +3,7 @@ using Application.Services.Cache;
 using Domain.DomainEvents.Trades;
 using MediatR;
 
-namespace Application.Behaviors.Trade.RemoveTradeItems;
+namespace Application.Behaviors.Trade.RemoveTradeItem;
 
 public class TradeItemRemovedEventHandler : INotificationHandler<TradeItemRemovedDomainEvent>
 {

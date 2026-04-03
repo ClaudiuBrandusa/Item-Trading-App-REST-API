@@ -22,18 +22,21 @@ public class TradeCreatedDomainEventHandler : INotificationHandler<TradeCreatedD
     {
         var notificationStrategy = NotificationHelper.CreateSingleUserNotificationStrategy(notification.ReceiverId);
         
+        var task = async () =>
+        {
+            var username = await _mediator.Send(new GetUsernameQuery { UserId = notification.ReceiverId });
+            await _clientNotificationService.SendMessageNotificationAsync(
+                    notificationStrategy,
+                    $"You've received a trade from {username}",
+                    DateTime.UtcNow);
+        };
+
         return Task.WhenAll(
+            task.Invoke(),
             _clientNotificationService.SendCreatedNotificationAsync(
                 notificationStrategy,
                 NotificationCategoryTypes.Trade,
-                notification.TradeId),
-            Task.Run(async () =>
-            {
-                var username = await _mediator.Send(new GetUsernameQuery { UserId = notification.ReceiverId });
-                await _clientNotificationService.SendMessageNotificationAsync(
-                        notificationStrategy,
-                        $"You've received a trade from {username}",
-                        DateTime.UtcNow);
-            }, CancellationToken.None));
+                notification.TradeId)
+        );
     }
 }

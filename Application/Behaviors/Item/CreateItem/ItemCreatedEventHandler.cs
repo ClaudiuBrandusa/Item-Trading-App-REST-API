@@ -17,11 +17,11 @@ public class ItemCreatedEventHandler : INotificationHandler<ItemCreatedDomainEve
 
     public Task Handle(ItemCreatedDomainEvent notification, CancellationToken cancellationToken)
     {
-        var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.SenderUserId);
+        var notificationStrategy = NotificationHelper.CreateAllUsersExceptNotificationStrategy(notification.UserId);
 
         return _clientNotificationService.SendCreatedNotificationAsync(
                 notificationStrategy,
                 NotificationCategoryTypes.Item,
-                notification.Item.ItemId);
+                notification.ItemId);
     }
 }
