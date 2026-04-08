@@ -1,21 +1,10 @@
-﻿using Application.Installers;
-using Application.Services.Cache;
+using Moq;
 using Domain.Repositories;
-using Mapster;
-using MapsterMapper;
 
-namespace Application_UnitTests.Utils;
+namespace CommonTestUtils.MockedServices;
 
-public static class TestingUtils
+public static class RepositoryUtils
 {
-    public static IMapper GetMapper()
-    {
-        var config = TypeAdapterConfig.GlobalSettings.Clone();
-        config.RuleMap.Clear();
-        config.Scan(typeof(MapsterInstaller).Assembly);
-        return new Mapper(config);
-    }
-
     public static Mock<R> CreateRepositoryMock<T, R>(List<T> collection) where R : class, IRepository
     {
         var repositoryMock = new Mock<R>();
@@ -77,15 +66,5 @@ public static class TestingUtils
                       .ReturnsAsync(collection.Count);
 
         return repositoryMock;
-    }
-
-    public static Mock<ICacheService> GetCacheServiceMock()
-    {
-        var cacheServiceMock = new Mock<ICacheService>();
-
-        cacheServiceMock.Setup(service => service.GetCacheValueAsync(It.IsAny<string>()))
-            .ReturnsAsync(() => null!);
-
-        return cacheServiceMock;
     }
 }

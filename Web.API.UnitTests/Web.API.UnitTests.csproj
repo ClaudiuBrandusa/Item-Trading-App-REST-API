@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Web.API\Web.API.csproj" />
+    <ProjectReference Include="..\CommonTestUtils\CommonTestUtils.csproj" />
   </ItemGroup>
 
   <ItemGroup>

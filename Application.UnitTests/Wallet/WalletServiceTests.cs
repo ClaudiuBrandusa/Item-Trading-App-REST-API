@@ -20,7 +20,7 @@ public class WalletServiceTests
     {
         collection = new List<User>();
 
-        var userRepositoryMock = TestingUtils.CreateRepositoryMock<User, IUserRepository>(collection);
+        var userRepositoryMock = RepositoryUtils.CreateRepositoryMock<User, IUserRepository>(collection);
 
         #region MediatorMocks
 

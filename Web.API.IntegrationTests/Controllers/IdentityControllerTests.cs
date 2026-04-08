@@ -1,8 +1,9 @@
+using CommonTestUtils.Extensions;
+using CommonTestUtils.Wrappers;
 using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Controllers;
 using Web.API.IntegrationTests.Common.Factories;
-using Web.API.IntegrationTests.Controllers.Common;
 using static Web.API.IntegrationTests.Controllers.Common.Utils;
 
 namespace Web.API.IntegrationTests.Controllers;

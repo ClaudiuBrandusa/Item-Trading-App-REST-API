@@ -1,11 +1,11 @@
 using System.Security.Claims;
+using CommonTestUtils.MockedServices;
 using Domain.Entities.Identity;
 using Infrastructure.Data;
-using static Web.API.IntegrationTests.Controllers.Common.Utils;
 
-namespace Web.API.IntegrationTests.Controllers.Common;
+namespace CommonTestUtils.Extensions;
 
-public static class Extensions
+public static class DatabaseContextExtensions
 {
     public static User? GetUserByName(this DatabaseContext dbContext, string username)
     {
@@ -17,7 +17,7 @@ public static class Extensions
     public static (User, ClaimsPrincipal) GetUserWithClaimsByName(this DatabaseContext dbContext, string username)
     {
         var user = dbContext.GetUserByName(username)!;
-        var userClaims = CreateClaimsFromUser(user)!;
+        var userClaims = ClaimsUtils.CreateClaimsFromUser(user)!;
 
         return (user, userClaims);
     }

@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Items;
+﻿using CommonTestUtils.Wrappers;
+using Domain.Entities.Items;
 using Item_Trading_App_Contracts.Requests.Item;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_Contracts.Responses.Item;

@@ -1,9 +1,9 @@
+using CommonTestUtils.MockedServices;
 using Domain.Entities.Items;
 using Domain.Repositories.Items;
 using Infrastructure.Data;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Infrastructure_IntegrationTests.Utils;
 
 namespace Infrastructure_UnitTests.RepositoryTests;
 
@@ -18,9 +18,7 @@ public class ItemsRepositoryTests
 
     public ItemsRepositoryTests()
     {
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
-
-        _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
 
         _sut = new ItemRepository(_contextWrapper);
     }

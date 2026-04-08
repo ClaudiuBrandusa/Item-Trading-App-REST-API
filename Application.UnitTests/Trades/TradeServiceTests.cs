@@ -19,6 +19,7 @@ using Application.Results.Inventories;
 using Application.Results.Trades;
 using Application.Services.Trades;
 using Application.Services.UnitOfWork;
+using CommonTestUtils.TestAdaptedServices;
 using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
@@ -45,8 +46,8 @@ public class TradeServiceTests
     {
         collection = new List<Trade>();
         cachedTrades = new List<CachedTrade>();
-        var tradeRepositoryMock = TestingUtils.CreateRepositoryMock<Trade, ICachedTradeRepository>(collection);
-        _mapper = TestingUtils.GetMapper();
+        var tradeRepositoryMock = RepositoryUtils.CreateRepositoryMock<Trade, ICachedTradeRepository>(collection);
+        _mapper = MapperUtils.GetMapper();
         _sender = new Mock<ISender>();
         var publisherMock = new Mock<IPublisher>();
         var unitOfWorkMock = new Mock<IUnitOfWorkService>();

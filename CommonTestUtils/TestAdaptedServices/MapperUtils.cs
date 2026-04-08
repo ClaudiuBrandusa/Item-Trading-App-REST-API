@@ -1,9 +1,10 @@
-﻿using Application.Installers;
+using Application.Installers;
 using Mapster;
 using MapsterMapper;
 
-namespace Infrastructure.IntegrationTests.Utils;
-public static class TestingUtils
+namespace CommonTestUtils.TestAdaptedServices;
+
+public static class MapperUtils
 {
     public static IMapper GetMapper()
     {

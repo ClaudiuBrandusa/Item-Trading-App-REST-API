@@ -16,6 +16,7 @@ using Domain.Aggregates.Inventories;
 using Application.Results.Items;
 using Application.Repositories;
 using Application.Models.Common;
+using CommonTestUtils.TestAdaptedServices;
 
 namespace Application_UnitTests.Inventories;
 
@@ -28,9 +29,9 @@ public class InventoryServiceTests
 
     public InventoryServiceTests()
     {
-        var inventoryRepositoryMock = TestingUtils.CreateRepositoryMock<Inventory, ICachedInventoryRepository>(inventories.Values.ToList());
+        var inventoryRepositoryMock = RepositoryUtils.CreateRepositoryMock<Inventory, ICachedInventoryRepository>(inventories.Values.ToList());
         var senderMock = new Mock<ISender>();
-        var mapper = TestingUtils.GetMapper();
+        var mapper = MapperUtils.GetMapper();
 
         #region MediatorMocks
 

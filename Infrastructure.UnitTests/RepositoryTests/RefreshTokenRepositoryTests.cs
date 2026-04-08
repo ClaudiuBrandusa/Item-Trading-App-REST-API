@@ -1,9 +1,9 @@
 ﻿using Application.Utils;
+using CommonTestUtils.MockedServices;
 using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,8 +25,8 @@ public class RefreshTokenRepositoryTests
 
     public RefreshTokenRepositoryTests()
     {
-        _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
-        var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
+        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        var userManagerMock = DatabaseUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
 
         var key = JwtUtils.CreateKeyByteArrayFromJwtSecret(JWT_SECRET);
         var signingCredentials = JwtUtils.CreateSigningCredentials(key);

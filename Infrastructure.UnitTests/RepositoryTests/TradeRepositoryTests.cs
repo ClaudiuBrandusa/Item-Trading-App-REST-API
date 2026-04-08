@@ -1,9 +1,9 @@
-﻿using Domain.Aggregates.Trades;
+﻿using CommonTestUtils.MockedServices;
+using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
 using Domain.Repositories.Trades;
 using Infrastructure.Repositories.Trades;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Infrastructure_IntegrationTests.Utils;
 using MediatR;
 using Moq;
 
@@ -19,7 +19,7 @@ public class TradeRepositoryTests
 
     public TradeRepositoryTests()
     {
-        _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
         var senderMock = new Mock<ISender>();
 
         _sut = new TradeRepository(_contextWrapper, senderMock.Object);

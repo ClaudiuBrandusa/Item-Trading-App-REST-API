@@ -30,9 +30,18 @@ public class BaseController : Controller
         where SucceededType : class
         where FailedType : FailedResponse
     {
+        if (result is null)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = ["Something went wrong"]
+            });
+        }
+
         if (result.IsSuccess)
         {
-            return Ok(_mapper.From(result.Content).AdaptToType<SucceededType>());
+            var mapped = _mapper.From(result.Content).AdaptToType<SucceededType>();
+            return Ok(mapped);
         }
 
         var response = new FailedResponse { Errors = [result.Error]};

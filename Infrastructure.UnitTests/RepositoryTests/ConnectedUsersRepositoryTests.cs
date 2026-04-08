@@ -1,7 +1,7 @@
 ﻿using Application.Services.Cache;
+using CommonTestUtils.MockedServices;
 using Infrastructure.Services.ConnectedUsers;
 using Infrastructure.Wrappers.Hubs;
-using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 
@@ -194,14 +194,16 @@ public class ConnectedUsersRepositoryTests
 
         Parallel.For(0, expectedUsersCount, (index) =>
         {
-            tasks[index] = Task.Run(async () =>
+            var func = async () =>
             {
                 var connectionId = Guid.NewGuid().ToString();
                 var userId = Guid.NewGuid().ToString();
                 var userName = Guid.NewGuid().ToString();
 
                 await sut.AddConnectionIdToUser(connectionId, userId, userName);
-            });
+            };
+
+            tasks[index] = func.Invoke();
         });
 
         await Task.WhenAll(tasks);
@@ -234,7 +236,7 @@ public class ConnectedUsersRepositoryTests
 
         Parallel.For(0, expectedUsersCount, (index) =>
         {
-            tasks[index] = Task.Run(async () =>
+            var func = async () =>
             {
                 var connectionId0 = Guid.NewGuid().ToString();
                 var connectionId1 = Guid.NewGuid().ToString();
@@ -247,7 +249,9 @@ public class ConnectedUsersRepositoryTests
                     sut.AddConnectionIdToUser(connectionId1, userId, userName),
                     sut.AddConnectionIdToUser(connectionId2, userId, userName)
                 );
-            });
+            };
+
+            tasks[index] = func.Invoke();
         });
 
         await Task.WhenAll(tasks);
@@ -274,7 +278,7 @@ public class ConnectedUsersRepositoryTests
 
     private (ConnectedUsersRepository repository, Mock<ICacheService>, Mock<IHubContextWrapper> hubContextWrapperMock) CreateRepositoryAndGetDependencyMocks()
     {
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        var cacheServiceMock = CacheUtils.GetCacheServiceMock();
         
         var hubContextWrapperMock = new Mock<IHubContextWrapper>();
 
@@ -285,7 +289,7 @@ public class ConnectedUsersRepositoryTests
 
     private ConnectedUsersRepository CreateRepository()
     {
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        var cacheServiceMock = CacheUtils.GetCacheServiceMock();
 
         var hubContextWrapperMock = new Mock<IHubContextWrapper>();
 

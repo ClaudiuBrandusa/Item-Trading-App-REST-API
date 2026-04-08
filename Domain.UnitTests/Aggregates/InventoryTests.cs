@@ -59,12 +59,10 @@ public class InventoryTests
 
         // Assert
 
-        Assert.Single(inventory.OwnedItems);
-        var firstElement = inventory.OwnedItems.FirstOrDefault()!;
+        var firstElement = Assert.Single(inventory.OwnedItems);
         Assert.Equal(itemId, firstElement.ItemId);
         Assert.Equal(expectedQuantity, firstElement.Quantity);
-        var domainEvents = inventory.GetDomainEvents();
-        Assert.Single(domainEvents);
+        Assert.Single(inventory.GetDomainEvents());
         inventory.ClearDomainEvents();
         Assert.Empty(inventory.GetDomainEvents());
     }
@@ -137,8 +135,7 @@ public class InventoryTests
 
         // Assert
 
-        Assert.Single(inventory.OwnedItems);
-        var firstElement = inventory.OwnedItems.FirstOrDefault()!;
+        var firstElement = Assert.Single(inventory.OwnedItems);
         Assert.Equal(itemId, firstElement.ItemId);
         Assert.Equal(remainedQuantity, firstElement.Quantity);
     }

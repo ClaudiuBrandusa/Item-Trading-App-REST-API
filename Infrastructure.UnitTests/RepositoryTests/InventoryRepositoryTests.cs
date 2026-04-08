@@ -1,8 +1,8 @@
-﻿using Domain.Aggregates.Inventories;
+﻿using CommonTestUtils.MockedServices;
+using Domain.Aggregates.Inventories;
 using Domain.Repositories.Inventories;
 using Infrastructure.Repositories.Inventories;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Infrastructure_IntegrationTests.Utils;
 
 namespace Infrastructure_UnitTests.RepositoryTests;
 
@@ -16,51 +16,10 @@ public class InventoryRepositoryTests
 
     public InventoryRepositoryTests()
     {
-        _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
 
         _sut = new InventoryRepository(_contextWrapper);
     }
-
-    /*[Fact(DisplayName = "Create inventory item then get item by id")]
-    public async Task GetInventoryItem_CreateInventoryItemThenGetItemById_ReturnsCreatedInventoryItem()
-    {
-        // Arrange
-
-        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, 5);
-
-        var addItem = await _sut.AddEntityAsync(inventoryItemMock);
-
-        // Act
-
-        var itemResult = await _sut.GetOwnedItemEntityAsync(inventoryItemMock.UserId, inventoryItemMock.ItemId);
-
-        // Assert
-
-        Assert.NotNull(itemResult);
-        Assert.Equal(inventoryItemMock.ItemId, itemResult.ItemId);
-        Assert.Equal(inventoryItemMock.UserId, itemResult.UserId);
-        Assert.Equal(inventoryItemMock.Quantity, itemResult.Quantity);
-    }*/
-
-    /*[Fact(DisplayName = "Create inventory item then get item by id (cached)")]
-    public async Task GetInventoryItem_CreateInventoryItemThenGetItemById_ReturnsCachedCreatedInventoryItem()
-    {
-        // Arrange
-
-        var inventoryItemMock = new OwnedItem(DEFAULT_ITEM_ID, DEFAULT_USER_ID, 5);
-
-        var addItem = await _sut.AddEntityAsync(inventoryItemMock);
-
-        // Act
-
-        var itemResult = await _sut.GetInventoryItemEntityCachedAsync(inventoryItemMock.UserId, inventoryItemMock.ItemId);
-
-        // Assert
-
-        Assert.NotNull(itemResult);
-        Assert.Equal(inventoryItemMock.ItemId, itemResult.Id);
-        Assert.Equal(inventoryItemMock.Quantity, itemResult.Quantity);
-    }*/
 
     [Fact(DisplayName = "Create several inventory items then list them")]
     public async Task ListOwnedItems_CreateSeveralOwnedItemsThenListThem_ReturnsAnArrayOfTheNewlyCreatedOwnedItems()

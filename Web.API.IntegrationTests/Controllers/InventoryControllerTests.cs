@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using CommonTestUtils.Extensions;
+using CommonTestUtils.Wrappers;
 using Domain.Entities.Items;
 using Item_Trading_App_Contracts.Requests.Inventory;
 using Item_Trading_App_Contracts.Responses.Inventory;

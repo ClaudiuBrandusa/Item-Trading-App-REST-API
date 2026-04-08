@@ -12,6 +12,7 @@ using Domain.Entities.Identity;
 using Domain.Entities.Items;
 using Application.Repositories;
 using MediatR;
+using CommonTestUtils.TestAdaptedServices;
 
 namespace Application_UnitTests.Items;
 
@@ -26,10 +27,10 @@ public class ItemServiceTests
     public ItemServiceTests()
     {
         collection = new List<Item>();
-        var itemRepositoryMock = TestingUtils.CreateRepositoryMock<Item, ICachedItemRepository>(collection);
+        var itemRepositoryMock = RepositoryUtils.CreateRepositoryMock<Item, ICachedItemRepository>(collection);
         var senderMock = new Mock<ISender>();
         var publisherMock = new Mock<IPublisher>();
-        var cacheServiceMock = TestingUtils.GetCacheServiceMock();
+        var cacheServiceMock = CacheUtils.GetCacheServiceMock();
 
         #region MediatorMocks
 
@@ -56,7 +57,7 @@ public class ItemServiceTests
 
         #endregion MediatorMocks
 
-        _sut = new ItemService(itemRepositoryMock.Object, senderMock.Object, publisherMock.Object, TestingUtils.GetMapper());
+        _sut = new ItemService(itemRepositoryMock.Object, senderMock.Object, publisherMock.Object, MapperUtils.GetMapper());
     }
 
     [Fact(DisplayName = "Create a new item")]
@@ -290,11 +291,10 @@ public class ItemServiceTests
         var result = await _sut.ListItemsAsync(queryStub);
 
         // Assert
-
+        
         Assert.True(result.IsSuccess, "The response should be a success");
         Assert.NotNull(result.Content);
         var retrievedContent = result.Content!;
-        Assert.NotNull(retrievedContent.ItemsId);
         var retrievedCollection = retrievedContent.ItemsId.ToList();
         Assert.True(retrievedCollection.Count > 0, "There should be at least one item");
         Assert.True(retrievedCollection.Contains(addItemResult.Content!.ItemId), "The list should contain the itemId that was received while inserting the item");

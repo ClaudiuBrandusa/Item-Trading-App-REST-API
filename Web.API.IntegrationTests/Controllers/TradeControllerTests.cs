@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using Application.Models.Trades;
+using CommonTestUtils.Extensions;
+using CommonTestUtils.Wrappers;
 using Domain.Entities.Identity;
 using Item_Trading_App_Contracts.Base.Item;
 using Item_Trading_App_Contracts.Requests.Trade;

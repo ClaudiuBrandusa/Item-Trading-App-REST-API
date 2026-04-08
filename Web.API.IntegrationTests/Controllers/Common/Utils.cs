@@ -1,5 +1,6 @@
 using System.Security.Claims;
-using Domain.Entities.Identity;
+using CommonTestUtils.MockedServices;
+using CommonTestUtils.Wrappers;
 using Item_Trading_App_Contracts.Responses.Base;
 using Item_Trading_App_REST_API.Controllers;
 using Microsoft.AspNetCore.Mvc;
@@ -9,28 +10,6 @@ namespace Web.API.IntegrationTests.Controllers.Common;
 
 public static class Utils
 {
-    public static ClaimsPrincipal CreateDefaultUser()
-    {
-        return new ClaimsPrincipal(new ClaimsIdentity(
-        [
-            new Claim(ClaimTypes.NameIdentifier, "test-user-id"),
-            new Claim("id", Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Name, "Test User"),
-            new Claim(ClaimTypes.Role, "Admin")
-        ], authenticationType: "Test"));
-    }
-
-    public static ClaimsPrincipal CreateClaimsFromUser(User user)
-    {
-        return new ClaimsPrincipal(new ClaimsIdentity(
-        [
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim("id", user.Id),
-            new Claim(ClaimTypes.Name, user.UserName!),
-            new Claim(ClaimTypes.Role, "Admin")
-        ], authenticationType: "Test"));
-    }
-
     public static ControllerPack<T> CreateControllerPackWithUser<T>(TestAppFactory factory, ClaimsPrincipal user) where T : BaseController
     {
         var controllerPack = new ControllerPack<T>(factory);
@@ -44,7 +23,7 @@ public static class Utils
     {
         var controllerPack = new ControllerPack<T>(factory);
 
-        var user = CreateDefaultUser();
+        var user = ClaimsUtils.CreateDefaultUser();
 
         controllerPack.SetUser(user);
 

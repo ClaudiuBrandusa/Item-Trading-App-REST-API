@@ -1,9 +1,9 @@
-﻿using Domain.Entities.Identity;
+﻿using CommonTestUtils.MockedServices;
+using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
 using Infrastructure.Data;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
-using Infrastructure_IntegrationTests.Utils;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Infrastructure_UnitTests.RepositoryTests;
@@ -17,8 +17,8 @@ public class IdentityRepositoryTests
 
     public IdentityRepositoryTests()
     {
-        _contextWrapper = TestingUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
-        var userManagerMock = TestingUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
+        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        var userManagerMock = DatabaseUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
 
         _sut = new IdentityRepository(_contextWrapper, userManagerMock);
     }

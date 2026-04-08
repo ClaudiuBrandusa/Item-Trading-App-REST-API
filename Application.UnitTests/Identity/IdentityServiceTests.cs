@@ -30,7 +30,7 @@ public class IdentityServiceTests
         refreshTokens = new List<RefreshToken>();
         var refreshTokenServiceMock = new Mock<IRefreshTokenService>();
         var cacheServiceMock = new Mock<ICacheService>().Object;
-        var identityRepositoryMock = TestingUtils.CreateRepositoryMock<User, IIdentityRepository>(collection);
+        var identityRepositoryMock = RepositoryUtils.CreateRepositoryMock<User, IIdentityRepository>(collection);
         
         var jwtSettings = new JwtSettings
         {
