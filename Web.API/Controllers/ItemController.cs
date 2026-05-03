@@ -61,7 +61,12 @@ public class ItemController : BaseController
 
         var results = await _mediator.Send(model);
 
-        return Ok(new TradesUsingTheItemResponse { ItemId = itemId, TradeIds = results.Content });
+        return MapResult<string[], TradesUsingTheItemResponse, FailedResponse>(results, (string[] tradeIds) =>
+            new TradesUsingTheItemResponse
+            {
+                ItemId = itemId,
+                TradeIds = tradeIds
+            });
     }
 
     [HttpPost(Endpoints.Item.Create)]

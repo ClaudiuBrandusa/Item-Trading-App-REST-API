@@ -18,11 +18,11 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var userId = Request.Headers["x-user-id"].ToString();
-        var userName = Request.Headers["x-test-user"].ToString();
-        if (string.IsNullOrWhiteSpace(userName)) userName = "user";
+        var userId = Request.Headers[Constants.UserIdRequestHeaderName].ToString();
+        var userName = Request.Headers[Constants.UserNameRequestHeaderName].ToString();
+        if (string.IsNullOrWhiteSpace(userName)) userName = Constants.DefaultTestUserName;
 
-        var role = Request.Headers["x-test-role"].ToString();
+        var role = Request.Headers[Constants.UserRoleRequestHeaderName].ToString();
 
         var claims = new List<Claim>
         {

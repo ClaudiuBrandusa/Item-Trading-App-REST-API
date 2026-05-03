@@ -4,14 +4,16 @@ using Item_Trading_App_Contracts.Requests.Identity;
 using Item_Trading_App_Contracts.Responses.Identity;
 using Item_Trading_App_REST_API.Controllers;
 using Web.API.IntegrationTests.Common.Factories;
-using static Web.API.IntegrationTests.Controllers.Common.Utils;
+using static CommonTestUtils.Assertions.HttpResultAssert;
+using static CommonTestUtils.Assertions.ResultPatternAssert;
+using static CommonTestUtils.Utils.ControllerPackUtils;
 
 namespace Web.API.IntegrationTests.Controllers;
 
 public class IdentityControllerTests : IClassFixture<TestAppFactory>
 {
     private readonly TestAppFactory _factory;
-    private const string _defaultPassword = "!Abcd1234";
+    private const string DefaultPassword = "!Abcd1234";
 
     public IdentityControllerTests(TestAppFactory factory)
     {
@@ -31,15 +33,14 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         {
             Username = expectedUsername,
             Email = expectedEmail,
-            Password = _defaultPassword,
-            ConfirmPassword = _defaultPassword
+            Password = DefaultPassword,
+            ConfirmPassword = DefaultPassword
         };
 
         var registerResult = await controller.Register(request);
         var receivedResponseDateTime = DateTime.UtcNow;
 
-        var objectResult = AssertActionResultAsOkObjectResult(registerResult);
-        var authenticationResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
+        var authenticationResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(registerResult);
         Assert.NotNull(authenticationResponse);
         Assert.NotEmpty(authenticationResponse.Token);
         Assert.NotEmpty(authenticationResponse.RefreshToken);
@@ -59,8 +60,8 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         {
             Username = expectedUsername,
             Email = expectedEmail,
-            Password = _defaultPassword,
-            ConfirmPassword = _defaultPassword
+            Password = DefaultPassword,
+            ConfirmPassword = DefaultPassword
         };
 
         await controller.Register(registerRequest);
@@ -68,14 +69,13 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         var loginRequest = new UserLoginRequest
         {
             Username = expectedUsername,
-            Password = _defaultPassword  
+            Password = DefaultPassword  
         };
 
         var loginResult = await controller.Login(loginRequest);
         var receivedResponseDateTime = DateTime.UtcNow;
 
-        var objectResult = AssertActionResultAsOkObjectResult(loginResult);
-        var authenticationResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
+        var authenticationResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(loginResult);
         Assert.NotNull(authenticationResponse);
         Assert.NotEmpty(authenticationResponse.Token);
         Assert.NotEmpty(authenticationResponse.RefreshToken);
@@ -91,14 +91,13 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         var loginRequest = new UserLoginRequest
         {
             Username = "Invalid_User",
-            Password = _defaultPassword  
+            Password = DefaultPassword  
         };
 
         var loginResult = await controller.Login(loginRequest);
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(loginResult);
-        var authenticationResponse = AssertBadRequestObjectResultFailedResponse<AuthenticationFailedResponse>(objectResult);
-        AssertResponseHasOnlyOneError(authenticationResponse);
+        var authenticationResponse = AssertActionResultAsFailedResponse<AuthenticationFailedResponse>(loginResult);
+        AssertHasOnlyOneError(authenticationResponse);
     }
 
     [Fact]
@@ -114,20 +113,19 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         {
             Username = expectedUsername,
             Email = expectedEmail,
-            Password = _defaultPassword,
-            ConfirmPassword = _defaultPassword
+            Password = DefaultPassword,
+            ConfirmPassword = DefaultPassword
         };
 
         var registerResult = await controller.Register(registerRequest);
         var receivedResponseDateTime = DateTime.UtcNow;
-        var registerResponse = GetContent<AuthenticationSuccessResponse>(registerResult);
+        var registerResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(registerResult);
         
         var userId = _factory.GetUserIdFromToken(registerResponse!.Token);
 
         var getUsernameResult = await controller.GetUsername(userId);
 
-        var objectResult = AssertActionResultAsOkObjectResult(getUsernameResult);
-        var getUsernameResponse = AssertOkObjectResultSuccessResponse<UsernameSuccessResponse>(objectResult);
+        var getUsernameResponse = AssertActionResultAsResponse<UsernameSuccessResponse>(getUsernameResult);
         Assert.NotNull(getUsernameResponse);
         Assert.Equal(userId, getUsernameResponse.UserId);
         Assert.Equal(expectedUsername, getUsernameResponse.Username);
@@ -146,12 +144,12 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         {
             Username = expectedUsername,
             Email = expectedEmail,
-            Password = _defaultPassword,
-            ConfirmPassword = _defaultPassword
+            Password = DefaultPassword,
+            ConfirmPassword = DefaultPassword
         };
 
         var registerResult = await controller.Register(registerRequest);
-        var registerResponse = GetContent<AuthenticationSuccessResponse>(registerResult);
+        var registerResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(registerResult);
         
         var refreshTokenRequest = new RefreshTokenRequest
         {
@@ -162,8 +160,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         var refreshResult = await controller.Refresh(refreshTokenRequest);
         var receivedResponseDateTime = DateTime.UtcNow;
 
-        var objectResult = AssertActionResultAsOkObjectResult(refreshResult);
-        var refreshTokenResponse = AssertOkObjectResultSuccessResponse<AuthenticationSuccessResponse>(objectResult);
+        var refreshTokenResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(refreshResult);
         Assert.NotNull(refreshTokenResponse);
         Assert.NotEmpty(refreshTokenResponse.Token);
         Assert.NotEmpty(refreshTokenResponse.RefreshToken);
@@ -178,7 +175,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
 
-        using var controllerPack = CreateControllerPackWithUser<IdentityController>(_factory, userClaims);
+        using var controllerPack = CreateControllerPackWithUser<IdentityController, Program>(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
         var expectedUsername = GetUsername(4);
@@ -188,25 +185,24 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
         {
             Username = expectedUsername,
             Email = expectedEmail,
-            Password = _defaultPassword,
-            ConfirmPassword = _defaultPassword
+            Password = DefaultPassword,
+            ConfirmPassword = DefaultPassword
         };
 
         await controller.Register(registerRequest);
         
         var listUsersResult = await controller.ListUsers(string.Empty);
 
-        var objectResult = AssertActionResultAsOkObjectResult(listUsersResult);
-        var listUsersResponse = AssertOkObjectResultSuccessResponse<UsersSuccessResponse>(objectResult);
+        var listUsersResponse = AssertActionResultAsResponse<UsersSuccessResponse>(listUsersResult);
         Assert.NotNull(listUsersResponse);
         Assert.NotNull(listUsersResponse.UsersId);
         var userIds = listUsersResponse.UsersId.ToArray();
         Assert.True(userIds.Length > 0);
     }
 
-    private ControllerPack<IdentityController> CreateController(TestAppFactory factory)
+    private ControllerPack<IdentityController, Program> CreateController(TestAppFactory factory)
     {
-        return new ControllerPack<IdentityController>(factory);
+        return new ControllerPack<IdentityController, Program>(factory);
     }
 
     private string GetUsername(int index) => $"New_User_{index}";

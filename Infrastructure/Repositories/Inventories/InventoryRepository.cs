@@ -187,7 +187,8 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
                 .AsNoTracking()
                 .Where(i => Equals(i.UserId, userId))
                 .SelectMany(oi => oi.OwnedItems)
-                .Select(x => x.LockedAmount)
+                .Where(i => i.ItemId == itemId)
+                .Select(i => i.LockedAmount)
                 .FirstOrDefault()
         );
 

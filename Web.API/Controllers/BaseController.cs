@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Application.Models.Common;
 using Item_Trading_App_Contracts.Responses.Base;
+using System;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -41,6 +42,32 @@ public class BaseController : Controller
         if (result.IsSuccess)
         {
             var mapped = _mapper.From(result.Content).AdaptToType<SucceededType>();
+            return Ok(mapped);
+        }
+
+        var response = new FailedResponse { Errors = [result.Error]};
+
+        if (typeof(FailedType) == typeof(FailedResponse))
+            return BadRequest(response);
+
+        return BadRequest(_mapper.From(response).AdaptToType<FailedType>());
+    }
+    
+    protected ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, Func<InputType, SucceededType> conversionMethod)
+        where SucceededType : class
+        where FailedType : FailedResponse
+    {
+        if (result is null)
+        {
+            return BadRequest(new FailedResponse
+            {
+                Errors = ["Something went wrong"]
+            });
+        }
+
+        if (result.IsSuccess)
+        {
+            var mapped = conversionMethod(result.Content);
             return Ok(mapped);
         }
 

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
+using Web.API.IntegrationTests.Common;
 using Web.API.IntegrationTests.Common.Factories;
 
 namespace Web.API.IntegrationTests.SignalR;
@@ -25,7 +26,7 @@ public class HubContextWrapperTests : IClassFixture<DbOnlyTestAppFactory>
 
         var connection = Utils.CreateHubConnection(_factory, userId);
 
-        connection.On<string>("notify", msg =>
+        connection.On<string>(Constants.NotifyEndpoint, msg =>
         {
             tcs.TrySetResult(msg);
         });

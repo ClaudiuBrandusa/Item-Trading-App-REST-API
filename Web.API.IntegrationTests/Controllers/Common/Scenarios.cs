@@ -9,18 +9,14 @@ using Item_Trading_App_Contracts.Responses.Trade;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Web.API.IntegrationTests.Common.Factories;
-using static Web.API.IntegrationTests.Controllers.Common.Utils;
 using Item_Trading_App_REST_API.Controllers;
+using static CommonTestUtils.Utils.ControllerPackUtils;
+using static CommonTestUtils.Assertions.HttpResultAssert;
 
 namespace Web.API.IntegrationTests.Controllers.Common;
 
 public static class Scenarios
 {
-    public static async Task CreateUser()
-    {
-        
-    }
-
     public static async Task<CreateItemSuccessResponse> CreateItem(ItemController controller, string itemName, string itemDescription)
     {
         var request = new Item_Trading_App_Contracts.Requests.Item.CreateItemRequest
@@ -37,7 +33,7 @@ public static class Scenarios
 
     public static async Task<CreateItemSuccessResponse> CreateItem(TestAppFactory factory, string itemName, string itemDescription)
     {
-        using var controllerPack = CreateControllerPackWithDefaultUser<ItemController>(factory);
+        using var controllerPack = CreateControllerPackWithDefaultUser<ItemController, Program>(factory);
 
         return await CreateItem(controllerPack.ControllerInstance, itemName, itemDescription);
     }
@@ -54,7 +50,7 @@ public static class Scenarios
 
     public static async Task<AddItemSuccessResponse> AddItemToInventory(TestAppFactory factory, ClaimsPrincipal userClaims, string itemId, int quantity)
     {
-        using var controllerPack = CreateControllerPackWithUser<InventoryController>(factory, userClaims);
+        using var controllerPack = CreateControllerPackWithUser<InventoryController, Program>(factory, userClaims);
 
         return await AddItemToInventory(controllerPack.ControllerInstance, itemId, quantity);
     }
@@ -84,12 +80,12 @@ public static class Scenarios
 
         var result = await controller.Offer(request);
 
-        return GetContent<TradeOfferSuccessResponse>(result)!;
+        return AssertActionResultAsResponse<TradeOfferSuccessResponse>(result)!;
     }
 
     public static async Task<TradeOfferSuccessResponse> CreateTrade(TestAppFactory factory, ClaimsPrincipal userClaims, string receiverUserId, ItemWithPrice[] tradeItems)
     {
-        using var controllerPack = CreateControllerPackWithUser<TradeController>(factory, userClaims);
+        using var controllerPack = CreateControllerPackWithUser<TradeController, Program>(factory, userClaims);
 
         return await CreateTrade(controllerPack.ControllerInstance, receiverUserId, tradeItems);
     }
@@ -103,14 +99,14 @@ public static class Scenarios
 
         var result = await controller.Accept(request);
 
-        var response = GetContent<AcceptTradeOfferSuccessResponse>(result);
+        var response = AssertActionResultAsResponse<AcceptTradeOfferSuccessResponse>(result);
 
         return response!;
     }
 
     public static async Task<AcceptTradeOfferSuccessResponse> AcceptTrade(TestAppFactory factory, ClaimsPrincipal userClaims, string tradeId)
     {
-        var controllerPack = CreateControllerPackWithUser<TradeController>(factory, userClaims);
+        var controllerPack = CreateControllerPackWithUser<TradeController, Program>(factory, userClaims);
 
         return await AcceptTrade(controllerPack.ControllerInstance, tradeId);
     }
@@ -124,12 +120,12 @@ public static class Scenarios
 
         var result = await controller.Reject(request);
 
-        return GetContent<RejectTradeOfferSuccessResponse>(result)!;
+        return AssertActionResultAsResponse<RejectTradeOfferSuccessResponse>(result)!;
     }
 
     public static async Task<RejectTradeOfferSuccessResponse> RejectTrade(TestAppFactory factory, ClaimsPrincipal userClaims, string tradeId)
     {
-        var controllerPack = CreateControllerPackWithUser<TradeController>(factory, userClaims);
+        var controllerPack = CreateControllerPackWithUser<TradeController, Program>(factory, userClaims);
 
         return await RejectTrade(controllerPack.ControllerInstance, tradeId);
     }
@@ -143,12 +139,12 @@ public static class Scenarios
 
         var result = await controller.Cancel(request);
 
-        return GetContent<CancelTradeOfferSuccessResponse>(result)!;
+        return AssertActionResultAsResponse<CancelTradeOfferSuccessResponse>(result)!;
     }
 
     public static async Task<CancelTradeOfferSuccessResponse> CancelTrade(TestAppFactory factory, ClaimsPrincipal userClaims, string tradeId)
     {
-        var controllerPack = CreateControllerPackWithUser<TradeController>(factory, userClaims);
+        var controllerPack = CreateControllerPackWithUser<TradeController, Program>(factory, userClaims);
 
         return await CancelTrade(controllerPack.ControllerInstance, tradeId);
     }

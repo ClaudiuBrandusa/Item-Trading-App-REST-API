@@ -6,14 +6,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CommonTestUtils.Wrappers;
 
-public class ControllerPack<ControllerType> : IDisposable
+public class ControllerPack<ControllerType, TEntryPoint> : IDisposable
      where ControllerType : Controller
+     where TEntryPoint : class
 {
     public ControllerType ControllerInstance { get; init; }
 
     public IServiceScope ServiceScope { get; init; }
 
-    public ControllerPack(WebApplicationFactory<Program> factory)
+    public ControllerPack(WebApplicationFactory<TEntryPoint> factory)
     {
         ServiceScope = factory.Services.CreateScope();
         ControllerInstance = CreateController();

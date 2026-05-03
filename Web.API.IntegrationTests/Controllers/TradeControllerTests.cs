@@ -10,12 +10,15 @@ using Item_Trading_App_Contracts.Responses.Trade;
 using Item_Trading_App_REST_API.Controllers;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
-using static Web.API.IntegrationTests.Controllers.Common.Utils;
+using static CommonTestUtils.Assertions.HttpResultAssert;
+using static CommonTestUtils.Utils.ControllerPackUtils;
 
 namespace Web.API.IntegrationTests.Controllers;
 
 public class TradeControllerTests : IClassFixture<TestAppFactory>
 {
+    private const string DefaultFirstUserName = "Claudiu";
+    private const string DefaultsSecondUserName = "Root";
     private readonly TestAppFactory _factory;
     
     public TradeControllerTests(TestAppFactory factory)
@@ -29,7 +32,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -44,7 +47,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
+        var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -64,8 +67,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<TradeOfferSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<TradeOfferSuccessResponse>(result);
         AssertTradeOfferResponse(user, receiverUser, tradeItems, response!);
     }
 
@@ -75,7 +77,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
         var userId = user.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -108,8 +110,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<TradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<TradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -120,12 +122,12 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
+        var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
         var receiverUserId = receiverUser.Id;
 
@@ -141,8 +143,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<TradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<TradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -153,7 +155,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -168,7 +170,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
+        var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -184,8 +186,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<TradeOfferSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<TradeOfferSuccessResponse>(result);
         AssertTradeOfferResponse(user, receiverUser, tradeItems, response!);
     }
 
@@ -195,7 +196,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -206,8 +207,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<TradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<TradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -218,7 +219,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Quartzite";
         var itemDescription = string.Empty;
@@ -230,7 +231,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -254,8 +255,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<AcceptTradeOfferSuccessResponse>(objectResult)!;
+        var response = AssertActionResultAsResponse<AcceptTradeOfferSuccessResponse>(result);
         Assert.Equal(createdTrade.TradeId, response.TradeId);
         Assert.Equal(user.Id, response.SenderId);
         Assert.Equal(user.UserName, response.SenderName);
@@ -267,7 +267,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -283,8 +283,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<AcceptTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<AcceptTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -295,7 +295,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Limestone";
         var itemDescription = string.Empty;
@@ -307,7 +307,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -333,8 +333,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<AcceptTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<AcceptTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -345,7 +345,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Basalt";
         var itemDescription = string.Empty;
@@ -357,7 +357,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -388,8 +388,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<AcceptTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<AcceptTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -400,7 +400,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -415,7 +415,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
+        var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -436,8 +436,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<AcceptTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<AcceptTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -448,7 +448,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Calcite";
         var itemDescription = string.Empty;
@@ -460,7 +460,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -484,8 +484,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<RejectTradeOfferSuccessResponse>(objectResult)!;
+        var response = AssertActionResultAsResponse<RejectTradeOfferSuccessResponse>(result);
         Assert.Equal(createdTrade.TradeId, response.TradeId);
         Assert.Equal(user.Id, response.SenderId);
         Assert.Equal(user.UserName, response.SenderName);
@@ -497,7 +496,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -513,8 +512,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<RejectTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<RejectTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -525,7 +524,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Feldspar";
         var itemDescription = string.Empty;
@@ -537,7 +536,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -563,8 +562,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<RejectTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<RejectTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -575,7 +574,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Gravel";
         var itemDescription = string.Empty;
@@ -587,7 +586,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -618,8 +617,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<RejectTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<RejectTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -630,7 +629,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -645,7 +644,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
+        var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -666,8 +665,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<RejectTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<RejectTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -678,7 +677,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -693,7 +692,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        var receiverUser = dbContext.GetUserByName("Root")!;
+        var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -714,8 +713,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<CancelTradeOfferSuccessResponse>(objectResult)!;
+        var response = AssertActionResultAsResponse<CancelTradeOfferSuccessResponse>(result);
         Assert.Equal(createdTrade.TradeId, response.TradeId);
         Assert.Equal(receiverUserId, response.ReceiverId);
         Assert.Equal(receiverUser.UserName, response.ReceiverName);
@@ -727,7 +725,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -743,8 +741,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<CancelTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<CancelTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -755,7 +753,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -770,7 +768,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -793,8 +791,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<CancelTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<CancelTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -805,7 +803,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -820,7 +818,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         var receiverUserId = receiverUser.Id;
         var tradeItems = new ItemWithPrice[]
@@ -848,8 +846,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<CancelTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<CancelTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -860,7 +858,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Gneiss";
         var itemDescription = string.Empty;
@@ -872,7 +870,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         
         await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
 
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
         using var receiverControllerPack = CreateControllerPackWithUser(_factory, receiverUserClaims);
         var receiverController = receiverControllerPack.ControllerInstance;
@@ -896,8 +894,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<CancelTradeOfferFailedResponse>(objectResult);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<CancelTradeOfferFailedResponse>(objectResult);
         Assert.NotNull(response!.Errors);
         Assert.Single(response!.Errors);
     }
@@ -910,7 +908,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var expectedTradeDirections = Enum.GetNames(typeof(TradeDirection));
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
         var controller = controllerPack.ControllerInstance;
@@ -921,8 +919,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var tradeDirections = AssertOkObjectResultSuccessResponse<string[]>(objectResult);
+        var tradeDirections = AssertActionResultAsResponse<string[]>(result);
         Assert.NotNull(tradeDirections);
         Assert.All(expectedTradeDirections, expectedTradeDirection => tradeDirections.Contains(expectedTradeDirection));
     }
@@ -933,8 +930,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -965,8 +962,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<ListTradeOffersSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<ListTradeOffersSuccessResponse>(result);
         Assert.NotNull(response);
         var sentTradeIds = response.SentTradeOfferIds.ToArray();
         var receivedTradeIds = response.ReceivedTradeOfferIds.ToArray();
@@ -984,8 +980,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -1016,8 +1012,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<ListTradeOffersSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<ListTradeOffersSuccessResponse>(result);
         Assert.NotNull(response);
         var sentTradeIds = response.SentTradeOfferIds.ToArray();
         var receivedTradeIds = response.ReceivedTradeOfferIds.ToArray();
@@ -1032,8 +1027,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -1064,8 +1059,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<ListTradeOffersSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<ListTradeOffersSuccessResponse>(result);
         Assert.NotNull(response);
         var sentTradeIds = response.SentTradeOfferIds.ToArray();
         var receivedTradeIds = response.ReceivedTradeOfferIds.ToArray();
@@ -1080,8 +1074,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         // Arrange
         
         using var dbContext = _factory.GetDatabaseContext();
-        (var user, var userClaims) = dbContext.GetUserWithClaimsByName("Claudiu");
-        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName("Root");
+        (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
+        (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -1115,8 +1109,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Assert
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<ListTradeOffersSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<ListTradeOffersSuccessResponse>(result);
         Assert.NotNull(response);
         var sentTradeIds = response.SentTradeOfferIds.ToArray();
         var receivedTradeIds = response.ReceivedTradeOfferIds.ToArray();
@@ -1162,8 +1155,8 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         });
     }
 
-    private ControllerPack<TradeController> CreateControllerPackWithUser(TestAppFactory factory, ClaimsPrincipal user)
+    private ControllerPack<TradeController, Program> CreateControllerPackWithUser(TestAppFactory factory, ClaimsPrincipal user)
     {
-        return CreateControllerPackWithUser<TradeController>(factory, user);
+        return CreateControllerPackWithUser<TradeController, Program>(factory, user);
     }
 }

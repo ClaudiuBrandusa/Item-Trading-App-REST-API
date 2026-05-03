@@ -6,7 +6,9 @@ using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_REST_API.Controllers;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
-using static Web.API.IntegrationTests.Controllers.Common.Utils;
+using static CommonTestUtils.Assertions.HttpResultAssert;
+using static CommonTestUtils.Assertions.ResultPatternAssert;
+using static CommonTestUtils.Utils.ControllerPackUtils;
 
 namespace Web.API.IntegrationTests.Controllers;
 
@@ -33,8 +35,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Create(request);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var response = AssertOkObjectResultSuccessResponse<CreateItemSuccessResponse>(objectResult);
+        var response = AssertActionResultAsResponse<CreateItemSuccessResponse>(result);
         Assert.NotNull(response);
         Assert.NotEmpty(response.ItemId);
         Assert.Equal(request.ItemName, response.ItemName);
@@ -55,9 +56,9 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Create(request);
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var response = AssertBadRequestObjectResultFailedResponse<CreateItemFailedResponse>(objectResult);
-        AssertResponseHasOnlyOneError(response);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var response = AssertBadRequestObjectResultAsResponse<CreateItemFailedResponse>(objectResult);
+        AssertHasOnlyOneError(response);
     }
 
     [Fact]
@@ -88,7 +89,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         await Parallel.ForAsync(0, expectedItemAmount, async (index, ct) =>
         {
             var createdItemResult = await controller.Create(createItemRequests[index]);
-            var response = GetContent<CreateItemSuccessResponse>(createdItemResult);
+            var response = AssertActionResultAsResponse<CreateItemSuccessResponse>(createdItemResult);
             createdItemResponses[index] = response!;
         });
 
@@ -96,8 +97,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.List(searchString);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var itemsResponse = AssertOkObjectResultSuccessResponse<ItemsResponse>(objectResult);
+        var itemsResponse = AssertActionResultAsResponse<ItemsResponse>(result);
         var createdItemIds = createdItemResponses.Select(x => x.ItemId).ToArray();
         Assert.NotNull(itemsResponse);
         Assert.NotNull(itemsResponse.ItemsId);
@@ -127,8 +127,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Get(itemId);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var itemResponse = AssertOkObjectResultSuccessResponse<ItemResponse>(objectResult);
+        var itemResponse = AssertActionResultAsResponse<ItemResponse>(result);
         Assert.NotNull(itemResponse);
         Assert.Equal(itemId, itemResponse.Id);
         Assert.Equal(itemName, itemResponse.Name);
@@ -145,9 +144,9 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Get(itemId);
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var itemResponse = AssertBadRequestObjectResultFailedResponse<FailedResponse>(objectResult);
-        AssertResponseHasOnlyOneError(itemResponse);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var itemResponse = AssertBadRequestObjectResultAsResponse<FailedResponse>(objectResult);
+        AssertHasOnlyOneError(itemResponse);
     }
 
     [Fact]
@@ -179,8 +178,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Update(updateRequest);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var updateItemResponse = AssertOkObjectResultSuccessResponse<UpdateItemSuccessResponse>(objectResult);
+        var updateItemResponse = AssertActionResultAsResponse<UpdateItemSuccessResponse>(result);
         Assert.NotNull(updateItemResponse);
         Assert.Equal(itemId, updateItemResponse.ItemId);
         Assert.Equal(expectedUpdatedName, updateItemResponse.ItemName);
@@ -204,9 +202,9 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Update(updateRequest);
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var updateItemResponse = AssertBadRequestObjectResultFailedResponse<UpdateItemFailedResponse>(objectResult);
-        AssertResponseHasOnlyOneError(updateItemResponse);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var updateItemResponse = AssertBadRequestObjectResultAsResponse<UpdateItemFailedResponse>(objectResult);
+        AssertHasOnlyOneError(updateItemResponse);
     }
 
     [Fact]
@@ -232,8 +230,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Delete(deleteItemRequest);
 
-        var objectResult = AssertActionResultAsOkObjectResult(result);
-        var deleteItemResponse = AssertOkObjectResultSuccessResponse<DeleteItemSuccessResponse>(objectResult);
+        var deleteItemResponse = AssertActionResultAsResponse<DeleteItemSuccessResponse>(result);
         Assert.NotNull(deleteItemResponse);
         Assert.Equal(itemId, deleteItemResponse.ItemId);
         Assert.Equal(itemName, deleteItemResponse.ItemName);
@@ -254,13 +251,13 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var result = await controller.Delete(deleteItemRequest);
 
-        var objectResult = AssertActionResultAsBadRequestObjectResult(result);
-        var deleteItemResponse = AssertBadRequestObjectResultFailedResponse<DeleteItemFailedResponse>(objectResult);
-        AssertResponseHasOnlyOneError(deleteItemResponse);
+        var objectResult = AssertActionResponseBadRequestObjectResult(result);
+        var deleteItemResponse = AssertBadRequestObjectResultAsResponse<DeleteItemFailedResponse>(objectResult);
+        AssertHasOnlyOneError(deleteItemResponse);
     }
 
-    private ControllerPack<ItemController> CreateControllerPackWithDefaultUser(TestAppFactory factory)
+    private ControllerPack<ItemController, Program>CreateControllerPackWithDefaultUser(TestAppFactory factory)
     {
-        return CreateControllerPackWithDefaultUser<ItemController>(factory);
+        return CreateControllerPackWithDefaultUser<ItemController, Program>(factory);
     }
 }
