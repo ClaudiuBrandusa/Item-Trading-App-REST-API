@@ -41,7 +41,7 @@ public class BaseController : Controller
 
         if (result.IsSuccess)
         {
-            var mapped = _mapper.From(result.Content).AdaptToType<SucceededType>();
+            var mapped = AdaptToType<InputType, SucceededType>(result.Content!);
             return Ok(mapped);
         }
 
@@ -85,15 +85,7 @@ public class BaseController : Controller
     {
         if (result.IsSuccess)
         {
-            var builder = _mapper.From(result.Content!);
-
-            if (parameters is not null)
-                foreach (var parameter in parameters)
-                {
-                    builder = builder.AddParameters(parameter.Item1, parameter.Item2);
-                }
-
-            return Ok(builder.AdaptToType<SucceededType>());
+            return Ok(AdaptToType<InputType, SucceededType>(result.Content!, parameters));
         }
         else
         {

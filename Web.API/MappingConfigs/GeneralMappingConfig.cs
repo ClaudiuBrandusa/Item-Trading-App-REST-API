@@ -14,5 +14,11 @@ public class GeneralMappingConfig : IRegister
             {
                 Errors = dictionary.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage))
             });
+
+        config.ForType<string, FailedResponse>()
+            .MapWith(value => new FailedResponse
+            {
+                Errors = new string[] { value }
+            });
     }
 }
