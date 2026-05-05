@@ -357,7 +357,8 @@ public class IdentityServiceTests
 
         // Assert
         
-        Assert.Equal(userName, result);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userName, result.Content);
     }
 
     [Fact(DisplayName = "Get username without registering the user")]
@@ -375,7 +376,8 @@ public class IdentityServiceTests
 
         // Assert
 
-        Assert.True(string.IsNullOrEmpty(result), "The username should be empty");
+        Assert.False(result.IsSuccess);
+        Assert.True(string.IsNullOrEmpty(result.Content), "The username should be empty");
     }
 
     [Theory(DisplayName = "List users")]

@@ -25,5 +25,23 @@ public class ItemMappingConfig : IRegister
 
         config.ForType<DeleteItemRequest, DeleteItemCommand>()
             .Map(dest => dest.UserId, src => MapContext.Current!.Parameters[nameof(DeleteItemCommand.UserId)]);
+
+        config.ForType<string, CreateItemFailedResponse>()
+            .MapWith((str) => new CreateItemFailedResponse
+            {
+                Errors = new string[] { str }
+            });
+
+        config.ForType<string, UpdateItemFailedResponse>()
+            .MapWith((str) => new UpdateItemFailedResponse
+            {
+                Errors = new string[] { str }
+            });
+
+        config.ForType<string, DeleteItemFailedResponse>()
+            .MapWith((str) => new DeleteItemFailedResponse
+            {
+                Errors = new string[] { str }
+            });
     }
 }

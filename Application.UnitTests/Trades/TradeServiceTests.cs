@@ -244,7 +244,7 @@ public class TradeServiceTests
         _sender.Setup(x => x.Send(It.IsAny<GetUsernameQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((GetUsernameQuery request, CancellationToken ct) =>
             {
-                return defaultUserName;
+                return Result<string>.Success(defaultUserName);
             });
         _sender.Setup(x => x.Send(It.IsAny<GetUserCashQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((GetUserCashQuery request, CancellationToken ct) =>

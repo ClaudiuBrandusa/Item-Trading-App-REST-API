@@ -2,7 +2,7 @@
 
 namespace Application.Behaviors.Identity.GetUsername;
 
-public record GetUsernameQuery : IRequest<string>
+public record GetUsernameQuery : IRequest<Result<string>>
 {
     public string UserId { get; set; } = string.Empty;
 }

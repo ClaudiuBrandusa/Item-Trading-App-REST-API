@@ -214,6 +214,12 @@ public class BaseControllerTests
             .Map(dest => dest.Parameter, src => src.Parameter)
             .Map(dest => dest.SecondParameter, src => MapContext.Current!.Parameters[nameof(ExampleOutputClass.SecondParameter)]);
 
+        config.ForType<string, FailedResponse>()
+            .MapWith(str => new FailedResponse
+            {
+                Errors = new string[] { str }
+            });
+
         var mapper = new Mapper(config);
 
         var input = new ExampleInputClass

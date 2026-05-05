@@ -75,9 +75,9 @@ public class IdentityController : BaseController
                 Errors = ["Invalid user id"]
             });
 
-        string userName = await _mediator.Send(new GetUsernameQuery { UserId = userId });
+        var result = await _mediator.Send(new GetUsernameQuery { UserId = userId });
 
-        return Ok(AdaptToType<string, UsernameSuccessResponse>(userId, (nameof(UsernameSuccessResponse.Username), userName)));
+        return MapResult<string, UsernameSuccessResponse, FailedResponse>(result, (nameof(UsernameSuccessResponse.UserId), userId));
     }
 
     [Authorize]

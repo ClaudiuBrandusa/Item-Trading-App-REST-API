@@ -1,21 +1,16 @@
 using Application.Behaviors.Identity.GetUsername;
-using Application.Behaviors.Inventories.DropItem;
-using Application.Behaviors.Inventories.LockItem;
-using Application.Behaviors.Inventories.UnlockItem;
 using Application.Behaviors.Trade.AddTradeItem;
 using Application.Behaviors.Trade.CancelTrade;
 using Application.Behaviors.Trade.CreateTrade;
 using Application.Behaviors.Trade.RemoveTradeItem;
 using Application.Behaviors.Trade.RespondTrade;
 using Application.Constants;
-using Application.Models.Inventories;
+using Application.Models.Common;
 using Application.Models.Trades;
 using Application.Services.Cache;
 using Application.Services.Notification;
 using Application.Utils.Notifications.Strategies;
-using Domain.DomainEvents.Inventories;
 using Domain.DomainEvents.Trades;
-using Domain.Entities.Items;
 using MediatR;
 
 namespace Application_UnitTests.Trades;
@@ -38,7 +33,7 @@ public class TradesEventHandlerTests
         var mediatorMock = new Mock<IMediator>();
 
         mediatorMock.Setup(x => x.Send(It.IsAny<GetUsernameQuery>(), CancellationToken.None))
-            .ReturnsAsync((GetUsernameQuery query, CancellationToken ct) => expectedUsername);
+            .ReturnsAsync((GetUsernameQuery query, CancellationToken ct) => Result<string>.Success(expectedUsername));
 
         var mediator = mediatorMock.Object;
 

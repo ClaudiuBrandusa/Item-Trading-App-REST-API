@@ -27,7 +27,7 @@ public interface IIdentityService
     /// <summary>
     /// Returns the username with the given user id
     /// </summary>
-    Task<string> GetUsername(GetUsernameQuery model);
+    Task<Result<string>> GetUsername(GetUsernameQuery model);
 
     /// <summary>
     /// Returns a list with all of the users besides the user requesting the service

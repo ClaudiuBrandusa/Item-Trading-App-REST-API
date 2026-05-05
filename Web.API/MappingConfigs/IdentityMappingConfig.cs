@@ -1,4 +1,5 @@
-﻿using Item_Trading_App_Contracts.Responses.Identity;
+﻿using Application.Behaviors.Identity.ListUsers;
+using Item_Trading_App_Contracts.Responses.Identity;
 using Mapster;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Linq;
@@ -13,6 +14,15 @@ public class IdentityMappingConfig : IRegister
             .MapWith(dictionary => new AuthenticationFailedResponse { Errors = dictionary.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage)) });
 
         config.ForType<string, UsernameSuccessResponse>()
-            .MapWith(str => new UsernameSuccessResponse { UserId = str, Username = MapContext.Current!.Parameters[nameof(UsernameSuccessResponse.Username)].ToString() });
-    }
+            .MapWith(str => new UsernameSuccessResponse { UserId = MapContext.Current!.Parameters[nameof(UsernameSuccessResponse.UserId)].ToString(), Username = str });
+    
+        config.ForType<string, ListUsersQuery>()
+            .MapWith(str => new ListUsersQuery { SearchString = str, UserId = MapContext.Current!.Parameters![nameof(ListUsersQuery.UserId)]!.ToString()! });
+    
+        config.ForType<string, AuthenticationFailedResponse>()
+            .MapWith(value => new AuthenticationFailedResponse
+            {
+                Errors = new string[] { value }
+            });
+    } 
 }

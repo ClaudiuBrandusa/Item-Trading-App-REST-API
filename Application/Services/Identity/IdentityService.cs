@@ -110,12 +110,12 @@ public class IdentityService : IIdentityService, IDisposable
         return await GetToken(user.Id);
     }
 
-    public Task<string> GetUsername(GetUsernameQuery model)
+    public async Task<Result<string>> GetUsername(GetUsernameQuery model)
     {
         if (string.IsNullOrEmpty(model.UserId))
-            return Task.FromResult(string.Empty);
+            return Result<string>.Failure("Invalid user id");
 
-        return _repository.GetUsernameAsync(model.UserId);
+        return Result<string>.Success(await _repository.GetUsernameAsync(model.UserId));
     }
 
     public async Task<Result<UsersResult>> ListUsers(ListUsersQuery model)

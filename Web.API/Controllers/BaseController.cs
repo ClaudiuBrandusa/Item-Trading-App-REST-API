@@ -45,12 +45,7 @@ public class BaseController : Controller
             return Ok(mapped);
         }
 
-        var response = new FailedResponse { Errors = [result.Error]};
-
-        if (typeof(FailedType) == typeof(FailedResponse))
-            return BadRequest(response);
-
-        return BadRequest(_mapper.From(response).AdaptToType<FailedType>());
+        return BadRequest(_mapper.From(result.Error).AdaptToType<FailedType>());
     }
     
     protected ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, Func<InputType, SucceededType> conversionMethod)

@@ -15,7 +15,6 @@ using Application.Behaviors.Identity.GetUsername;
 using Application.Behaviors.Item.GetItemName;
 using Application.Services.UnitOfWork;
 using Application.Repositories;
-using Application.Models;
 using Application.Results.Trades;
 using Application.Models.Trades;
 using Domain.Entities.Trades;
@@ -760,5 +759,5 @@ public class TradeService : ITradeService, IDisposable
     
     private Task<string> GetItemNameAsync(string itemId) => _sender.Send(new GetItemNameQuery { ItemId = itemId });
 
-    private Task<string> GetUsernameAsync(string userId) => _sender.Send(new GetUsernameQuery { UserId = userId });
+    private async Task<string> GetUsernameAsync(string userId) => (await _sender.Send(new GetUsernameQuery { UserId = userId })).Content ?? string.Empty;
 }
