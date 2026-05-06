@@ -1,5 +1,4 @@
-﻿using Application.Behaviors.Wallet.GetWallet;
-using Application.Behaviors.Wallet.GiveCash;
+﻿using Application.Behaviors.Wallet.GiveCash;
 using Application.Behaviors.Wallet.UpdateWallet;
 using Mapster;
 
@@ -11,9 +10,5 @@ public class WalletMappingConfig : IRegister
     {
         config.ForType<GiveCashCommand, UpdateWalletCommand>()
             .Map(dest => dest.Quantity, src => src.Amount);
-
-        config.ForType<string, GetUserWalletQuery>()
-            .MapWith(str =>
-                new GetUserWalletQuery { UserId = str });
     }
 }

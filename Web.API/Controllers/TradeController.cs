@@ -43,7 +43,7 @@ public class TradeController : BaseController
     public async Task<IActionResult> List([FromQuery] string[] tradeItemIds, [FromQuery] string direction, [FromQuery] bool responded = false)
     {
         if (!Enum.TryParse<TradeDirection>(direction, out var tradeDirection))
-            return new ObjectResult(new FailedResponse { Errors = ["Invalid trade direction value"] });
+            return new BadRequestObjectResult(new FailedResponse { Errors = ["Invalid trade direction value"] });
 
         var model = AdaptToType<string, ListTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.TradeDirection), tradeDirection), (nameof(ListTradesQuery.Responded), responded));
 
