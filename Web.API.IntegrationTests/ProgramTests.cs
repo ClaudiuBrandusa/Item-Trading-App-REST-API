@@ -125,15 +125,8 @@ public class ProgramTests
         
         var implementations = new List<Type>();
 
-        var t = typeof(IHubClientWrapper);
-
         foreach (var @interface in interfacesAndImplementations.Keys)
         {
-            if (t == @interface)
-            {
-                
-            }
-
             var impl = assembly.GetTypes()
                 .Where(type =>
                     type != @interface &&
@@ -167,11 +160,6 @@ public class ProgramTests
 
         foreach (var @interface in interfaces)
         {
-            if (t == @interface)
-            {
-                
-            }
-
             if (excludedTypes.Contains(@interface))
                 continue;
 
