@@ -1,47 +1,45 @@
 ﻿using Application.Behaviors.Item.ListItems;
 using Application.Behaviors.Trade.ItemUsedInTrade;
 using Application.Options;
+using Item_Trading_App_REST_API.StartupServices.Common;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Item_Trading_App_REST_API.HostedServices.Cache;
+namespace Item_Trading_App_REST_API.StartupServices;
 
-public class CacheInitHostedService : IHostedService
+public class CacheInitStartupService : IStartupService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly CacheSettings _settings;
 
-    public CacheInitHostedService(IServiceProvider serviceProvider, CacheSettings settings)
+    public CacheInitStartupService(IServiceProvider serviceProvider, CacheSettings settings)
     {
         _serviceProvider = serviceProvider;
         _settings = settings;
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public async Task Execute()
     {
         if (!_settings.InitAtStartup) return;
 
+        var cancellationToken = CancellationToken.None;
+
         using var scope = _serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
 
-        var mediator = scope.ServiceProvider.GetService<IMediator>();
+        var sender = scope.ServiceProvider.GetService<ISender>();
 
         // using listItems from the item service will set the cache if it is a miss
-        var itemsId = (await mediator.Send(new ListItemsQuery(), cancellationToken)).Content!.ItemsId.ToArray();
+        var itemsResult = await sender.Send(new ListItemsQuery(), cancellationToken);
+        var itemsId = itemsResult.Content.ItemsId.ToArray();
 
         // init used items
         for (int i = 0; i < itemsId.Length; i++)
         {
-            await mediator.Send(new ItemUsedInTradeQuery { ItemId = itemsId[i] }, cancellationToken);
+            await sender.Send(new ItemUsedInTradeQuery { ItemId = itemsId[i] }, cancellationToken);
         }
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
     }
 }

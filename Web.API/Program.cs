@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Installers;
@@ -36,10 +35,11 @@ else
     app.UseExceptionHandler("/Error");
 }
 
-app.UseAuthentication();
-var swaggerOptions = new SwaggerOptions();
+app.RegisterStartupServices();
 
-builder.Configuration.GetSection(nameof(SwaggerOptions)).Bind(swaggerOptions);
+app.UseAuthentication();
+
+var swaggerOptions = app.Services.GetRequiredService<SwaggerOptions>();
 
 app.UseSwagger(option =>
 {

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Extensions;
 using System;
 using System.Threading.Tasks;
+using Item_Trading_App_REST_API.StartupServices.Common;
 
 namespace Item_Trading_App_REST_API.Extensions;
 
@@ -41,5 +42,18 @@ public static class WebAppExtensions
                 Console.WriteLine(ex.Message);
             }
         }
+    }
+
+    public static void RegisterStartupServices(this WebApplication app)
+    {
+        app.Lifetime.ApplicationStarted.Register(async () =>
+        {
+            var services = app.Services.GetServices<IStartupService>();
+
+            foreach (var service in services)
+            {
+                await service.Execute();
+            }
+        });
     }
 }
