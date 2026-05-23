@@ -8,6 +8,8 @@ services:
       dockerfile: Web.API/Dockerfile
     ports:
       - "5000:80"
+    environment:
+      ASPNETCORE_URLS: "http://+:80"
     depends_on:
       - sqlserver
       - redis
