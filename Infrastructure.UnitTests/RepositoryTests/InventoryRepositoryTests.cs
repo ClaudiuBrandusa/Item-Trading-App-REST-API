@@ -22,7 +22,7 @@ public class InventoryRepositoryTests
     }
 
     [Fact(DisplayName = "Create several inventory items then list them")]
-    public async Task ListOwnedItems_CreateSeveralOwnedItemsThenListThem_ReturnsAnArrayOfTheNewlyCreatedOwnedItems()
+    public async Task GetInventory_CreateSeveralOwnedItemsThenRetrieveTheInventory_ReturnsInventory()
     {
         // Arrange
 
@@ -44,6 +44,69 @@ public class InventoryRepositoryTests
         // Assert
 
         Assert.NotNull(inventoryResult);
+        Assert.Equal(count, inventoryResult.OwnedItems.Count);
+    }
+
+    [Fact(DisplayName = "Create several inventory items then list them (load inventory)")]
+    public async Task LoadInventory_CreateSeveralOwnedItemsThenRetrieveTheInventory_ReturnsInventory()
+    {
+        // Arrange
+
+        int count = 5;
+
+        var inventory = new Inventory(DEFAULT_USER_ID);
+
+        for (int i = 0; i < count; i++)
+        {
+            inventory.AddItem(Guid.NewGuid().ToString(), 5 + i);
+        }
+
+        await _sut.AddEntityAsync(inventory);
+
+        // Act
+
+        var inventoryResult = await _sut.LoadInventoryAsync(DEFAULT_USER_ID);
+
+        // Assert
+
+        Assert.NotNull(inventoryResult);
+        Assert.Equal(count, inventoryResult.OwnedItems.Count);
+    }
+
+    [Fact(DisplayName = "Create inventory then drop item")]
+    public async Task DropItem_CreateInventoryThenDropItem_ShouldSucceed()
+    {
+        // Arrange
+
+        int count = 5;
+
+        var inventory = new Inventory(DEFAULT_USER_ID);
+
+        for (int i = 0; i < count; i++)
+        {
+            inventory.AddItem(Guid.NewGuid().ToString(), 5 + i);
+        }
+
+        await _sut.AddEntityAsync(inventory);
+
+        var itemToDrop = inventory.OwnedItems.First();
+        var quantityToDrop = 3;
+        var expectedRemainedQuantity = itemToDrop.FreeAmount - quantityToDrop;
+
+        // Act
+
+        var inventoryResult = await _sut.LoadInventoryAsync(DEFAULT_USER_ID);
+
+        inventory.DropItem(itemToDrop.ItemId, quantityToDrop);
+        
+        var dropItemResult = await _sut.DropItemAsync(inventory, itemToDrop.ItemId, quantityToDrop);
+
+        
+
+        // Assert
+
+        Assert.NotNull(inventoryResult);
+
         Assert.Equal(count, inventoryResult.OwnedItems.Count);
     }
 

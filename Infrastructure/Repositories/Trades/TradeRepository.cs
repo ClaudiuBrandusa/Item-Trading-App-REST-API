@@ -21,7 +21,11 @@ public class TradeRepository : RepositoryBase, ITradeRepository
     {
         if (responded)
         {
-            return (await GetTradeItemHistoryQuery(context, tradeId)).Select(x => new TradeItem(tradeId, x.ItemId, x.Quantity, x.Price)).ToArray();
+            var queryResult = await GetTradeItemHistoryQuery(context, tradeId);
+
+            return queryResult.Select(x =>
+                new TradeItem(tradeId, x.ItemId, x.Quantity, x.Price)
+            ).ToArray();
         }
         
         var trade = await GetTradeQuery(context, tradeId);

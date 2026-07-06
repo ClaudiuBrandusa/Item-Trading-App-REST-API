@@ -35,22 +35,18 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
         return inventoryEntity;
     }
 
-    public void Attach(Inventory inventory)
-    {
-        context.Attach(inventory);
-    }
-
-    public void Detach(Inventory inventory)
-    {
-        context.Entry(inventory).State = EntityState.Detached;
-    }
-
     public async Task<bool> AddInventoryOrUpdateAsync(Inventory inventory)
     {
         var operationResult = false;
 
         if (await DoesUserInventoryExist(inventory.UserId))
         {
+            if (context.Entry(inventory).State == EntityState.Detached)
+            {
+                Attach(inventory);
+                context.Entry(inventory).State = EntityState.Modified;
+            }
+
             operationResult = await context.SaveChangesAsync() > 0;
         }
         else
@@ -193,4 +189,14 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
         );
 
     #endregion Queries
+
+    private void Attach(Inventory inventory)
+    {
+        context.Attach(inventory);
+    }
+
+    private void Detach(Inventory inventory)
+    {
+        context.Entry(inventory).State = EntityState.Detached;
+    }
 }

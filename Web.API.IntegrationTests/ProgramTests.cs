@@ -20,7 +20,6 @@ public class ProgramTests
 
         var expectedRegisteredServices = ListApplicationExpectedDependencies(new());
         expectedRegisteredServices = ListInfrastructureExpectedDependencies(expectedRegisteredServices);
-        var interfaces = new List<Type>();
         expectedRegisteredServices = ListAPIExpectedDependencies(expectedRegisteredServices);
 
         MsSqlContainer sqlContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:latest")
@@ -85,6 +84,10 @@ public class ProgramTests
         if (sqlContainer is not null)
         {
             await sqlContainer.StopAsync();
+        }
+
+        if (redisContainer is not null)
+        {
             await redisContainer.StopAsync();
         }
 
@@ -122,8 +125,6 @@ public class ProgramTests
             }
 
         var interfaces = query.ToArray();
-        
-        var implementations = new List<Type>();
 
         foreach (var @interface in interfacesAndImplementations.Keys)
         {
@@ -154,8 +155,6 @@ public class ProgramTests
 
                 interfacesAndImplementations[@interface].Add(im);
             }
-
-            implementations.AddRange(impl);
         }
 
         foreach (var @interface in interfaces)
@@ -187,8 +186,6 @@ public class ProgramTests
 
                 interfacesAndImplementations[@interface].Add(im);
             }
-
-            implementations.AddRange(impl);
         }
 
         return interfacesAndImplementations;

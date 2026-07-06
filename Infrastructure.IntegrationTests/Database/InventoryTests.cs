@@ -96,9 +96,9 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
         // Act
 
         var addItemResponse = await _repository.AddInventoryOrUpdateAsync(inventory);
-        _repository.Attach(inventory);
-        inventory.DropItem(item.ItemId, droppedQuantity);
-        var dropItemResponse = await _repository.AddInventoryOrUpdateAsync(inventory);
+        var retrievedInventory = await _repository.LoadInventoryAsync(user.Id);
+        retrievedInventory.DropItem(item.ItemId, droppedQuantity);
+        var dropItemResponse = await _repository.AddInventoryOrUpdateAsync(retrievedInventory);
         var getInventoryResponse = await _repository.GetInventoryAsync(user.Id);
         var inventoryItem = getInventoryResponse!.GetItem(item.ItemId);
 
