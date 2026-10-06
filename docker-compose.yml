@@ -9,10 +9,15 @@ services:
     ports:
       - "5000:80"
     environment:
+      ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:80"
+      OTEL_SERVICE_NAME: Item-Trading-App
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     depends_on:
       - sqlserver
       - redis
+      - otel-collector
     networks:
       - app-network
 
@@ -30,15 +35,86 @@ services:
       - app-network
 
   redis:
-   image: redis:latest
-   container_name: Redis
-   environment:
-    ALLOW_EMPTY_PASSWORD: yes
-   ports:
+    image: redis:latest
+    container_name: Redis
+    environment:
+      ALLOW_EMPTY_PASSWORD: yes
+    ports:
       - "6379:6379"
-   volumes:
+    volumes:
       - redis-data:/data
-   networks:
+    networks:
+      - app-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command:
+      - "--config=/etc/otelcol/config.yaml"
+    volumes:
+      - ./Observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+    networks:
+      - app-network
+
+  tempo:
+    image: grafana/tempo:latest
+    command:
+      - "-config.file=/etc/tempo.yaml"
+    volumes:
+      - ./Observability/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"
+    networks:
+      - app-network
+
+  loki:
+    image: grafana/loki:3.7.0
+    command:
+      - "-config.file=/etc/loki/local-config.yaml"
+    volumes:
+      - ./Observability/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-otlp-receiver"
+    volumes:
+      - ./Observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./Observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+    networks:
       - app-network
 
 networks:
@@ -47,3 +123,7 @@ networks:
 volumes:
   sqlserverdata:
   redis-data:
+  tempo-data:
+  loki-data:
+  prometheus-data:
+  grafana-data:

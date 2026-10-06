@@ -23,6 +23,7 @@ public sealed class ProcessOutboxMessagesJob : IJob
     public async Task Execute(IJobExecutionContext context)
 	{
 		var dbContext = await _dbContextWrapper.ProvideDatabaseContextAsync();
+		await using var transaction = await dbContext.Database.BeginTransactionAsync(context.CancellationToken);
 
 		var messages = await dbContext
 			.OutboxMessages
@@ -64,6 +65,7 @@ public sealed class ProcessOutboxMessagesJob : IJob
 		}
 		
 		await dbContext.SaveChangesAsync();
+		await transaction.CommitAsync();
 
 		_dbContextWrapper.DisposeDatabaseContext(dbContext);
 	}

@@ -37,7 +37,7 @@ public class NotificationStrategyTests
 
     private static Notification<ModifiedContentJson> CreateModifiedNotification(string notificationType, string categoryType, string id, object customData)
     {
-        var jsonNode = JsonNode.Parse(JsonSerializer.Serialize(customData));
+        var jsonNode = JsonNode.Parse(JsonSerializer.Serialize(customData, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
 
         return new Notification<ModifiedContentJson>
         {

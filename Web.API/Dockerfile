@@ -5,7 +5,7 @@ WORKDIR /app
 EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
+ARG BUILD_CONFIGURATION=Debug
 WORKDIR /src
 COPY ["Web.API/Web.API.csproj", "Web.API/"]
 COPY ["Item-Trading-App-Contracts/Item-Trading-App-Contracts/Item-Trading-App-Contracts.csproj", "Item-Trading-App-Contracts/Item-Trading-App-Contracts/"]
@@ -19,8 +19,8 @@ WORKDIR "/src/Web.API"
 RUN dotnet build "./Web.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Web.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+ARG BUILD_CONFIGURATION=Debug
+RUN dotnet publish "./Web.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false /p:DebugType=portable /p:DebugSymbols=true /p:Optimize=false /p:PublishReadyToRun=false
 
 FROM base AS final
 WORKDIR /app

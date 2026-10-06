@@ -8,6 +8,8 @@ using System.Reflection;
 using Item_Trading_App_REST_API.Options;
 using Item_Trading_App_REST_API.Extensions;
 using Item_Trading_App_REST_API.Hubs;
+using Microsoft.Extensions.Logging;
+using OpenTelemetry.Logs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication(builder.Configuration)
                 .AddInfrastructure(builder.Configuration)
                 .InstallServicesInAssembly(Assembly.GetExecutingAssembly(), builder.Configuration);
+
+// otel logging config
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+    logging.AddOtlpExporter();
+});
 
 var app = builder.Build();
 

@@ -110,7 +110,7 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
         
         var modified = await _repository.UpdateInventory(inventory);
 
-        await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId), quantity);
+        await AddLockedAmount(userId, itemId, quantity);
 
         return modified;
     }
@@ -123,7 +123,7 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
 
         foreach ((var itemId, var quantity) in items)
         {
-            await _cacheService.SetCacheValueAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId), quantity);
+            await AddLockedAmount(userId, itemId, quantity);
         }
 
         return modified;
@@ -191,11 +191,21 @@ public class CachedInventoryRepository : CachedRepository, ICachedInventoryRepos
                 _cacheService.ClearCacheKeyAsync(CacheKeys.Inventory.GetLockedAmountKey(userId, itemId))
             );
 
-    private async Task<bool> UpdateInventoryItemCache(InventoryItem ownedItem, string userId)
+    private async Task AddLockedAmount(string userId, string itemId, int quantity)
     {
-        await SetCacheAsync((ownedItem, userId));
+        var cacheKey = CacheKeys.Inventory.GetLockedAmountKey(userId, itemId);
 
-        return true;
+        var currentValue = await _cacheService.GetEntityValueAsync(
+            CacheKeys.Inventory.GetLockedAmountKey(userId, itemId),
+            async (args) =>
+            {
+                var lockedItemAmount = await _repository.GetAmountOfLockedItemAsync(userId, itemId);
+
+                return lockedItemAmount;
+            },
+            true);
+
+        await _cacheService.SetCacheValueAsync(cacheKey, currentValue + quantity);
     }
 
     protected override string GetCacheKey(object entity)

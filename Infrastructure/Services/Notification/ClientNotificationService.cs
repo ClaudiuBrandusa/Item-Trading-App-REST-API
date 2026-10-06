@@ -63,7 +63,7 @@ public class ClientNotificationService : IClientNotificationService
     {
         if (customData is not null)
         {
-            var jsonNode = JsonNode.Parse(JsonSerializer.Serialize(customData));
+            var jsonNode = JsonNode.Parse(JsonSerializer.Serialize(customData, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
 
             if (jsonNode is not null)
                 return new Notification<ModifiedContentJson>
