@@ -15,6 +15,6 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<Authentic
 
     public Task<Result<AuthenticationResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        return _identityService.RegisterAsync(request);
+        return _identityService.RegisterAsync(request, cancellationToken);
     }
 }

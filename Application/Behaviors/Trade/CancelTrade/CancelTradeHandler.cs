@@ -15,6 +15,6 @@ public class CancelTradeHandler : IRequestHandler<CancelTradeCommand, Result<Tra
 
     public Task<Result<TradeOfferResult>> Handle(CancelTradeCommand request, CancellationToken cancellationToken)
     {
-        return _tradeService.CancelTradeOfferAsync(request);
+        return _tradeService.CancelTradeOfferAsync(request, cancellationToken);
     }
 }

@@ -83,7 +83,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.Add(request);
+        var result = await sut.Add(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -124,7 +124,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.Add(request);
+        var result = await sut.Add(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -171,7 +171,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.Drop(request);
+        var result = await sut.Drop(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -212,7 +212,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.Drop(request);
+        var result = await sut.Drop(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -253,7 +253,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.Get(expectedItemResult.ItemId);
+        var result = await sut.Get(expectedItemResult.ItemId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -288,7 +288,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.Get("item-id");
+        var result = await sut.Get("item-id", TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -326,7 +326,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.List(string.Empty);
+        var result = await sut.List(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -359,7 +359,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.List(string.Empty);
+        var result = await sut.List(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -399,7 +399,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.GetLockedAmount(string.Empty);
+        var result = await sut.GetLockedAmount(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -434,7 +434,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 
         // Act
 
-        var result = await sut.GetLockedAmount(string.Empty);
+        var result = await sut.GetLockedAmount(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 

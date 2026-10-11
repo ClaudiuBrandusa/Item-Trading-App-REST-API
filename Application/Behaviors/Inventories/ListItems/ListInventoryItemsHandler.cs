@@ -15,6 +15,6 @@ public class ListInventoryItemsHandler : IRequestHandler<ListInventoryItemsQuery
 
     public Task<Result<ItemsResult>> Handle(ListInventoryItemsQuery request, CancellationToken cancellationToken)
     {
-        return _inventoryService.ListItemsAsync(request);
+        return _inventoryService.ListItemsAsync(request, cancellationToken);
     }
 }

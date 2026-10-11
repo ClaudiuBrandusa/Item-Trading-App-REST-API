@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using Item_Trading_App_REST_API.Options;
+using System.Threading;
 
 namespace Item_Trading_App_REST_API.HostedServices.Identity.RefreshToken;
 
@@ -16,11 +17,11 @@ public class RefreshTokenHostedService : BaseHostedService, IDisposable
         _serviceScopeFactory = serviceScopeFactory;
     }
 
-    protected override async Task ExecuteAsync()
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var refreshTokenService = scope.ServiceProvider.GetService<IRefreshTokenService>();
 
-        await refreshTokenService.ClearRefreshTokensAsync();
+        await refreshTokenService.ClearRefreshTokensAsync(cancellationToken);
     }
 }

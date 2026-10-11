@@ -15,6 +15,6 @@ public class GetItemHandler : IRequestHandler<GetItemQuery, Result<FullItemResul
 
     public Task<Result<FullItemResult>> Handle(GetItemQuery request, CancellationToken cancellationToken)
     {
-        return _itemService.GetItemAsync(request);
+        return _itemService.GetItemAsync(request, cancellationToken);
     }
 }

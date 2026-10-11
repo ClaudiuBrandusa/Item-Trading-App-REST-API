@@ -2,8 +2,8 @@
 using Domain.Aggregates.Trades;
 using Domain.Entities.Identity;
 using Domain.Repositories.Trades;
+using Infrastructure.Data;
 using Infrastructure.Repositories.Trades;
-using Infrastructure.Services.DatabaseContextWrapper;
 using MediatR;
 using Moq;
 
@@ -15,14 +15,15 @@ public class TradeRepositoryTests
     private readonly string DEFAULT_SENDER_ID = User.GenerateId();
     private readonly string DEFAULT_RECEIVER_ID = User.GenerateId();
 
-    private IDatabaseContextWrapper _contextWrapper;
+    private DatabaseContext _context;
 
     public TradeRepositoryTests()
     {
-        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _context = DatabaseUtils.GetDatabaseContext(Guid.NewGuid().ToString());
+
         var senderMock = new Mock<ISender>();
 
-        _sut = new TradeRepository(_contextWrapper, senderMock.Object);
+        _sut = new TradeRepository(_context, senderMock.Object);
     }
 
     [Fact(DisplayName = "Create a trade and return the created trade")]
@@ -60,7 +61,7 @@ public class TradeRepositoryTests
             await _sut.AddEntityAsync(tradeMock);
         }
 
-        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync(CancellationToken.None);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         // Act
 
@@ -86,7 +87,7 @@ public class TradeRepositoryTests
             await _sut.AddEntityAsync(tradeMock);
         }
 
-        await _contextWrapper.ProvideDatabaseContext().SaveChangesAsync(CancellationToken.None);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         // Act
 

@@ -2,7 +2,7 @@
 
 namespace Domain.Repositories.Identity;
 
-public interface IRefreshTokenRepository : IRepository, IDisposable
+public interface IRefreshTokenRepository : IRepository
 {
     /// <summary>
     /// Generates a refresh token for the user with <paramref name="userId"/>

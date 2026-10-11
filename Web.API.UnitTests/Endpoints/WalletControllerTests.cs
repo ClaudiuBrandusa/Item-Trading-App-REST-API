@@ -72,7 +72,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
 
         // Act
 
-        var result = await sut.Get();
+        var result = await sut.Get(TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -112,7 +112,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
 
         // Act
 
-        var result = await sut.Get();
+        var result = await sut.Get(TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -157,7 +157,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
 
         // Act
 
-        var result = await sut.Update(request);
+        var result = await sut.Update(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -196,7 +196,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
 
         // Act
 
-        var result = await sut.Update(request);
+        var result = await sut.Update(request, TestContext.Current.CancellationToken);
 
         // Assert
 

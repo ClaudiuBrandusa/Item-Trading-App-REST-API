@@ -14,6 +14,6 @@ public class GetItemDescriptionHandler : IRequestHandler<GetItemDescriptionQuery
 
     public Task<string> Handle(GetItemDescriptionQuery request, CancellationToken cancellationToken)
     {
-        return _itemService.GetItemDescriptionAsync(request);
+        return _itemService.GetItemDescriptionAsync(request, cancellationToken);
     }
 }

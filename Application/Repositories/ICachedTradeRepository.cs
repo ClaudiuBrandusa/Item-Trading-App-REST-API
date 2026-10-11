@@ -3,7 +3,7 @@ using Domain.Entities.Trades;
 
 namespace Application.Repositories;
 
-public interface ICachedTradeRepository : ICachedRepository, IDisposable
+public interface ICachedTradeRepository : ICachedRepository
 {
     Task<Trade?> GetTradeAsync(string tradeId);
 
@@ -32,4 +32,6 @@ public interface ICachedTradeRepository : ICachedRepository, IDisposable
     Task<bool> IsItemUsedInTrade(string itemId);
 
     Task<bool> MoveTradeContentToHistory(string tradeId);
+
+    
 }

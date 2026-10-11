@@ -14,13 +14,17 @@ public class IdentityRepositoryTests
     private const string DEFAULT_EMAIL = "Default@email.com";
 
     private IDatabaseContextWrapper _contextWrapper;
+    private DatabaseContext _context;
 
     public IdentityRepositoryTests()
     {
-        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        var guid = Guid.NewGuid().ToString();
+
+        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(guid);
+        _context = DatabaseUtils.GetDatabaseContext(guid);
         var userManagerMock = DatabaseUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
 
-        _sut = new IdentityRepository(_contextWrapper, userManagerMock);
+        _sut = new IdentityRepository(_context, _contextWrapper, userManagerMock);
     }
 
     [Fact(DisplayName = "Create user and check password")]

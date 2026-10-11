@@ -75,7 +75,7 @@ app.MapHub<NotificationHub>("/hubs/notification");
 
 app.MigrateDatabase();
 
-await app.SeedDatabase();
+await app.SeedDatabase(app.Lifetime.ApplicationStopping);
 
 app.Run();
 

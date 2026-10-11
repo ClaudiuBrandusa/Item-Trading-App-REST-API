@@ -15,6 +15,6 @@ public class UpdateItemHandler : IRequestHandler<UpdateItemCommand, Result<FullI
 
     public Task<Result<FullItemResult>> Handle(UpdateItemCommand request, CancellationToken cancellationToken)
     {
-        return _itemService.UpdateItemAsync(request);
+        return _itemService.UpdateItemAsync(request, cancellationToken);
     }
 }

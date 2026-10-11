@@ -7,25 +7,25 @@ public interface IRefreshTokenService
     /// <summary>
     /// Generates a refresh token for the user with the given userId and jwtId
     /// </summary>
-    Task<Result<RefreshTokenResult>> GenerateRefreshTokenAsync(string userId, string jti);
+    Task<Result<RefreshTokenResult>> GenerateRefreshTokenAsync(string userId, string jti, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the refresh token with the given id
     /// </summary>
-    Task<Result<RefreshTokenResult>> GetRefreshTokenAsync(string refreshTokenId);
+    Task<Result<RefreshTokenResult>> GetRefreshTokenAsync(string refreshTokenId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the most recent refresh token
     /// </summary>
-    Task<Result<RefreshTokenResult>> GetRecentRefreshTokenAsync(string userId, string jti);
+    Task<Result<RefreshTokenResult>> GetRecentRefreshTokenAsync(string userId, string jti, CancellationToken cancellationToken);
 
     /// <summary>
     /// Removes the refresh token with the given id
     /// </summary>
-    Task<bool> RemoveRefreshTokenAsync(string refreshTokenId);
+    Task<bool> RemoveRefreshTokenAsync(string refreshTokenId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Clear the refresh tokens that we no longer need
     /// </summary>
-    Task ClearRefreshTokensAsync();
+    Task ClearRefreshTokensAsync(CancellationToken cancellationToken);
 }

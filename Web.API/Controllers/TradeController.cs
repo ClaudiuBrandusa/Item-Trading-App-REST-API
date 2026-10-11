@@ -16,6 +16,7 @@ using Application.Behaviors.Trade.ListTrades;
 using Application.Behaviors.Trade.GetTrade;
 using Application.Results.Trades;
 using Application.Models.Trades;
+using System.Threading;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -30,24 +31,24 @@ public class TradeController : BaseController
     }
 
     [HttpGet(Endpoints.Trade.Get)]
-    public async Task<IActionResult> Get(string tradeId)
+    public async Task<IActionResult> Get(string tradeId, CancellationToken cancellationToken)
     {
         var model = AdaptToType<string, RequestTradeOfferQuery>(tradeId);
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<TradeOfferResult, TradeOfferSuccessResponse, TradeOfferFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Trade.List)]
-    public async Task<IActionResult> List([FromQuery] string[] tradeItemIds, [FromQuery] string direction, [FromQuery] bool responded = false)
+    public async Task<IActionResult> List([FromQuery] string[] tradeItemIds, [FromQuery] string direction, CancellationToken cancellationToken, [FromQuery] bool responded = false)
     {
         if (!Enum.TryParse<TradeDirection>(direction, out var tradeDirection))
             return new BadRequestObjectResult(new FailedResponse { Errors = ["Invalid trade direction value"] });
 
         var model = AdaptToType<string, ListTradesQuery>(UserId, (nameof(ListTradesQuery.TradeItemIds), tradeItemIds), (nameof(ListTradesQuery.TradeDirection), tradeDirection), (nameof(ListTradesQuery.Responded), responded));
 
-        var results = await _mediator.Send(model);
+        var results = await _mediator.Send(model, cancellationToken);
 
         return MapResult<TradeOffersResult, ListTradeOffersSuccessResponse, FailedResponse>(results);
     }
@@ -61,53 +62,53 @@ public class TradeController : BaseController
     }
 
     [HttpPost(Endpoints.Trade.Offer)]
-    public async Task<IActionResult> Offer([FromBody] TradeOfferRequest request)
+    public async Task<IActionResult> Offer([FromBody] TradeOfferRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<TradeOfferRequest, CreateTradeOfferCommand>(request, (nameof(CreateTradeOfferCommand.SenderUserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<TradeOfferResult, TradeOfferSuccessResponse, TradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Accept)]
-    public async Task<IActionResult> Accept([FromBody] AcceptTradeOfferRequest request)
+    public async Task<IActionResult> Accept([FromBody] AcceptTradeOfferRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<AcceptTradeOfferRequest, RespondTradeCommand>(request, (nameof(RespondTradeCommand.UserId), UserId), (nameof(RespondTradeCommand.Response), true));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<TradeOfferResult, AcceptTradeOfferSuccessResponse, AcceptTradeOfferFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Trade.Reject)]
-    public async Task<IActionResult> Reject([FromBody] RejectTradeOfferRequest request)
+    public async Task<IActionResult> Reject([FromBody] RejectTradeOfferRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<RejectTradeOfferRequest, RespondTradeCommand>(request, (nameof(RespondTradeCommand.UserId), UserId), (nameof(RespondTradeCommand.Response), false));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<TradeOfferResult, RejectTradeOfferSuccessResponse, RejectTradeOfferFailedResponse>(result);
     }
 
     [HttpDelete(Endpoints.Trade.Cancel)]
-    public async Task<IActionResult> Cancel([FromBody] CancelTradeOfferRequest request)
+    public async Task<IActionResult> Cancel([FromBody] CancelTradeOfferRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<CancelTradeOfferRequest, CancelTradeCommand>(request, (nameof(RespondTradeCommand.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<TradeOfferResult, CancelTradeOfferSuccessResponse, CancelTradeOfferFailedResponse>(result);
     }

@@ -15,6 +15,6 @@ public class ListUsersHandler : IRequestHandler<ListUsersQuery, Result<UsersResu
 
     public Task<Result<UsersResult>> Handle(ListUsersQuery request, CancellationToken cancellationToken)
     {
-        return _identityService.ListUsers(request);
+        return _identityService.ListUsers(request, cancellationToken);
     }
 }

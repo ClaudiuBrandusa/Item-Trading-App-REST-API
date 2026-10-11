@@ -13,7 +13,6 @@ using Application.Behaviors.Trade.CancelTrade;
 using Application.Behaviors.Trade.GetTrade;
 using Application.Behaviors.Identity.GetUsername;
 using Application.Behaviors.Item.GetItemName;
-using Application.Services.UnitOfWork;
 using Application.Repositories;
 using Application.Results.Trades;
 using Application.Models.Trades;
@@ -24,275 +23,121 @@ using Application.Behaviors.Inventories.LockItems;
 using Domain.Aggregates.Trades;
 using Application.Behaviors.Trade.GetTradeItemIds;
 using Application.Behaviors.Trade.ItemUsedInTrade;
+using Microsoft.Extensions.Logging;
+using Application.Results.Inventories;
 
 namespace Application.Services.Trades;
 
-public class TradeService : ITradeService, IDisposable
+public class TradeService : ITradeService
 {
+    private readonly ILogger<TradeService> _logger;
     private readonly ICachedTradeRepository _repository;
     private readonly ISender _sender;
     private readonly IPublisher _publisher;
     private readonly IMapper _mapper;
-    private readonly IUnitOfWorkService _unitOfWork;
 
-    public TradeService(ICachedTradeRepository tradeRepository, ISender sender, IPublisher publisher, IMapper mapper, IUnitOfWorkService unitOfWork)
+    public TradeService(ILogger<TradeService> logger, ICachedTradeRepository tradeRepository, ISender sender, IPublisher publisher, IMapper mapper)
     {
+        _logger = logger;
         _repository = tradeRepository;
         _sender = sender;
         _publisher = publisher;
         _mapper = mapper;
-        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<TradeOfferResult>> CreateTradeOfferAsync(CreateTradeOfferCommand model)
+    public async Task<Result<TradeOfferResult>> CreateTradeOfferAsync(CreateTradeOfferCommand model, CancellationToken cancellationToken)
     {
         if (model is null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.TargetUserId) || model.Items is null)
             return Result<TradeOfferResult>.Failure("Invalid input data");
 
         var result = new TradeOfferResult();
 
-        var transactionErrorMessage = await _unitOfWork.ExplicitTransaction(async (TaskCompletionSource<string?> taskCompletionSource) =>
+        await _repository.StartTransactionAsync(cancellationToken);
+
+        try
         {
-            try
+            var lockItemsResult = await LockTradeItemsAsync(
+                model.SenderUserId,
+                model.Items
+                    .Select(x => (x.ItemId, x.Quantity))
+                    .ToArray()
+            );
+
+            if (!lockItemsResult.IsSuccess)
             {
-                var lockItemsCommand = new LockItemsCommand
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed creating a trade from sender with id {senderId}. Unable to lock trade items", model.SenderUserId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            var items = lockItemsResult.Content!.Items;
+
+            if (items.Length == 0)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed creating a trade from sender with id {senderId}. Trade items not provided", model.SenderUserId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            var modelItems = model.Items.ToArray();
+            
+            for (int i = 0; i < items.Length; i++)
+            {
+                var modelItem = modelItems[i];
+
+                if (modelItem.Price < 0)
                 {
-                    UserId = model.SenderUserId,
-                    Items = model.Items
-                        .Select(x => (x.ItemId, x.Quantity))
-                        .ToArray()
-                };
-
-                var lockItemsResult = await _sender.Send(lockItemsCommand);
-
-                if (!lockItemsResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult(lockItemsResult.Error);
-
-                    return false;
+                    await _repository.RollbackTransactionAsync(cancellationToken);
+                    _logger.LogWarning("Failed creating a trade from sender with id {senderId}. Invalid price", model.SenderUserId);
+                    return Result<TradeOfferResult>.Failure("Something went wrong");
                 }
 
-                var items = lockItemsResult.Content!.Items;
+                var item = items[i];
+                item.Price = modelItem.Price;
+                item.Quantity = modelItem.Quantity;
+            }
 
-                if (items.Length == 0)
-                {
-                    taskCompletionSource.SetResult("Invalid input data");
+            result.Items = items;
 
-                    return false;
-                }
+            var offer = new Trade(DateTime.UtcNow, model.SenderUserId, model.TargetUserId);
 
-                var modelItems = model.Items.ToArray();
+            foreach (var item in items)
+            {
+                var tradeContent = new TradeItem(offer.TradeId, item.ItemId, item.Quantity, item.Price);
                 
-                for (int i = 0; i < items.Length; i++)
-                {
-                    var modelItem = modelItems[i];
-
-                    if (modelItem.Price < 0)
-                    {
-                        taskCompletionSource.SetResult("Invalid price");
-
-                        return false;
-                    }
-
-                    var item = items[i];
-                    item.Price = modelItem.Price;
-                    item.ItemName = await GetItemNameAsync(item.ItemId);
-                    item.Quantity = modelItem.Quantity;
-                }
-
-                result.Items = items;
-
-                var offer = new Trade(DateTime.UtcNow, model.SenderUserId, model.TargetUserId);
-
-                foreach (var item in items)
-                {
-                    var tradeContent = new TradeItem(offer.TradeId, item.ItemId, item.Quantity, item.Price);
-                    
-                    offer.AddTradeContent(tradeContent);
-                }
-
-                if (!await _repository.AddEntityAsync(offer))
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-
-                    return false;
-                }
-
-                result.TradeId = offer.TradeId;
-                result.SenderId = model.SenderUserId;
-                result.ReceiverId = model.TargetUserId;
-                result.CreationDate = offer.SentDate;
-
-                await _repository.SetCacheForTrade(offer);
-
-                return true;
+                offer.AddTradeContent(tradeContent);
             }
-            catch (Exception)
+
+            if (!await _repository.AddEntityAsync(offer))
             {
-                taskCompletionSource.SetResult("Something went wrong");
-
-                return false;
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed creating a trade from sender with id {senderId}. Unable to add the trade entity", model.SenderUserId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
             }
-        });
 
-        if (transactionErrorMessage is not null)
-            return Result<TradeOfferResult>.Failure(transactionErrorMessage);
+            result.TradeId = offer.TradeId;
+            result.SenderId = model.SenderUserId;
+            result.ReceiverId = model.TargetUserId;
+            result.CreationDate = offer.SentDate;
 
-        var receiverUsernameTask = GetUsernameAsync(model.TargetUserId);
-        var senderUsernameTask = GetUsernameAsync(model.SenderUserId);
+            await _repository.SetCacheForTrade(offer);
 
-        await Task.WhenAll(
-            receiverUsernameTask,
-            senderUsernameTask
-        );
+            await _repository.SaveChangesAsync();
+            await _repository.CommitTransactionAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _repository.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Something went wrong while creating from sender with id {senderId}", model.SenderUserId);
+            return Result<TradeOfferResult>.Failure("Something went wrong");
+        }
+        
+        await ApplyTradeItemsNameToResult(result);
 
-        result.SenderName = await senderUsernameTask;
-        result.ReceiverName = await receiverUsernameTask;
-
-        return Result<TradeOfferResult>.Success(result);
+        return await ApplyUsernameDataToResultAndValidate(result, model.SenderUserId, model.TargetUserId);
     }
 
-    public async Task<Result<TradeOfferResult>> AcceptTradeOfferAsync(RespondTradeCommand model)
-    {
-        if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
-            return Result<TradeOfferResult>.Failure("Invalid IDs");
-
-        if (await IsRespondedAsync(model.TradeId))
-            return Result<TradeOfferResult>.Failure("Already responded");
-
-        var result = new TradeOfferResult
-        {
-            TradeId = model.TradeId
-        };
-
-        var transactionErrorMessage = await _unitOfWork.ExplicitTransaction(async (TaskCompletionSource<string?> taskCompletionSource) =>
-        {
-            try
-            {
-                var trade = await _repository.GetTradeAsync(model.TradeId)!;
-
-                var senderId = trade!.GetSenderId();
-                var receiverId = trade.GetReceiverId();
-
-                if (Equals(senderId, model.UserId) || !Equals(receiverId, model.UserId))
-                {
-                    taskCompletionSource.SetResult("Invalid userId");
-
-                    return false;
-                }
-
-                result.SenderId = senderId;
-                result.ReceiverId = receiverId;
-
-                var price = trade.GetTotalPrice();
-
-                if (!await _sender.Send(new TakeCashCommand { UserId = model.UserId, Amount = price }))
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-
-                    return false;
-                }
-
-                result.CreationDate = trade.SentDate;
-
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
-
-                if (!unlockTradeItemsResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-
-                    return false;
-                }
-
-                var giveItemsResult = await GiveItemsAsync(model.UserId, trade);
-
-                if (!giveItemsResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-
-                    return false;
-                }
-
-                var tradeItemDTOs = new List<TradeItemDTO>();
-
-                foreach (var tradeContent in trade.TradeContents)
-                {
-                    tradeItemDTOs.Add(_mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeContent, (nameof(TradeItemDTO.ItemName), string.Empty)));
-                }
-
-                result.Items = tradeItemDTOs;
-
-                var takeItemsResult = await TakeItemsAsync(senderId, trade);
-
-                if (!takeItemsResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-
-                    return false;
-                }
-
-                if (!await _sender.Send(new GiveCashCommand { UserId = senderId, Amount = price }))
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-
-                    return false;
-                }
-
-                var respondTradeResult = await RespondTradeAsync(trade);
-
-                if (!respondTradeResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult(respondTradeResult.Error);
-
-                    return false;
-                }
-
-                for (int i = 0; i < tradeItemDTOs.Count; i++)
-                {
-                    string itemName = await GetItemNameAsync(tradeItemDTOs[i].ItemId);
-
-                    tradeItemDTOs[i].ItemName = itemName;
-                }
-
-                trade.SetResponse(true);
-
-                var operationResult = await _repository.UpdateEntityAsync(trade);
-
-                if (operationResult)
-                {
-                    result.Response = trade.Response;
-                    result.ResponseDate = trade.ResponseDate;
-                }
-
-                return operationResult;
-            }
-            catch (Exception)
-            {
-                taskCompletionSource.SetResult("Something went wrong");
-
-                return false;
-            }
-        });
-
-        if (transactionErrorMessage is not null)
-            return Result<TradeOfferResult>.Failure(transactionErrorMessage);
-
-        var senderNameTask = GetUsernameAsync(result.SenderId);
-        var receiverNameTask = GetUsernameAsync(result.ReceiverId);
-
-        await Task.WhenAll(
-            _publisher.Publish(new TradeRespondedDomainEvent(model.TradeId, result.SenderId, true)),
-            senderNameTask,
-            receiverNameTask
-        );
-
-        result.SenderName = await senderNameTask;
-        result.ReceiverName = await receiverNameTask;
-
-        return Result<TradeOfferResult>.Success(result);
-    }
-
-    public async Task<Result<TradeOfferResult>> RejectTradeOfferAsync(RespondTradeCommand model)
+    public async Task<Result<TradeOfferResult>> AcceptTradeOfferAsync(RespondTradeCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
             return Result<TradeOfferResult>.Failure("Invalid IDs");
@@ -306,95 +151,205 @@ public class TradeService : ITradeService, IDisposable
             TradeId = model.TradeId
         };
 
-        var transactionErrorMessage = await _unitOfWork.ExplicitTransaction(async (TaskCompletionSource<string?> taskCompletionSource) =>
+        await _repository.StartTransactionAsync(cancellationToken);        
+
+        try
         {
-            try
+            var trade = await _repository.GetTradeAsync(model.TradeId)!;
+
+            if (trade is null)
             {
-                var trade = await _repository.GetTradeAsync(model.TradeId);
-
-                if (trade is null)
-                {
-                    taskCompletionSource.SetResult("Invalid trade id. Trade doesn't exist");
-
-                    return false;
-                }
-
-                var senderId = trade.GetSenderId();
-                var receiverId = trade.GetReceiverId();
-
-                if (Equals(senderId, model.UserId) || !Equals(receiverId, model.UserId))
-                {
-                    taskCompletionSource.SetResult("Invalid userId");
-
-                    return false;
-                }
-
-                result.SenderId = senderId;
-                result.ReceiverId = receiverId;
-                result.CreationDate = trade.SentDate;
-
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
-
-                if (!unlockTradeItemsResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-                    return false;
-                }
-
-                var respondTradeResult = await RespondTradeAsync(trade);
-
-                if (!respondTradeResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult(respondTradeResult.Error);
-                    return false;
-                }
-
-                for (int i = 0; i < tradeItemDTOs.Count; i++)
-                {
-                    string itemName = await GetItemNameAsync(tradeItemDTOs[i].ItemId);
-
-                    tradeItemDTOs[i].ItemName = itemName;
-                }
-
-                trade.SetResponse(false);
-
-                var operationResult = await _repository.UpdateEntityAsync(trade);
-
-                if (operationResult)
-                {
-                    result.Response = trade.Response;
-                    result.ResponseDate = trade.ResponseDate;
-                }
-
-                return operationResult;
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed accepting trade with id {tradeId}. Invalid trade id, trade doesn't exist", model.TradeId);
+                return Result<TradeOfferResult>.Failure("Invalid trade id. Trade doesn't exist");
             }
-            catch (Exception)
+
+            var senderId = trade!.GetSenderId();
+            var receiverId = trade.GetReceiverId();
+
+            if (Equals(senderId, model.UserId) || !Equals(receiverId, model.UserId))
             {
-                taskCompletionSource.SetResult("Something went wrong");
-                return false;
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed accepting trade with id {tradeId}. Invalid user id. The provided sender id does not match with the sender of the given trade", model.TradeId);
+                return Result<TradeOfferResult>.Failure("Invalid user id");
             }
-        });
 
-        if (transactionErrorMessage is not null)
-            return Result<TradeOfferResult>.Failure(transactionErrorMessage);
+            result.SenderId = senderId;
+            result.ReceiverId = receiverId;
 
-        var senderNameTask = GetUsernameAsync(result.SenderId);
-        var receiverNameTask = GetUsernameAsync(result.ReceiverId);
+            var price = trade.GetTotalPrice();
 
-        await Task.WhenAll(
-            _publisher.Publish(new TradeRespondedDomainEvent(model.TradeId, result.SenderId, false)),
-            senderNameTask,
-            receiverNameTask
-        );
+            if (!await _sender.Send(new TakeCashCommand { UserId = model.UserId, Amount = price }))
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed handling the cash transaction between traders of trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
 
-        result.SenderName = await senderNameTask;
-        result.ReceiverName = await receiverNameTask;
+            result.CreationDate = trade.SentDate;
+
+            var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
+
+            if (!unlockTradeItemsResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed unlocking trade items of trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            var giveItemsResult = await GiveItemsAsync(model.UserId, trade);
+
+            if (!giveItemsResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed sending trade items of trade with id {tradeId} to the receiver with id {ReceiverId}", trade.TradeId, trade.ReceiverId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            foreach (var tradeContent in trade.TradeContents)
+            {
+                tradeItemDTOs.Add(_mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeContent, (nameof(TradeItemDTO.ItemName), string.Empty)));
+            }
+
+            var takeItemsResult = await TakeItemsAsync(senderId, trade);
+
+            if (!takeItemsResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed taking trade items of trade with id {tradeId} from the sender with id {SenderId}", trade.TradeId, trade.SenderId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            if (!await _sender.Send(new GiveCashCommand { UserId = senderId, Amount = price }))
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed handling the cash transaction between traders of trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            var respondTradeResult = await RespondTradeAsync(trade);
+
+            if (!respondTradeResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed accepting trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            trade.SetResponse(true);
+
+            var operationResult = await _repository.UpdateEntityAsync(trade);
+
+            if (operationResult)
+            {
+                result.Response = trade.Response;
+                result.ResponseDate = trade.ResponseDate;
+            }
+
+            await _repository.SaveChangesAsync();
+            await _repository.CommitTransactionAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _repository.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Something went wrong while accepting a trade with id {tradeId}", model.TradeId);
+            return Result<TradeOfferResult>.Failure("Something went wrong");
+        }
+
         result.Items = tradeItemDTOs;
 
-        return Result<TradeOfferResult>.Success(result);;
+        await ApplyTradeItemsNameToResult(result);
+
+        return await ApplyUsernameDataToResultAndValidate(result, result.SenderId, result.ReceiverId);
     }
 
-    public async Task<Result<TradeOfferResult>> CancelTradeOfferAsync(CancelTradeCommand model)
+    public async Task<Result<TradeOfferResult>> RejectTradeOfferAsync(RespondTradeCommand model, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
+            return Result<TradeOfferResult>.Failure("Invalid IDs");
+
+        if (await IsRespondedAsync(model.TradeId))
+            return Result<TradeOfferResult>.Failure("Already responded");
+        
+        var tradeItemDTOs = new List<TradeItemDTO>();
+        var result = new TradeOfferResult
+        {
+            TradeId = model.TradeId
+        };
+
+        await _repository.StartTransactionAsync(cancellationToken);
+
+        try
+        {
+            var trade = await _repository.GetTradeAsync(model.TradeId);
+
+            if (trade is null)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed rejecting trade with id {tradeId}. Invalid trade id, trade doesn't exist", model.TradeId);
+                return Result<TradeOfferResult>.Failure("Invalid trade id. Trade doesn't exist");
+            }
+
+            var senderId = trade.GetSenderId();
+            var receiverId = trade.GetReceiverId();
+
+            if (Equals(senderId, model.UserId) || !Equals(receiverId, model.UserId))
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed rejecting trade with id {tradeId}. Invalid user id. The provided sender id does not match with the sender of the given trade", model.TradeId);
+                return Result<TradeOfferResult>.Failure("Invalid user id");
+            }
+
+            result.SenderId = senderId;
+            result.ReceiverId = receiverId;
+            result.CreationDate = trade.SentDate;
+
+            var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
+
+            if (!unlockTradeItemsResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed unlocking trade items of trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            var respondTradeResult = await RespondTradeAsync(trade);
+
+            if (!respondTradeResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed rejecting trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            trade.SetResponse(false);
+
+            var operationResult = await _repository.UpdateEntityAsync(trade);
+
+            if (operationResult)
+            {
+                result.Response = trade.Response;
+                result.ResponseDate = trade.ResponseDate;
+            }
+
+            await _repository.SaveChangesAsync();
+            await _repository.CommitTransactionAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _repository.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Something went wrong while rejecting a trade with id {tradeId}", model.TradeId);
+            return Result<TradeOfferResult>.Failure("Something went wrong");
+        }
+
+        result.Items = tradeItemDTOs;
+        
+        await ApplyTradeItemsNameToResult(result);
+
+        return await ApplyUsernameDataToResultAndValidate(result, result.SenderId, result.ReceiverId);
+    }
+
+    public async Task<Result<TradeOfferResult>> CancelTradeOfferAsync(CancelTradeCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.TradeId) || string.IsNullOrEmpty(model.UserId))
             return Result<TradeOfferResult>.Failure("Invalid IDs");
@@ -409,89 +364,81 @@ public class TradeService : ITradeService, IDisposable
             TradeId = model.TradeId
         };
 
-        var transactionErrorMessage = await _unitOfWork.ExplicitTransaction(async (TaskCompletionSource<string?> taskCompletionSource) =>
+        await _repository.StartTransactionAsync(cancellationToken);
+
+        try
         {
-            try
+            var trade = await _repository.GetTradeAsync(model.TradeId)!;
+
+            if (trade is null)
             {
-                var trade = await _repository.GetTradeAsync(model.TradeId)!;
-
-                if (trade is null)
-                {
-                    taskCompletionSource.SetResult("Invalid trade id. Trade doesn't exist");
-
-                    return false;
-                }
-
-                result.SenderId = trade.GetSenderId();
-                result.ReceiverId = trade.GetReceiverId();
-                result.CreationDate = trade.SentDate;
-
-                if (!Equals(result.SenderId, model.UserId))
-                {
-                    taskCompletionSource.SetResult("Invalid userId");
-                    return false;
-                }
-
-                var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
-
-                if (!unlockTradeItemsResult.IsSuccess)
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-                    return false;
-                }
-
-                var tradeItems = new List<TradeItemDTO>();
-
-                foreach (var tradeContent in trade.TradeContents)
-                {
-                    var itemName = await GetItemNameAsync(tradeContent.ItemId);
-                
-                    tradeItems.Add(new TradeItemDTO
-                    {
-                        ItemId = tradeContent.ItemId,
-                        ItemName = itemName,
-                        Quantity = tradeContent.Quantity,
-                        Price = tradeContent.Price
-                    });
-                }
-
-                result.Items = tradeItems;
-
-                if (!await _repository.RemoveEntityAsync(trade))
-                {
-                    taskCompletionSource.SetResult("Something went wrong");
-                    return false;
-                }
-
-                return true;
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed canceling trade with id {tradeId}. Invalid trade id, trade doesn't exist", model.TradeId);
+                return Result<TradeOfferResult>.Failure("Invalid trade id. Trade doesn't exist");
             }
-            catch (Exception)
+
+            result.SenderId = trade.GetSenderId();
+            result.ReceiverId = trade.GetReceiverId();
+            result.CreationDate = trade.SentDate;
+
+            if (!Equals(result.SenderId, model.UserId))
             {
-                taskCompletionSource.SetResult("Something went wrong");
-                return false;
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed canceling trade with id {tradeId}. The provided sender id does not match with the sender of the given trade", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Invalid userId");
             }
-        });
 
-        if (transactionErrorMessage is not null)
-            return Result<TradeOfferResult>.Failure(transactionErrorMessage);
+            var unlockTradeItemsResult = await UnlockTradeItemsAsync(trade);
 
-        var senderNameTask = GetUsernameAsync(result.SenderId);
-        var receiverNameTask = GetUsernameAsync(result.ReceiverId);
+            if (!unlockTradeItemsResult.IsSuccess)
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed unlocking trade items of trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            var tradeItems = new List<TradeItemDTO>();
+
+            foreach (var tradeContent in trade.TradeContents)
+            {
+                tradeItems.Add(new TradeItemDTO
+                {
+                    ItemId = tradeContent.ItemId,
+                    Quantity = tradeContent.Quantity,
+                    Price = tradeContent.Price
+                });
+            }
+
+            result.Items = tradeItems;
+
+            if (!await _repository.RemoveEntityAsync(trade))
+            {
+                await _repository.RollbackTransactionAsync(cancellationToken);
+                _logger.LogWarning("Failed deleting trade with id {tradeId}", trade.TradeId);
+                return Result<TradeOfferResult>.Failure("Something went wrong");
+            }
+
+            await _repository.SaveChangesAsync();
+            await _repository.CommitTransactionAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await _repository.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Something went wrong while canceling a trade with id {tradeId}", model.TradeId);
+            return Result<TradeOfferResult>.Failure("Something went wrong");
+        }
 
         await Task.WhenAll(
-             ClearCacheUsedForTradeAsync(model.TradeId, result.SenderId, result.ReceiverId, result.Items.Select(x => x.ItemId).ToArray()),
-             _publisher.Publish(new TradeCancelledDomainEvent(model.TradeId, result.ReceiverId)),
-             senderNameTask,
-             receiverNameTask
+            ClearCacheUsedForTradeAsync(model.TradeId, result.SenderId, result.ReceiverId, result.Items.Select(x => x.ItemId).ToArray()),
+            _publisher.Publish(new TradeCancelledDomainEvent(model.TradeId, result.ReceiverId))
         );
 
-        result.SenderName = await senderNameTask;
-        result.ReceiverName = await receiverNameTask;
+        await ApplyTradeItemsNameToResult(result);
 
-        return Result<TradeOfferResult>.Success(result);
+        return await ApplyUsernameDataToResultAndValidate(result, result.SenderId, result.ReceiverId);
     }
 
-    public async Task<Result<TradeOffersResult>> GetTradeOffersAsync(ListTradesQuery model)
+    public async Task<Result<TradeOffersResult>> GetTradeOffersAsync(ListTradesQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId))
             return Result<TradeOffersResult>.Failure("Invalid input data");
@@ -515,7 +462,7 @@ public class TradeService : ITradeService, IDisposable
         });
     }
 
-    public async Task<Result<TradeOfferResult>> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer)
+    public async Task<Result<TradeOfferResult>> GetTradeOfferAsync(RequestTradeOfferQuery requestTradeOffer, CancellationToken cancellationToken)
     {
         if (requestTradeOffer is null || string.IsNullOrEmpty(requestTradeOffer.TradeId))
             return Result<TradeOfferResult>.Failure("Invalid input data");
@@ -528,44 +475,24 @@ public class TradeService : ITradeService, IDisposable
         string senderId = trade.GetSenderId();
         string receiverId = trade.GetReceiverId();
 
-        var senderNameTask = GetUsernameAsync(senderId);
-        var receiverNameTask = GetUsernameAsync(receiverId);
-
-        await Task.WhenAll(
-            senderNameTask,
-            receiverNameTask
-        );
-
-        var tradeItemsData = new TradeItemDTO[trade.TradeContents.Count];
-
-        int i = 0;
-
-        foreach (var tradeItem in trade.TradeContents)
-        {
-            string itemName = await GetItemNameAsync(tradeItem.ItemId);
-
-            tradeItemsData[i] = _mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeItem, (nameof(TradeItemDTO.ItemName), itemName));
-        
-            i++;
-        }
-
-        return Result<TradeOfferResult>.Success(new TradeOfferResult
+        var result = new TradeOfferResult
         {
             TradeId = trade.TradeId,
             SenderId = senderId,
-            SenderName = await senderNameTask,
             ReceiverId = receiverId,
-            ReceiverName = await receiverNameTask,
             CreationDate = trade.SentDate,
             Response = trade.Response,
-            ResponseDate = trade.ResponseDate,
-            Items = tradeItemsData
-        });
+            ResponseDate = trade.ResponseDate
+        };
+
+        await ApplyTradeItemsNameToResult(result, trade.TradeContents);
+
+        return await ApplyUsernameDataToResultAndValidate(result, senderId, receiverId);
     }
 
-    public async Task<Result<string[]>> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model)
+    public async Task<Result<string[]>> GetItemTradeIdsAsync(GetTradesUsingTheItemQuery model, CancellationToken cancellationToken)
     {
-        string[] resultArray; 
+        string[] resultArray;
 
         if (string.IsNullOrEmpty(model.ItemId))
             resultArray = Array.Empty<string>();
@@ -575,18 +502,12 @@ public class TradeService : ITradeService, IDisposable
         return Result<string[]>.Success(resultArray);
     }
 
-    public async Task<bool> IsItemUsedInTrade(ItemUsedInTradeQuery model)
+    public async Task<bool> IsItemUsedInTrade(ItemUsedInTradeQuery model, CancellationToken cancellationToken)
     {
         if (model is null || string.IsNullOrEmpty(model.ItemId))
             return false;
 
         return await _repository.IsItemUsedInTrade(model.ItemId);
-    }
-
-    public void Dispose()
-    {
-        _repository.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     private async Task<Result> RespondTradeAsync(Trade trade)
@@ -677,55 +598,68 @@ public class TradeService : ITradeService, IDisposable
         return tradeResponse is not null;
     }
 
+    private async Task<Result<LockItemsResult>> LockTradeItemsAsync(string senderUserId, (string ItemId, int Quantity)[] items)
+    {
+        var lockItemsCommand = new LockItemsCommand
+        {
+            UserId = senderUserId,
+            Items = items
+        };
+
+        return await _sender.Send(lockItemsCommand);
+    }
+
     private async Task<Result> UnlockTradeItemsAsync(Trade trade)
     {
-        var tradeItems = trade.TradeContents;
-
-        foreach (var item in tradeItems)
+        var tradeItems = trade.TradeContents.ToArray();
+        var request = new UnlockItemsCommand
         {
-            if (item is null)
-                continue;
+            UserId = trade.GetSenderId(),
+            Items = new (string itemId, int quantity)[tradeItems.Length],
+            Notify = true
+        };
 
-            var request = new UnlockItemCommand
-            {
-                UserId = trade.GetSenderId(),
-                ItemId = item.ItemId,
-                Quantity = item.Quantity,
-                Notify = true
-            };
+        for (int i = 0; i < tradeItems.Length; i++)
+        {
+            var item = tradeItems[i];
 
-            var result = await _sender.Send(request);
+            request.Items[i] = (item.ItemId, item.Quantity);
+        }
 
-            if (!result.IsSuccess)
-            {
-                return Result.Failure(result.Error!);
-            }
+        var result = await _sender.Send(request);
+
+        if (!result.IsSuccess)
+        {
+            return Result.Failure(result.Error!);
         }
 
         return Result.Success();
     }
 
-    // Takes the items from trade to the receiver
     private async Task<Result> GiveItemsAsync(string userId, Trade trade)
     {
-        var tradeItems = trade.TradeContents;
+        var tradeItems = trade.TradeContents.ToArray();
+        var itemsCount = tradeItems.Length;
         
-        foreach (var item in tradeItems)
+        var request = new AddInventoryItemsCommand
         {
-            var request = new AddInventoryItemCommand
-            {
-                UserId = userId,
-                ItemId = item.ItemId,
-                Quantity = item.Quantity,
-                Notify = true
-            };
+            UserId = userId,
+            Items = new (string itemId, int quantity)[itemsCount],
+            Notify = true
+        };
 
-            var result = await _sender.Send(request);
-            
-            if (!result.IsSuccess)
-            {
-                return Result.Failure(result.Error!);
-            }
+        for (int i = 0; i < itemsCount; i++)
+        {
+            var item = tradeItems[i];
+
+            request.Items[i] = (item.ItemId, item.Quantity);
+        }
+
+        var result = await _sender.Send(request);
+
+        if (!result.IsSuccess)
+        {
+            return Result.Failure(result.Error!);
         }
 
         return Result.Success();
@@ -734,30 +668,117 @@ public class TradeService : ITradeService, IDisposable
     // Takes the items from the sender
     private async Task<Result> TakeItemsAsync(string userId, Trade trade)
     {
-        var tradeItems = trade.TradeContents;
+        var tradeItems = trade.TradeContents.ToArray();
+        var itemsCount = tradeItems.Length;
 
-        foreach (var item in tradeItems)
+        var request = new DropInventoryItemsCommand
         {
-            var request = new DropInventoryItemCommand
-            {
-                UserId = userId,
-                ItemId = item.ItemId,
-                Quantity = item.Quantity,
-                Notify = true
-            };
+            UserId = userId,
+            Items = new (string itemId, int quantity)[itemsCount],
+            Notify = true
+        };
 
-            var result = await _sender.Send(request);
+        for (int i = 0; i < itemsCount; i++)
+        {
+            var item = tradeItems[i];
 
-            if (!result.IsSuccess)
-            {
-                return Result.Failure(result.Error!);
-            }
+            request.Items[i] = (item.ItemId, item.Quantity);
+        }
+
+        var result = await _sender.Send(request);
+
+        if (!result.IsSuccess)
+        {
+            return Result.Failure(result.Error!);
         }
 
         return Result.Success();
     }
-    
-    private Task<string> GetItemNameAsync(string itemId) => _sender.Send(new GetItemNameQuery { ItemId = itemId });
 
-    private async Task<string> GetUsernameAsync(string userId) => (await _sender.Send(new GetUsernameQuery { UserId = userId })).Content ?? string.Empty;
+    private async Task ApplyTradeItemsNameToResult(TradeOfferResult result)
+    {
+        var tradeItems = result.Items.ToArray();
+        var tradeItemsId = tradeItems
+            .Select(tradeItem => tradeItem.ItemId)
+            .ToArray();
+        var tradeItemsName = await GetItemsNameAsync(tradeItemsId);
+
+        for (int i = 0; i < tradeItemsId.Length; i++)
+        {
+            string itemId = tradeItems[i].ItemId;
+
+            if (!tradeItemsName.TryGetValue(itemId, out var itemName) || string.IsNullOrEmpty(itemName))
+            {
+                _logger.LogWarning("Missing item name for the item with id {itemId}", itemId);
+                continue;
+            }
+
+            tradeItems[i].ItemName = itemName;
+        }
+    }
+
+    private async Task ApplyTradeItemsNameToResult(TradeOfferResult result, IEnumerable<TradeItem> tradeItems)
+    {
+        var resultItems = new List<TradeItemDTO>();
+
+        var tradeItemsArr = tradeItems.ToArray();
+        var tradeItemsId = tradeItemsArr
+            .Select(tradeItem => tradeItem.ItemId)
+            .ToArray();
+        var tradeItemsName = await GetItemsNameAsync(tradeItemsId);
+
+        for (int i = 0; i < tradeItemsId.Length; i++)
+        {
+            var tradeItem = tradeItemsArr[i];
+            string itemId = tradeItem.ItemId;
+
+            if (!tradeItemsName.TryGetValue(itemId, out var itemName) || string.IsNullOrEmpty(itemName))
+            {
+                _logger.LogWarning("Missing item name for the item with id {itemId}", itemId);
+                continue;
+            }
+
+            resultItems.Add(_mapper.AdaptToType<TradeItem, TradeItemDTO>(tradeItem, (nameof(TradeItemDTO.ItemName), itemName)));
+        }
+
+        result.Items = resultItems;
+    }
+
+    private async Task<Result<TradeOfferResult>> ApplyUsernameDataToResultAndValidate(TradeOfferResult result, string senderUserId, string targetUserId)
+    {
+        var usernames = await GetUsernamesAsync([targetUserId, senderUserId]);
+
+        return await ApplyUsernameDataToResultAndValidate(result, senderUserId, targetUserId, usernames);
+    }
+
+    private async Task<Result<TradeOfferResult>> ApplyUsernameDataToResultAndValidate(TradeOfferResult result, string senderUserId, string targetUserId, Dictionary<string, string> usernames)
+    {
+        if (!SetUsernameToProperty(usernames, senderUserId, username => result.SenderName = username))
+            return Result<TradeOfferResult>.Failure("Unable to retrieve the trade sender username");
+        if (!SetUsernameToProperty(usernames, targetUserId, username => result.ReceiverName = username))
+            return Result<TradeOfferResult>.Failure("Unable to retrieve the trade receiver username");
+        
+        return Result<TradeOfferResult>.Success(result);
+    }
+
+    private static bool SetUsernameToProperty(Dictionary<string, string> source, string userId, Action<string> setUsername)
+    {
+        if (source.TryGetValue(userId, out string? username))
+        {
+            if (string.IsNullOrEmpty(username))
+            {
+                return false;
+            }
+            else
+            {
+                setUsername(username);
+            }    
+        }
+
+        return true;
+    }
+
+    private Task<Dictionary<string, string>> GetItemsNameAsync(string[] itemIds) => _sender.Send(new GetItemsNameQuery { ItemIds = itemIds });
+
+    private async Task<Dictionary<string, string>> GetUsernamesAsync(string[] userIds) => (await _sender.Send(new GetUsernamesQuery { UserIds = userIds })).Content ?? new Dictionary<string, string>();
 }

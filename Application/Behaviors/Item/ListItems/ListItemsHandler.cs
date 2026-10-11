@@ -15,6 +15,6 @@ public class ListItemsHandler : IRequestHandler<ListItemsQuery, Result<ItemsResu
 
     public Task<Result<ItemsResult>> Handle(ListItemsQuery request, CancellationToken cancellationToken)
     {
-        return _itemService.ListItemsAsync(request);
+        return _itemService.ListItemsAsync(request, cancellationToken);
     }
 }

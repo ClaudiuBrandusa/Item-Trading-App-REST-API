@@ -15,6 +15,6 @@ public class UpdateWalletHandler : IRequestHandler<UpdateWalletCommand, Result<W
 
     public Task<Result<WalletResult>> Handle(UpdateWalletCommand request, CancellationToken cancellationToken)
     {
-        return _walletService.UpdateWalletAsync(request);
+        return _walletService.UpdateWalletAsync(request, cancellationToken);
     }
 }

@@ -33,7 +33,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             ItemDescription = "Test"
         };
 
-        var result = await controller.Create(request);
+        var result = await controller.Create(request, TestContext.Current.CancellationToken);
 
         var response = AssertActionResultAsResponse<CreateItemSuccessResponse>(result);
         Assert.NotNull(response);
@@ -54,7 +54,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             ItemDescription = string.Empty
         };
 
-        var result = await controller.Create(request);
+        var result = await controller.Create(request, TestContext.Current.CancellationToken);
 
         var objectResult = AssertActionResponseBadRequestObjectResult(result);
         var response = AssertBadRequestObjectResultAsResponse<CreateItemFailedResponse>(objectResult);
@@ -88,14 +88,17 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         await Parallel.ForAsync(0, expectedItemAmount, async (index, ct) =>
         {
-            var createdItemResult = await controller.Create(createItemRequests[index]);
+            using var controllerPack = CreateControllerPackWithDefaultUser(_factory);
+            var controller = controllerPack.ControllerInstance;
+            
+            var createdItemResult = await controller.Create(createItemRequests[index], TestContext.Current.CancellationToken);
             var response = AssertActionResultAsResponse<CreateItemSuccessResponse>(createdItemResult);
             createdItemResponses[index] = response!;
         });
 
         var searchString = string.Empty;
 
-        var result = await controller.List(searchString);
+        var result = await controller.List(searchString, TestContext.Current.CancellationToken);
 
         var itemsResponse = AssertActionResultAsResponse<ItemsResponse>(result);
         var createdItemIds = createdItemResponses.Select(x => x.ItemId).ToArray();
@@ -121,11 +124,12 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var createdItemResponse = await Scenarios.CreateItem(
             controller,
             itemName,
-            itemDescription
+            itemDescription,
+            TestContext.Current.CancellationToken
         );
         var itemId = createdItemResponse!.ItemId;
 
-        var result = await controller.Get(itemId);
+        var result = await controller.Get(itemId, TestContext.Current.CancellationToken);
 
         var itemResponse = AssertActionResultAsResponse<ItemResponse>(result);
         Assert.NotNull(itemResponse);
@@ -142,7 +146,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
 
         var itemId = Item.GenerateId();
 
-        var result = await controller.Get(itemId);
+        var result = await controller.Get(itemId, TestContext.Current.CancellationToken);
 
         var objectResult = AssertActionResponseBadRequestObjectResult(result);
         var itemResponse = AssertBadRequestObjectResultAsResponse<FailedResponse>(objectResult);
@@ -161,7 +165,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var createdItemResponse = await Scenarios.CreateItem(
             controller,
             itemName,
-            itemDescription
+            itemDescription,
+            TestContext.Current.CancellationToken
         );
 
         var itemId = createdItemResponse!.ItemId;
@@ -176,7 +181,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             ItemDescription = expectedUpdatedDescription
         };
 
-        var result = await controller.Update(updateRequest);
+        var result = await controller.Update(updateRequest, TestContext.Current.CancellationToken);
 
         var updateItemResponse = AssertActionResultAsResponse<UpdateItemSuccessResponse>(result);
         Assert.NotNull(updateItemResponse);
@@ -200,7 +205,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             ItemDescription = "UpdatedDescription"
         };
 
-        var result = await controller.Update(updateRequest);
+        var result = await controller.Update(updateRequest, TestContext.Current.CancellationToken);
 
         var objectResult = AssertActionResponseBadRequestObjectResult(result);
         var updateItemResponse = AssertBadRequestObjectResultAsResponse<UpdateItemFailedResponse>(objectResult);
@@ -219,7 +224,8 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
         var createdItemResponse = await Scenarios.CreateItem(
             controller,
             itemName,
-            itemDescription
+            itemDescription,
+            TestContext.Current.CancellationToken
         );
         var itemId = createdItemResponse!.ItemId;
 
@@ -228,7 +234,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             ItemId = itemId
         };
 
-        var result = await controller.Delete(deleteItemRequest);
+        var result = await controller.Delete(deleteItemRequest, TestContext.Current.CancellationToken);
 
         var deleteItemResponse = AssertActionResultAsResponse<DeleteItemSuccessResponse>(result);
         Assert.NotNull(deleteItemResponse);
@@ -249,7 +255,7 @@ public class ItemControllerTests : IClassFixture<TestAppFactory>
             ItemId = itemId
         };
 
-        var result = await controller.Delete(deleteItemRequest);
+        var result = await controller.Delete(deleteItemRequest, TestContext.Current.CancellationToken);
 
         var objectResult = AssertActionResponseBadRequestObjectResult(result);
         var deleteItemResponse = AssertBadRequestObjectResultAsResponse<DeleteItemFailedResponse>(objectResult);

@@ -13,6 +13,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers;
@@ -27,47 +28,47 @@ public class IdentityController : BaseController
     }
 
     [HttpPost(Endpoints.Identity.Register)]
-    public async Task<IActionResult> Register([FromBody] UserRegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] UserRegisterRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
         var model = AdaptToType<UserRegisterRequest, RegisterCommand>(request);
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Identity.Login)]
-    public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
+    public async Task<IActionResult> Login([FromBody] UserLoginRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
         var model = AdaptToType<UserLoginRequest, LoginCommand>(request);
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Identity.Refresh)]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, AuthenticationFailedResponse>(ModelState));
 
         var model = AdaptToType<RefreshTokenRequest, RefreshTokenCommand>(request);
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<AuthenticationResult, AuthenticationSuccessResponse, AuthenticationFailedResponse>(result);
     }
 
     [Authorize]
     [HttpGet(Endpoints.Identity.GetUsername)]
-    public async Task<IActionResult> GetUsername(string userId)
+    public async Task<IActionResult> GetUsername(string userId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(userId))
             return BadRequest(new FailedResponse
@@ -75,18 +76,18 @@ public class IdentityController : BaseController
                 Errors = ["Invalid user id"]
             });
 
-        var result = await _mediator.Send(new GetUsernameQuery { UserId = userId });
+        var result = await _mediator.Send(new GetUsernameQuery { UserId = userId }, cancellationToken);
 
         return MapResult<string, UsernameSuccessResponse, FailedResponse>(result, (nameof(UsernameSuccessResponse.UserId), userId));
     }
 
     [Authorize]
     [HttpGet(Endpoints.Identity.ListUsers)]
-    public async Task<IActionResult> ListUsers(string searchString)
+    public async Task<IActionResult> ListUsers(string searchString, CancellationToken cancellationToken)
     {
         var model = AdaptToType<string, ListUsersQuery>(searchString, (nameof(ListUsersQuery.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<UsersResult, UsersSuccessResponse, FailedResponse>(result);
     }

@@ -23,6 +23,38 @@ public class RedisCacheService : ICacheService
         return (await Database.StringGetAsync(key)).ToString();
     }
 
+    public async Task<Dictionary<string, string>> GetCacheValuesAsync(string[] keys)
+    {
+        var keysCount = keys.Length;
+        var redisKeys = keys.Select(key => (RedisKey)key).ToArray();
+
+        var result = new Dictionary<string, string>(keysCount);
+
+        var values = await Database.StringGetAsync(redisKeys);
+    
+        for (int i = 0; i < values.Length; i++)
+        {
+            var value = values[i];
+
+            if (!value.HasValue)
+                continue;
+            
+            result.Add(keys[i], (string)value!);
+        }
+
+        return result;
+    }
+
+    public async Task SetCacheValuesAsync(Dictionary<string, string> keyValuePairs)
+    {
+        var data = keyValuePairs.ToDictionary(
+            kvp => (RedisKey)kvp.Key,
+            kvp => (RedisValue)kvp.Value
+        ).ToArray();
+
+        await Database.StringSetAsync(data);
+    }
+
     public async Task<T?> GetCacheValueAsync<T>(string key)
     {
         var value = await GetCacheValueAsync(key);
@@ -101,8 +133,53 @@ public class RedisCacheService : ICacheService
             var keys = server.KeysAsync(Database.Database, $"{prefix}*");
             await foreach (var key in keys)
             {
+                if (string.IsNullOrEmpty(key.ToString()))
+                    continue;
+
                 var value = await GetCacheValueAsync(key!);
                 var dictionaryKey = removePrefix ? key.ToString().Replace(prefix, string.Empty) : key.ToString();
+
+                try
+                {
+                    var dictionaryValue = typeof(T) == typeof(string)
+                        ? (T)(object)value
+                        : JsonSerializer.Deserialize<T>(value);
+                
+                    if (dictionaryValue is null)
+                    continue;
+
+                    dictionary.Add(dictionaryKey, dictionaryValue!);
+                }
+                catch (JsonException)
+                {
+                }
+            }
+        }
+
+        return dictionary;
+    }
+
+    public async Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, string[] selectedIds, bool removePrefix = false)
+    {
+        var dictionary = new Dictionary<string, T>();
+        var endPoints = _connectionMultiplexer.GetEndPoints();
+        
+        foreach (var endpoint in endPoints)
+        {
+            IServer server = _connectionMultiplexer.GetServer(endpoint);
+            var keys = server.KeysAsync(Database.Database, $"{prefix}*");
+            await foreach (var key in keys)
+            {
+                if (string.IsNullOrEmpty(key.ToString()))
+                    continue;
+                
+                var id = key.ToString().Replace(prefix, string.Empty);
+                
+                if (!selectedIds.Contains(id))
+                    continue;
+                
+                var value = await GetCacheValueAsync(key!);
+                var dictionaryKey = removePrefix ? id : key.ToString();
                 var dictionaryValue = typeof(T) == typeof(string) ? (T)(value as object) : JsonSerializer.Deserialize<T>(value);
 
                 if (dictionaryValue is null)

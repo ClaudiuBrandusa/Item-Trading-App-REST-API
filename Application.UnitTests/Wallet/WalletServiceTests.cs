@@ -69,7 +69,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.GetWalletAsync(queryStub);
+        var result = await _sut.GetWalletAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -89,7 +89,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.GetWalletAsync(queryStub);
+        var result = await _sut.GetWalletAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -123,7 +123,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.UpdateWalletAsync(commandStub);
+        var result = await _sut.UpdateWalletAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -149,7 +149,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.UpdateWalletAsync(commandStub);
+        var result = await _sut.UpdateWalletAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -177,7 +177,7 @@ public class WalletServiceTests
 
         // Act
 
-        var userCashAmount = await _sut.GetUserCashAsync(queryStub);
+        var userCashAmount = await _sut.GetUserCashAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -193,7 +193,7 @@ public class WalletServiceTests
 
         // Act
 
-        var userCashAmount = await _sut.GetUserCashAsync(queryStub);
+        var userCashAmount = await _sut.GetUserCashAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -225,7 +225,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.TakeCashAsync(commandStub);
+        var result = await _sut.TakeCashAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -257,7 +257,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.TakeCashAsync(commandStub);
+        var result = await _sut.TakeCashAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -279,7 +279,7 @@ public class WalletServiceTests
 
         // Act
 
-        var result = await _sut.TakeCashAsync(commandStub);
+        var result = await _sut.TakeCashAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -312,9 +312,9 @@ public class WalletServiceTests
 
         // Act
 
-        var giveCashResult = await _sut.GiveCashAsync(commandStub);
+        var giveCashResult = await _sut.GiveCashAsync(commandStub, TestContext.Current.CancellationToken);
 
-        var result = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = DEFAULT_USER_ID });
+        var result = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = DEFAULT_USER_ID }, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -347,9 +347,9 @@ public class WalletServiceTests
 
         // Act
 
-        var giveCashResult = await _sut.GiveCashAsync(commandStub);
+        var giveCashResult = await _sut.GiveCashAsync(commandStub, TestContext.Current.CancellationToken);
 
-        var result = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = DEFAULT_USER_ID });
+        var result = await _sut.GetUserCashAsync(new GetUserCashQuery { UserId = DEFAULT_USER_ID }, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -370,7 +370,7 @@ public class WalletServiceTests
 
         // Act
 
-        var giveCashResult = await _sut.GiveCashAsync(commandStub);
+        var giveCashResult = await _sut.GiveCashAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 

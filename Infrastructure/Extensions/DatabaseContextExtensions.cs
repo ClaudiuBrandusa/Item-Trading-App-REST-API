@@ -20,7 +20,7 @@ public static class DatabaseContextExtensions
     private const string SECONDARY_USERNAME = "Claudiu";
     private const string SECONDARY_PASSWORD = "!Ab12345";
 
-    public static async Task SeedDatabase(this DatabaseContext databaseContext, IServiceProvider serviceProvider)
+    public static async Task SeedDatabase(this DatabaseContext databaseContext, IServiceProvider serviceProvider, CancellationToken cancellationToken)
     {
         if (databaseContext.Users.Any()) return;
 
@@ -42,11 +42,11 @@ public static class DatabaseContextExtensions
             {
                 // add the items
 
-                var items = await GenerateAndSeedItemData(databaseContext);
+                var items = await GenerateAndSeedItemData(databaseContext, cancellationToken);
 
                 foreach (var (username, password) in usersDataCollection)
                 {
-                    var user = await CreateAndSeedUser(userManager, username, password);
+                    var user = await CreateAndSeedUser(userManager, username, password, cancellationToken);
 
                     var inventory = new Inventory(user.Id);
 
@@ -63,7 +63,7 @@ public static class DatabaseContextExtensions
 
                 var itemsToBeAdded = new string[] { items[0].ItemId, items[1].ItemId, items[2].ItemId };
 
-                await SeedTrades(tradeService, userIds[0], userIds[1], items.Select(x => (x.ItemId, x.Name)).ToArray());
+                await SeedTrades(tradeService, userIds[0], userIds[1], items.Select(x => (x.ItemId, x.Name)).ToArray(), cancellationToken);
 
                 return true;
             }
@@ -75,7 +75,7 @@ public static class DatabaseContextExtensions
         });
     }
 
-    private static async Task<Item[]> GenerateAndSeedItemData(DatabaseContext databaseContext)
+    private static async Task<Item[]> GenerateAndSeedItemData(DatabaseContext databaseContext, CancellationToken cancellationToken)
     {
         var itemsData = new (string itemName, string itemDescription)[]
             {
@@ -102,7 +102,7 @@ public static class DatabaseContextExtensions
         return items;
     }
 
-    public static async Task<User> CreateAndSeedUser(UserManager<User> userManager, string username, string password)
+    public static async Task<User> CreateAndSeedUser(UserManager<User> userManager, string username, string password, CancellationToken cancellationToken)
     {
         static string formatEmail(string id) => $"{id}@item_trading.app";
 
@@ -132,7 +132,7 @@ public static class DatabaseContextExtensions
         }
     }
 
-    private static async Task SeedTrades(ITradeService tradeService, string firstUserId, string secondUserId, (string itemId, string itemName)[] availableItemData)
+    private static async Task SeedTrades(ITradeService tradeService, string firstUserId, string secondUserId, (string itemId, string itemName)[] availableItemData, CancellationToken cancellationToken)
     {
         var random = new Random();
 
@@ -160,29 +160,29 @@ public static class DatabaseContextExtensions
                 secondUserSentAtLeastOneTrade = true;
             }
 
-            await SeedTradeWithRandomItems(tradeService, random, senderId, receiverId, availableItemData);
+            await SeedTradeWithRandomItems(tradeService, random, senderId, receiverId, availableItemData, cancellationToken);
         }
 
         if (!firstUserSentAtLeastOneTrade)
         {
-            await SeedTradeWithRandomItems(tradeService, random, firstUserId, secondUserId, availableItemData);
+            await SeedTradeWithRandomItems(tradeService, random, firstUserId, secondUserId, availableItemData, cancellationToken);
         }
         else if (!secondUserSentAtLeastOneTrade)
         {
-            await SeedTradeWithRandomItems(tradeService, random, secondUserId, firstUserId, availableItemData);
+            await SeedTradeWithRandomItems(tradeService, random, secondUserId, firstUserId, availableItemData, cancellationToken);
         }
     }
 
-    private static Task<Trade> SeedTradeWithRandomItems(ITradeService tradeService, Random random, string senderUserId, string receiverUserId, (string itemId, string itemName)[] availableItemData)
+    private static Task<Trade> SeedTradeWithRandomItems(ITradeService tradeService, Random random, string senderUserId, string receiverUserId, (string itemId, string itemName)[] availableItemData, CancellationToken cancellationToken)
     {
         int itemsCount = random.Next(1, availableItemData.Length);
 
         var itemsToBeAdded = availableItemData.Take(itemsCount).ToArray();
 
-        return SeedTrade(tradeService, senderUserId, receiverUserId, itemsToBeAdded);
+        return SeedTrade(tradeService, senderUserId, receiverUserId, itemsToBeAdded, cancellationToken);
     }
 
-    private static async Task<Trade> SeedTrade(ITradeService tradeService, string senderUserId, string receiverUserId, (string itemId, string itemName)[] itemDataToBeAdded)
+    private static async Task<Trade> SeedTrade(ITradeService tradeService, string senderUserId, string receiverUserId, (string itemId, string itemName)[] itemDataToBeAdded, CancellationToken cancellationToken)
     {
         var trade = new Trade(DateTime.UtcNow, senderUserId, receiverUserId);
 
@@ -200,7 +200,7 @@ public static class DatabaseContextExtensions
             Items = tradeItems
         };
 
-        await tradeService.CreateTradeOfferAsync(createTradeCommand);
+        await tradeService.CreateTradeOfferAsync(createTradeCommand, cancellationToken);
 
         return trade;
     }

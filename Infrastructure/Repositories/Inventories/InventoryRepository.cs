@@ -1,31 +1,26 @@
 ﻿using Domain.Aggregates.Inventories;
 using Domain.Repositories.Inventories;
 using Infrastructure.Data;
-using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories.Inventories;
 
 public class InventoryRepository : RepositoryBase, IInventoryRepository
 {
-    public InventoryRepository(IDatabaseContextWrapper databaseContextWrapper) : base(databaseContextWrapper)
+    public InventoryRepository(DatabaseContext context) : base(context)
     {
     }
 
     public async Task<Inventory?> GetInventoryAsync(string userId)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var inventoryEntity = await GetInventoryQuery(dbContext, userId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+        var inventoryEntity = await GetInventoryQuery(_context, userId);
 
         return inventoryEntity;
     }
 
     public async Task<Inventory> LoadInventoryAsync(string userId)
     {
-        var inventoryEntity = await GetInventoryTrackingQuery(context, userId);
+        var inventoryEntity = await GetInventoryTrackingQuery(_context, userId);
 
         if (inventoryEntity is null)
         {
@@ -41,19 +36,19 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
         if (await DoesUserInventoryExist(inventory.UserId))
         {
-            if (context.Entry(inventory).State == EntityState.Detached)
+            if (_context.Entry(inventory).State == EntityState.Detached)
             {
                 Attach(inventory);
-                context.Entry(inventory).State = EntityState.Modified;
+                _context.Entry(inventory).State = EntityState.Modified;
             }
 
-            operationResult = await context.SaveChangesAsync() > 0;
+            operationResult = await _context.SaveChangesAsync() > 0;
         }
         else
         {    
-            bool result = (await context.AddAsync(inventory)).State == EntityState.Added;
+            bool result = (await _context.AddAsync(inventory)).State == EntityState.Added;
 
-            operationResult = result && await context.SaveChangesAsync() > 0;
+            operationResult = result && await _context.SaveChangesAsync() > 0;
         }
 
         Detach(inventory);
@@ -61,7 +56,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
         return operationResult;
     }
 
-    public async Task<bool> DropItemAsync(Inventory inventory, string itemId, int amount)
+    public async Task<bool> DropItemAsync(Inventory inventory)
     {
         var operationResult = false;
 
@@ -71,7 +66,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
         }
         else
         {
-            operationResult = await context.SaveChangesAsync() > 0;
+            operationResult = await _context.SaveChangesAsync() > 0;
         }
 
         Detach(inventory);
@@ -81,9 +76,9 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
     public async Task<bool> UpdateInventory(Inventory inventory)
     {
-        context.Update(inventory);
+        _context.Update(inventory);
 
-        var operationResult = await context.SaveChangesAsync() > 0;
+        var operationResult = await _context.SaveChangesAsync() > 0;
 
         Detach(inventory);
 
@@ -101,7 +96,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
     }
 
     public Task<string[]> ListUsersThatOwnItemAsync(string itemId) =>
-        context.Inventories
+        _context.Inventories
             .AsNoTracking()
             .Where(x => x.OwnedItems.Any(x => x.ItemId == itemId))
             .Select(x => x.UserId)
@@ -109,7 +104,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
     private async Task<bool> DoesUserInventoryExist(string userId)
     {
-        return await UserInventoryExistQuery(context, userId);
+        return await UserInventoryExistQuery(_context, userId);
     }
 
     /// <summary>
@@ -117,11 +112,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
     /// </summary>
     private async Task<int> GetItemFreeQuantity(string userId, string itemId)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var inventoryItemFreeQuantity = await GetInventoryItemFreeQuantityQuery(dbContext, userId, itemId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+        var inventoryItemFreeQuantity = await GetInventoryItemFreeQuantityQuery(_context, userId, itemId);
 
         return inventoryItemFreeQuantity;
     }
@@ -131,11 +122,7 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
     /// </summary>
     private async Task<int> GetLockedItemQuantity(string userId, string itemId)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var lockedItemQuantity = await GetLockedItemQuantityQuery(dbContext, userId, itemId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+        var lockedItemQuantity = await GetLockedItemQuantityQuery(_context, userId, itemId);
 
         return lockedItemQuantity;
     }
@@ -192,11 +179,11 @@ public class InventoryRepository : RepositoryBase, IInventoryRepository
 
     private void Attach(Inventory inventory)
     {
-        context.Attach(inventory);
+        _context.Attach(inventory);
     }
 
     private void Detach(Inventory inventory)
     {
-        context.Entry(inventory).State = EntityState.Detached;
+        DetachEntity(inventory);
     }
 }

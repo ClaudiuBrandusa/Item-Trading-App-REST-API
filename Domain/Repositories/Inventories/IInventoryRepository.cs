@@ -2,7 +2,7 @@
 
 namespace Domain.Repositories.Inventories;
 
-public interface IInventoryRepository : IRepository, IDisposable
+public interface IInventoryRepository : IRepository
 {
     /// <summary>
     /// Returns the inventory for the given userId (for reading purposes)
@@ -26,13 +26,12 @@ public interface IInventoryRepository : IRepository, IDisposable
     Task<bool> AddInventoryOrUpdateAsync(Inventory inventory);
 
     /// <summary>
-    /// Drops the <paramref name="amount"/> of item with <paramref name="itemId"/> from the user's inventory
+    /// The drop operation/s are already performed before reaching this method,
+    /// so this method only handles the decision of updating the drop operation or
+    /// deleting the whole inventory (in case no other item remained)
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="itemId"></param>
-    /// <param name="amount"></param>
     /// <returns>Operation result</returns>
-    Task<bool> DropItemAsync(Inventory inventory, string itemId, int amount);
+    Task<bool> DropItemAsync(Inventory inventory);
 
     /// <summary>
     /// Update inventory aggregate

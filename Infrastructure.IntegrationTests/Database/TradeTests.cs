@@ -3,10 +3,10 @@ using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Domain.Repositories.Trades;
+using Infrastructure.Data;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Trades;
-using Infrastructure.Services.DatabaseContextWrapper;
 using MediatR;
 
 namespace Infrastructure.IntegrationTests.Database;
@@ -18,9 +18,9 @@ public class TradeTests : IClassFixture<DatabaseFixture>
 
     public TradeTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        var dbContext = fixture.GetService<DatabaseContext>();
         var sender = fixture.GetService<ISender>();
-        _repository = new TradeRepository(dbContextWrapper, sender);
+        _repository = new TradeRepository(dbContext, sender);
         _serviceProvider = fixture.ServiceProvider!;
     }
 

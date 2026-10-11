@@ -17,11 +17,14 @@ using Application.Results.Items;
 using Application.Repositories;
 using Application.Models.Common;
 using CommonTestUtils.TestAdaptedServices;
+using Microsoft.Extensions.Logging;
 
 namespace Application_UnitTests.Inventories;
 
 public class InventoryServiceTests
 {
+    
+    private readonly ILogger<InventoryService> _logger;
     private readonly IInventoryService _sut; // service under test
     private readonly string DEFAULT_USER_ID = User.GenerateId();
     private readonly string DEFAULT_ITEM_ID = Item.GenerateId();
@@ -29,6 +32,7 @@ public class InventoryServiceTests
 
     public InventoryServiceTests()
     {
+        _logger = new Mock<ILogger<InventoryService>>().Object;
         var inventoryRepositoryMock = RepositoryUtils.CreateRepositoryMock<Inventory, ICachedInventoryRepository>(inventories.Values.ToList());
         var senderMock = new Mock<ISender>();
         var mapper = MapperUtils.GetMapper();
@@ -131,7 +135,7 @@ public class InventoryServiceTests
 
         var clientNotificationServiceMock = new Mock<IClientNotificationService>();
 
-        _sut = new InventoryService(inventoryRepositoryMock.Object, clientNotificationServiceMock.Object, senderMock.Object, mapper);
+        _sut = new InventoryService(_logger, inventoryRepositoryMock.Object, clientNotificationServiceMock.Object, senderMock.Object, mapper);
     }
 
     [Fact(DisplayName = "Add item to inventory")]
@@ -150,7 +154,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.AddItemAsync(commandStub);
+        var result = await _sut.AddItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -176,7 +180,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.AddItemAsync(commandStub);
+        var result = await _sut.AddItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -199,7 +203,7 @@ public class InventoryServiceTests
             UserId = DEFAULT_USER_ID
         };
 
-        await _sut.AddItemAsync(addInventoryItemCommandStub);
+        await _sut.AddItemAsync(addInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
@@ -210,7 +214,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -235,7 +239,7 @@ public class InventoryServiceTests
             UserId = DEFAULT_USER_ID
         };
 
-        await _sut.AddItemAsync(addInventoryItemCommandStub);
+        await _sut.AddItemAsync(addInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
@@ -246,7 +250,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -268,7 +272,7 @@ public class InventoryServiceTests
             UserId = DEFAULT_USER_ID
         };
 
-        await _sut.AddItemAsync(addInventoryItemCommandStub);
+        await _sut.AddItemAsync(addInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         var lockItemCommandStub = new LockItemCommand
         {
@@ -277,7 +281,7 @@ public class InventoryServiceTests
             UserId = DEFAULT_USER_ID
         };
 
-        await _sut.LockItemAsync(lockItemCommandStub);
+        await _sut.LockItemAsync(lockItemCommandStub, TestContext.Current.CancellationToken);
 
         var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
@@ -288,7 +292,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         int freeQuantity = quantityToAdd - quantityToBeLocked;
 
@@ -316,7 +320,7 @@ public class InventoryServiceTests
             UserId = DEFAULT_USER_ID
         };
 
-        await _sut.AddItemAsync(addInventoryItemCommandStub);
+        await _sut.AddItemAsync(addInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         var lockItemCommandStub = new LockItemCommand
         {
@@ -325,7 +329,7 @@ public class InventoryServiceTests
             UserId = DEFAULT_USER_ID
         };
 
-        await _sut.LockItemAsync(lockItemCommandStub);
+        await _sut.LockItemAsync(lockItemCommandStub, TestContext.Current.CancellationToken);
 
         var dropInventoryItemCommandStub = new DropInventoryItemCommand
         {
@@ -336,7 +340,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub);
+        var result = await _sut.DropItemAsync(dropInventoryItemCommandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -357,7 +361,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         string item_id = tmpResult.Content!.ItemId;
 
@@ -370,7 +374,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.HasItemAsync(queryStub);
+        var result = await _sut.HasItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -390,7 +394,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         string itemId = tmpResult.Content!.ItemId;
 
@@ -403,7 +407,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.HasItemAsync(queryStub);
+        var result = await _sut.HasItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -422,7 +426,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         string item_id = tmpResult.Content!.ItemId;
 
@@ -435,7 +439,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.HasItemAsync(queryStub);
+        var result = await _sut.HasItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
         
@@ -456,7 +460,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.HasItemAsync(queryStub);
+        var result = await _sut.HasItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -475,7 +479,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityToBeAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         string item_id = tmpResult.Content!.ItemId;
 
@@ -487,7 +491,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.GetItemAsync(queryStub);
+        var result = await _sut.GetItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -510,7 +514,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.GetItemAsync(queryStub);
+        var result = await _sut.GetItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
         
@@ -532,7 +536,7 @@ public class InventoryServiceTests
                 ItemId = item_id,
                 Quantity = 1,
                 UserId = DEFAULT_USER_ID
-            });
+            }, TestContext.Current.CancellationToken);
 
         var queryStub = new ListInventoryItemsQuery
         {
@@ -542,7 +546,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.ListItemsAsync(queryStub);
+        var result = await _sut.ListItemsAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -565,7 +569,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.ListItemsAsync(queryStub);
+        var result = await _sut.ListItemsAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -587,7 +591,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         int quantityLocked = quantityAdded;
 
@@ -600,7 +604,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.LockItemAsync(commandStub);
+        var result = await _sut.LockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -624,7 +628,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         var commandStub = new LockItemCommand
         {
@@ -635,7 +639,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.LockItemAsync(commandStub);
+        var result = await _sut.LockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -656,7 +660,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         var commandStub = new LockItemCommand
         {
@@ -667,7 +671,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.LockItemAsync(commandStub);
+        var result = await _sut.LockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -690,7 +694,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.LockItemAsync(commandStub);
+        var result = await _sut.LockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -711,14 +715,14 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
         
         await _sut.LockItemAsync(new LockItemCommand
         {
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityLocked,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         var commandStub = new UnlockItemCommand
         {
@@ -729,7 +733,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.UnlockItemAsync(commandStub);
+        var result = await _sut.UnlockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -753,7 +757,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         int quantityLocked = 1;
 
@@ -762,7 +766,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityLocked,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         int quantityUnlocked = quantityLocked + 1;
 
@@ -775,7 +779,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.UnlockItemAsync(commandStub);
+        var result = await _sut.UnlockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -796,7 +800,7 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityLocked,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         int quantityUnlocked = quantityLocked;
 
@@ -809,7 +813,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.UnlockItemAsync(commandStub);
+        var result = await _sut.UnlockItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -830,14 +834,14 @@ public class InventoryServiceTests
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityAdded,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         await _sut.LockItemAsync(new LockItemCommand
         {
             ItemId = DEFAULT_ITEM_ID,
             Quantity = quantityLocked,
             UserId = DEFAULT_USER_ID
-        });
+        }, TestContext.Current.CancellationToken);
 
         var queryStub = new GetInventoryItemLockedAmountQuery
         {
@@ -847,7 +851,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.GetLockedAmountAsync(queryStub);
+        var result = await _sut.GetLockedAmountAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -871,7 +875,7 @@ public class InventoryServiceTests
 
         // Act
 
-        var result = await _sut.GetLockedAmountAsync(queryStub);
+        var result = await _sut.GetLockedAmountAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -894,14 +898,14 @@ public class InventoryServiceTests
                 ItemId = DEFAULT_ITEM_ID,
                 UserId = userId,
                 Quantity = 1
-            });
+            }, TestContext.Current.CancellationToken);
         }
 
         var queryStub = new GetUserIdsOwningItemQuery { ItemId = DEFAULT_ITEM_ID };
 
         // Act
 
-        var result = await _sut.GetUsersOwningThisItemAsync(queryStub);
+        var result = await _sut.GetUsersOwningThisItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 

@@ -52,7 +52,7 @@ public class ItemServiceTests
                 return collection.FirstOrDefault(x => x.ItemId == itemId);
             });
 
-        itemRepositoryMock.Setup(repo => repo.ListItemsAsync())
+        itemRepositoryMock.Setup(repo => repo.ListItemsAsync(It.IsAny<string[]>()))
             .ReturnsAsync(() => collection.ToArray());
 
         #endregion MediatorMocks
@@ -75,7 +75,7 @@ public class ItemServiceTests
         // Act 
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(commandStub);
+        var addItemResult = await _sut.CreateItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -97,7 +97,7 @@ public class ItemServiceTests
         // Act
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(commandStub);
+        var addItemResult = await _sut.CreateItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -119,7 +119,7 @@ public class ItemServiceTests
         // Act
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(commandStub);
+        var addItemResult = await _sut.CreateItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -143,7 +143,7 @@ public class ItemServiceTests
         // Act
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(commandStub);
+        var addItemResult = await _sut.CreateItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -166,7 +166,7 @@ public class ItemServiceTests
         };
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(createItemStub);
+        var addItemResult = await _sut.CreateItemAsync(createItemStub, TestContext.Current.CancellationToken);
 
         string item_id = addItemResult.Content!.ItemId;
 
@@ -183,7 +183,7 @@ public class ItemServiceTests
 
         // Act
 
-        var updateItemResult = await _sut.UpdateItemAsync(commandStub);
+        var updateItemResult = await _sut.UpdateItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -212,7 +212,7 @@ public class ItemServiceTests
 
         // Act
 
-        var updateItemResult = await _sut.UpdateItemAsync(commandStub);
+        var updateItemResult = await _sut.UpdateItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -232,7 +232,7 @@ public class ItemServiceTests
         };
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(createItemStub);
+        var addItemResult = await _sut.CreateItemAsync(createItemStub, TestContext.Current.CancellationToken);
 
         string item_id = addItemResult.Content!.ItemId;
 
@@ -240,7 +240,7 @@ public class ItemServiceTests
 
         // Act
 
-        var deleteItemResult = await _sut.DeleteItemAsync(commandStub);
+        var deleteItemResult = await _sut.DeleteItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -262,7 +262,7 @@ public class ItemServiceTests
 
         // Act
 
-        var deleteItemResult = await _sut.DeleteItemAsync(commandStub);
+        var deleteItemResult = await _sut.DeleteItemAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -282,13 +282,13 @@ public class ItemServiceTests
         };
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(createItemStub);
+        var addItemResult = await _sut.CreateItemAsync(createItemStub, TestContext.Current.CancellationToken);
 
         var queryStub = new ListItemsQuery();
 
         // Act
 
-        var result = await _sut.ListItemsAsync(queryStub);
+        var result = await _sut.ListItemsAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
         
@@ -312,7 +312,7 @@ public class ItemServiceTests
             SenderUserId = DEFAULT_USER_ID,
             ItemName = DEFAULT_ITEM_NAME,
             ItemDescription = DEFAULT_ITEM_DESCRIPTION
-        });
+        }, TestContext.Current.CancellationToken);
 
         string item_id = addItemResult.Content!.ItemId;
 
@@ -320,7 +320,7 @@ public class ItemServiceTests
 
         // Act
 
-        var getItemResult = await _sut.GetItemAsync(queryStub);
+        var getItemResult = await _sut.GetItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -341,7 +341,7 @@ public class ItemServiceTests
 
         // Act
 
-        var getItemResult = await _sut.GetItemAsync(queryStub);
+        var getItemResult = await _sut.GetItemAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -361,13 +361,13 @@ public class ItemServiceTests
         };
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(createItemStub);
+        var addItemResult = await _sut.CreateItemAsync(createItemStub, TestContext.Current.CancellationToken);
 
         var queryStub = new GetItemNameQuery { ItemId = addItemResult.Content!.ItemId };
 
         // Act
 
-        var getItemNameResult = await _sut.GetItemNameAsync(queryStub);
+        var getItemNameResult = await _sut.GetItemNameAsync(queryStub, TestContext.Current.CancellationToken);
         
         // Assert
 
@@ -388,13 +388,13 @@ public class ItemServiceTests
         };
 
         // add one item
-        var addItemResult = await _sut.CreateItemAsync(createItemStub);
+        var addItemResult = await _sut.CreateItemAsync(createItemStub, TestContext.Current.CancellationToken);
 
         var queryStub = new GetItemDescriptionQuery { ItemId = addItemResult.Content!.ItemId };
 
         // Act
 
-        var getItemDescriptionResult = await _sut.GetItemDescriptionAsync(queryStub);
+        var getItemDescriptionResult = await _sut.GetItemDescriptionAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 

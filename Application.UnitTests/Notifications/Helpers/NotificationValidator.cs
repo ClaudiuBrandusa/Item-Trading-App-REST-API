@@ -53,7 +53,10 @@ public class NotificationValidator<T>
             notification.Content.Id == expectedId && 
             (
                 customValidationRule is null ||
-                customValidationRule(notification.Content.Content.Deserialize<T>())
+                customValidationRule(notification.Content.Content.Deserialize<T>(new JsonSerializerOptions {
+                    PropertyNameCaseInsensitive = true
+                })
+            )
             );
     }
 

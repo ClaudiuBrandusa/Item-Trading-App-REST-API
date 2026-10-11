@@ -18,7 +18,6 @@ using Application.Repositories;
 using Application.Results.Inventories;
 using Application.Results.Trades;
 using Application.Services.Trades;
-using Application.Services.UnitOfWork;
 using CommonTestUtils.TestAdaptedServices;
 using Domain.Aggregates.Inventories;
 using Domain.Aggregates.Trades;
@@ -26,12 +25,14 @@ using Domain.Entities.Identity;
 using Domain.Entities.Trades;
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Application_UnitTests.Trades;
 
 public class TradeServiceTests
 {
     private readonly ITradeService _sut; // service under test
+    private readonly ILogger<TradeService> _logger;
     private readonly IMapper _mapper;
     private readonly Mock<ISender> _sender;
     private readonly string senderUserId = Guid.NewGuid().ToString();
@@ -44,33 +45,13 @@ public class TradeServiceTests
 
     public TradeServiceTests()
     {
+        _logger = new Mock<ILogger<TradeService>>().Object;
         collection = new List<Trade>();
         cachedTrades = new List<CachedTrade>();
         var tradeRepositoryMock = RepositoryUtils.CreateRepositoryMock<Trade, ICachedTradeRepository>(collection);
         _mapper = MapperUtils.GetMapper();
         _sender = new Mock<ISender>();
         var publisherMock = new Mock<IPublisher>();
-        var unitOfWorkMock = new Mock<IUnitOfWorkService>();
-
-        unitOfWorkMock.Setup(x => x.ExplicitTransaction(It.IsAny<Func<Task<bool>>>()))
-            .Returns(async (Func<Task<bool>> func) =>
-            {
-                return await func();
-            });
-
-        unitOfWorkMock.Setup(x => x.ExplicitTransaction(It.IsAny<Func<TaskCompletionSource<string?>, Task<bool>>>()))
-            .Returns(async (Func<TaskCompletionSource<string?>, Task<bool>> func) =>
-            {
-                var taskCompletionSource = new TaskCompletionSource<string?>();
-                var task = taskCompletionSource.Task;
-
-                var commitTransaction = await func(taskCompletionSource);
-
-                if (!task.IsCompleted && !task.IsCanceled)
-                    taskCompletionSource.SetResult(null);
-
-                return await task;
-            });
 
         #region MediatorMocks
 
@@ -268,7 +249,7 @@ public class TradeServiceTests
             });
         #endregion MediatorMocks
 
-        _sut = new TradeService(tradeRepositoryMock.Object, _sender.Object, publisherMock.Object, _mapper, unitOfWorkMock.Object);
+        _sut = new TradeService(_logger, tradeRepositoryMock.Object, _sender.Object, publisherMock.Object, _mapper);
     }
 
     [Theory(DisplayName = "Create trade offer")]
@@ -379,7 +360,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOfferAsync(queryStub);
+        var result = await _sut.GetTradeOfferAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -421,7 +402,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOffersAsync(queryStub);
+        var result = await _sut.GetTradeOffersAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -451,7 +432,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOffersAsync(stub);
+        var result = await _sut.GetTradeOffersAsync(stub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -480,7 +461,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOfferAsync(queryStub);
+        var result = await _sut.GetTradeOfferAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -522,7 +503,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOffersAsync(queryStub);
+        var result = await _sut.GetTradeOffersAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -552,7 +533,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOffersAsync(queryStub);
+        var result = await _sut.GetTradeOffersAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -583,7 +564,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOffersAsync(queryStub);
+        var result = await _sut.GetTradeOffersAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -617,7 +598,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.GetTradeOffersAsync(queryStub);
+        var result = await _sut.GetTradeOffersAsync(queryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -650,7 +631,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.AcceptTradeOfferAsync(commandStub);
+        var result = await _sut.AcceptTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -693,8 +674,8 @@ public class TradeServiceTests
 
         // Act
 
-        await _sut.AcceptTradeOfferAsync(commandStub);
-        var result = await _sut.AcceptTradeOfferAsync(commandStub);
+        await _sut.AcceptTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
+        var result = await _sut.AcceptTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -721,7 +702,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.AcceptTradeOfferAsync(commandStub);
+        var result = await _sut.AcceptTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -750,7 +731,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.RejectTradeOfferAsync(commandStub);
+        var result = await _sut.RejectTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -794,8 +775,8 @@ public class TradeServiceTests
 
         // Act
 
-        await _sut.RejectTradeOfferAsync(commandStub);
-        var result = await _sut.RejectTradeOfferAsync(commandStub);
+        await _sut.RejectTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
+        var result = await _sut.RejectTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -822,7 +803,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.RejectTradeOfferAsync(commandStub);
+        var result = await _sut.RejectTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -851,7 +832,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.CancelTradeOfferAsync(commandStub);
+        var result = await _sut.CancelTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -894,8 +875,8 @@ public class TradeServiceTests
 
         // Act
 
-        await _sut.CancelTradeOfferAsync(commandStub);
-        var result = await _sut.CancelTradeOfferAsync(commandStub);
+        await _sut.CancelTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
+        var result = await _sut.CancelTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -934,7 +915,7 @@ public class TradeServiceTests
 
         // Act
 
-        var result = await _sut.CancelTradeOfferAsync(commandStub);
+        var result = await _sut.CancelTradeOfferAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -947,7 +928,7 @@ public class TradeServiceTests
 
     private async Task<Result<TradeOfferResult>> InitTrade(CreateTradeOfferCommand model)
     {
-        var trade = await _sut.CreateTradeOfferAsync(model);
+        var trade = await _sut.CreateTradeOfferAsync(model, TestContext.Current.CancellationToken);
 
         if (model.Items is not null && model.Items.Any())
         {
@@ -979,7 +960,7 @@ public class TradeServiceTests
                 {
                     TradeId = tradeOfferResult.Content!.TradeId,
                     UserId = receiverUserId
-                });
+                }, TestContext.Current.CancellationToken);
 
             tradeOfferIds.Add(tradeOfferResult.Content!.TradeId);
         }
@@ -1000,7 +981,7 @@ public class TradeServiceTests
                 {
                     TradeId = tradeOfferResult.Content!.TradeId,
                     UserId = receiverUserId
-                });
+                }, TestContext.Current.CancellationToken);
 
             tradeOfferIds.Add(tradeOfferResult.Content!.TradeId);
         }
@@ -1022,7 +1003,7 @@ public class TradeServiceTests
                 {
                     TradeId = tradeOfferResult.Content!.TradeId,
                     UserId = receiverUserId
-                });
+                }, TestContext.Current.CancellationToken);
 
             tradeOfferIds.Add(tradeOfferResult.Content!.TradeId);
         }

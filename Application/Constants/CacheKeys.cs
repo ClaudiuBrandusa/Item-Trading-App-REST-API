@@ -18,18 +18,27 @@ public static class CacheKeys
         public static string GetItemsKey() => Items;
 
         public static string GetItemKey(string itemId) => $"{Items}{itemId}";
+
+        private const string ItemName = "name:";
+
+        public static string GetItemNameKey(string itemId) => $"{Items}{ItemName}{itemId}";
+
+        public static string ExtractItemIdFromItemKey(string itemKey) => itemKey.Replace(GetItemNameKey(string.Empty), string.Empty);
     }
 
     public static class Inventory
     {
         private const string InventoryKey = "inventory:";
         private const string InventoryItems = "inventory_items:";
+        private const string InventoryItemAmount = "inventory_item_amount:";
         private const string InventoryLockedItem = "locked_amount:";
 
         public static string GetUserInventoryKey(string userId) => $"{InventoryKey}{userId}:{InventoryItems}";
 
-        public static string GetAmountKey(string userId, string itemId) => $"{InventoryKey}{userId}:{InventoryItems}{itemId}";
+        public static string GetInventoryItemKey(string userId, string itemId) => $"{InventoryKey}{userId}:{InventoryItems}{itemId}";
     
+        public static string GetItemAmountKey(string userId, string itemId) => $"{InventoryKey}{userId}:{InventoryItemAmount}{itemId}";
+
         public static string GetLockedAmountKey(string userId, string itemId) => $"{InventoryKey}{userId}:{InventoryLockedItem}{itemId}";
     }
 

@@ -62,6 +62,46 @@ public static class CacheServiceExtensions
         return entities.ToArray();
     }
 
+    public static async Task<EntityType[]> GetEntitiesAsync<EntityType, CachedType>(this ICacheService service, string cacheKey, string[] selectedIds, Func<object[], Task<EntityType[]>> readFromDb, Func<EntityType, CachedType> convertEntityToCachedEntity, Func<CachedType, EntityType> convertCachedEntityToEntity, bool setCache, params object[] args) where EntityType : class
+    {
+        if (selectedIds is null || selectedIds.Length == 0)
+            return await GetEntitiesAsync(service, cacheKey, readFromDb, convertEntityToCachedEntity, convertCachedEntityToEntity, setCache, args);
+
+        var cachedEntities = (await service.ListWithPrefix<CachedType>(cacheKey, selectedIds))?.Values.ToList() ?? new List<CachedType>();
+
+        var entities = new List<EntityType>();
+
+        if (cachedEntities.Count == 0)
+        {
+            var fromDb = await readFromDb(args);
+
+            if (setCache)
+            {
+                var func = args[0] as Func<EntityType, string>;
+
+                if (func is not null)
+                    foreach (var entity in fromDb)
+                    {
+                        var tmp = convertEntityToCachedEntity(entity);
+                        await service.SetCacheValueAsync($"{cacheKey}{func(entity)}", tmp);
+                        entities.Add(entity);
+                    }
+            }
+            else
+                foreach (var entity in fromDb)
+                {
+                    var tmp = convertEntityToCachedEntity(entity);
+                    entities.Add(entity);
+                }
+        }
+        else
+        {
+            entities.AddRange(cachedEntities.Select(x => convertCachedEntityToEntity(x)));
+        }
+
+        return entities.ToArray();
+    }
+
     public static async Task<string[]> GetSetValuesAsync(this ICacheService service, string cacheKey, Func<object[], Task<string[]>> readFromDb, bool setCache, params object[] args)
     {
         var values = (await service.ListSetValuesAsync(cacheKey)).ToArray();

@@ -1,5 +1,6 @@
 ﻿using Domain.Entities.Items;
 using Domain.Repositories.Items;
+using Infrastructure.Data;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Repositories.Items;
 using Infrastructure.Services.DatabaseContextWrapper;
@@ -11,8 +12,8 @@ public class ItemTests : IClassFixture<DatabaseFixture>
 
     public ItemTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
-        _repository = new ItemRepository(dbContextWrapper);
+        var dbContext = fixture.GetService<DatabaseContext>();
+        _repository = new ItemRepository(dbContext);
     }
 
     [Fact]
@@ -112,8 +113,8 @@ public class ItemTests : IClassFixture<DatabaseFixture>
     {
         // Arrange
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
-        var dbContextWrapper = dbFixture.GetService<IDatabaseContextWrapper>();
-        var repository = new ItemRepository(dbContextWrapper);
+        var dbContext = dbFixture.GetService<DatabaseContext>();
+        var repository = new ItemRepository(dbContext);
 
         string baseItemName = "ItemName";
         string baseItemDescription = "ItemDescription";
@@ -141,10 +142,9 @@ public class ItemTests : IClassFixture<DatabaseFixture>
             }
         }
 
-        var listResponse = await repository.ListItemsAsync();
+        var listResponse = await repository.ListItemsAsync([]);
 
         await dbFixture.DisposeAsync();
-        repository.Dispose();
 
         // Assert
         Assert.True(succeeded);

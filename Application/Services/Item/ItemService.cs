@@ -15,7 +15,7 @@ using Application.Behaviors.Trade.ItemUsedInTrade;
 
 namespace Application.Services.Item;
 
-public class ItemService : IItemService, IDisposable
+public class ItemService : IItemService
 {
     private readonly ICachedItemRepository _repository;
     private readonly ISender _sender;
@@ -30,7 +30,7 @@ public class ItemService : IItemService, IDisposable
         _mapper = mapper;
     }
 
-    public async Task<Result<FullItemResult>> CreateItemAsync(CreateItemCommand model)
+    public async Task<Result<FullItemResult>> CreateItemAsync(CreateItemCommand model, CancellationToken cancellationToken)
     {
         if (model is null || string.IsNullOrEmpty(model.SenderUserId) || string.IsNullOrEmpty(model.ItemName))
             return Result<FullItemResult>.Failure("Something went wrong");
@@ -50,7 +50,7 @@ public class ItemService : IItemService, IDisposable
         });
     }
 
-    public async Task<Result<FullItemResult>> UpdateItemAsync(UpdateItemCommand model)
+    public async Task<Result<FullItemResult>> UpdateItemAsync(UpdateItemCommand model, CancellationToken cancellationToken)
     {
         if (model is null || string.IsNullOrEmpty(model.ItemName))
             return Result<FullItemResult>.Failure("Something went wrong");
@@ -76,7 +76,7 @@ public class ItemService : IItemService, IDisposable
         });
     }
 
-    public async Task<Result<DeleteItemResult>> DeleteItemAsync(DeleteItemCommand model)
+    public async Task<Result<DeleteItemResult>> DeleteItemAsync(DeleteItemCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.ItemId))
             return Result<DeleteItemResult>.Failure("Something went wrong");
@@ -103,7 +103,7 @@ public class ItemService : IItemService, IDisposable
         });
     }
 
-    public async Task<Result<FullItemResult>> GetItemAsync(GetItemQuery model)
+    public async Task<Result<FullItemResult>> GetItemAsync(GetItemQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.ItemId))
             return Result<FullItemResult>.Failure("Something went wrong");
@@ -121,9 +121,30 @@ public class ItemService : IItemService, IDisposable
         });
     }
 
-    public async Task<Result<ItemsResult>> ListItemsAsync(ListItemsQuery model)
+    public async Task<Result<FullItemResult[]>> GetItemsAsync(GetItemsQuery model, CancellationToken cancellationToken)
     {
-        var items = await _repository.ListItemsAsync();
+        if (model.ItemIds is null || model.ItemIds.Length == 0)
+            return Result<FullItemResult[]>.Failure("Something went wrong");
+
+        var items = await _repository.ListItemsAsync(model.ItemIds);
+
+        if (items is null || items.Any(x => x is null))
+            return Result<FullItemResult[]>.Failure("Items not found");
+
+        return Result<FullItemResult[]>.Success(
+            items.Select(item => new FullItemResult
+            {
+                ItemId = item.ItemId,
+                ItemName = item.Name,
+                ItemDescription = item.Description
+            })
+            .ToArray()
+        );
+    }
+
+    public async Task<Result<ItemsResult>> ListItemsAsync(ListItemsQuery model, CancellationToken cancellationToken)
+    {
+        var items = await _repository.ListItemsAsync([]);
 
         if (!string.IsNullOrEmpty(model.SearchString))
             items = items.Where(x => x.Name
@@ -138,23 +159,22 @@ public class ItemService : IItemService, IDisposable
         });
     }
 
-    public async Task<string> GetItemNameAsync(GetItemNameQuery model)
+    public async Task<string> GetItemNameAsync(GetItemNameQuery model, CancellationToken cancellationToken)
     {
         var entity = await _repository.GetItemEntityAsync(model.ItemId);
 
         return entity?.Name ?? string.Empty;
     }
 
-    public async Task<string> GetItemDescriptionAsync(GetItemDescriptionQuery model)
+    public async Task<Dictionary<string, string>> GetItemsNameAsync(GetItemsNameQuery model, CancellationToken cancellationToken)
+    {
+        return await _repository.GetItemsNameAsync(model.ItemIds);
+    }
+
+    public async Task<string> GetItemDescriptionAsync(GetItemDescriptionQuery model, CancellationToken cancellationToken)
     {
         var entity = await _repository.GetItemEntityAsync(model.ItemId);
 
         return entity?.Description ?? string.Empty;
-    }
-
-    public void Dispose()
-    {
-        _repository.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

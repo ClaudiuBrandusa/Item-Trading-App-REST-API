@@ -3,7 +3,7 @@ using Domain.Entities.Trades;
 
 namespace Domain.Repositories.Trades;
 
-public interface ITradeRepository : IRepository, IDisposable
+public interface ITradeRepository : IRepository
 {
     Task<Trade?> GetTradeAsync(string tradeId);
 

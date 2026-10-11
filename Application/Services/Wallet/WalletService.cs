@@ -18,7 +18,7 @@ public class WalletService : IWalletService
         _userRepository = userRepository;
     }
 
-    public async Task<int> GetUserCashAsync(GetUserCashQuery model)
+    public async Task<int> GetUserCashAsync(GetUserCashQuery model, CancellationToken cancellationToken)
     {
         var user = await GetUser(model.UserId);
 
@@ -28,7 +28,7 @@ public class WalletService : IWalletService
         return user.Cash;
     }
 
-    public async Task<Result<WalletResult>> GetWalletAsync(GetUserWalletQuery model)
+    public async Task<Result<WalletResult>> GetWalletAsync(GetUserWalletQuery model, CancellationToken cancellationToken)
     {
         var user = await GetUser(model.UserId);
 
@@ -42,7 +42,7 @@ public class WalletService : IWalletService
         });
     }
 
-    public async Task<bool> GiveCashAsync(GiveCashCommand model)
+    public async Task<bool> GiveCashAsync(GiveCashCommand model, CancellationToken cancellationToken)
     {
         var user = await GetUser(model.UserId);
 
@@ -59,7 +59,7 @@ public class WalletService : IWalletService
         return true;
     }
 
-    public async Task<bool> TakeCashAsync(TakeCashCommand model)
+    public async Task<bool> TakeCashAsync(TakeCashCommand model, CancellationToken cancellationToken)
     {
         var user = await GetUser(model.UserId);
 
@@ -76,7 +76,7 @@ public class WalletService : IWalletService
         return true;
     }
 
-    public async Task<Result<WalletResult>> UpdateWalletAsync(UpdateWalletCommand model)
+    public async Task<Result<WalletResult>> UpdateWalletAsync(UpdateWalletCommand model, CancellationToken cancellationToken)
     {
         var user = await GetUser(model.UserId);
 

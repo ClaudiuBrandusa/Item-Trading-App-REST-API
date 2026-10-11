@@ -15,6 +15,6 @@ public class DeleteItemHandler : IRequestHandler<DeleteItemCommand, Result<Delet
 
     public Task<Result<DeleteItemResult>> Handle(DeleteItemCommand request, CancellationToken cancellationToken)
     {
-        return _itemService.DeleteItemAsync(request);
+        return _itemService.DeleteItemAsync(request, cancellationToken);
     }
 }

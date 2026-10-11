@@ -15,6 +15,6 @@ public class CreateItemHandler : IRequestHandler<CreateItemCommand, Result<FullI
 
     public Task<Result<FullItemResult>> Handle(CreateItemCommand request, CancellationToken cancellationToken)
     {
-        return _itemService.CreateItemAsync(request);
+        return _itemService.CreateItemAsync(request, cancellationToken);
     }
 }

@@ -9,6 +9,7 @@ using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers;
@@ -24,17 +25,17 @@ public class WalletController : BaseController
     }
 
     [HttpGet(Endpoints.Wallet.Get)]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var model = AdaptToType<string, GetUserWalletQuery>(UserId);
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<WalletResult, WalletSuccessResponse, FailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Wallet.Update)]
-    public async Task<IActionResult> Update([FromBody] UpdateWalletRequest request)
+    public async Task<IActionResult> Update([FromBody] UpdateWalletRequest request, CancellationToken cancellationToken)
     {
         if (request is null)
             return BadRequest(new FailedResponse
@@ -44,7 +45,7 @@ public class WalletController : BaseController
 
         var model = AdaptToType<UpdateWalletRequest, UpdateWalletCommand>(request, (nameof(UpdateWalletCommand.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<WalletResult, UpdateWalletSuccessResponse, FailedResponse>(result);
     }

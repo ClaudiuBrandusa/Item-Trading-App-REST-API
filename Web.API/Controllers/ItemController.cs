@@ -14,6 +14,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers;
@@ -29,7 +30,7 @@ public class ItemController : BaseController
     }
 
     [HttpGet(Endpoints.Item.Get)]
-    public async Task<IActionResult> Get(string itemId)
+    public async Task<IActionResult> Get(string itemId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(itemId))
             return BadRequest(new FailedResponse
@@ -39,27 +40,27 @@ public class ItemController : BaseController
 
         var model = new GetItemQuery { ItemId = itemId };
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<FullItemResult, ItemResponse, FailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Item.List)]
-    public async Task<IActionResult> List([FromQuery] string searchString)
+    public async Task<IActionResult> List([FromQuery] string searchString, CancellationToken cancellationToken)
     {
         var model = new ListItemsQuery { SearchString = searchString };
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<ItemsResult, ItemsResponse, FailedResponse>(result);
     }
     
     [HttpGet(Endpoints.Item.ListTradesUsingTheItem)]
-    public async Task<IActionResult> GetTradesUsingTheItem([FromQuery] string itemId)
+    public async Task<IActionResult> GetTradesUsingTheItem([FromQuery] string itemId, CancellationToken cancellationToken)
     {
         var model = new GetTradesUsingTheItemQuery { ItemId = itemId };
 
-        var results = await _mediator.Send(model);
+        var results = await _mediator.Send(model, cancellationToken);
 
         return MapResult<string[], TradesUsingTheItemResponse, FailedResponse>(results, (string[] tradeIds) =>
             new TradesUsingTheItemResponse
@@ -70,40 +71,40 @@ public class ItemController : BaseController
     }
 
     [HttpPost(Endpoints.Item.Create)]
-    public async Task<IActionResult> Create([FromBody] CreateItemRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateItemRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<CreateItemRequest, CreateItemCommand>(request, (nameof(CreateItemCommand.SenderUserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<FullItemResult, CreateItemSuccessResponse, CreateItemFailedResponse>(result);
     }
 
     [HttpPatch(Endpoints.Item.Update)]
-    public async Task<IActionResult> Update([FromBody] UpdateItemRequest request)
+    public async Task<IActionResult> Update([FromBody] UpdateItemRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<UpdateItemRequest, UpdateItemCommand>(request, (nameof(UpdateItemCommand.SenderUserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<FullItemResult, UpdateItemSuccessResponse, UpdateItemFailedResponse>(result);
     }
 
     [HttpDelete(Endpoints.Item.Delete)]
-    public async Task<IActionResult> Delete([FromBody] DeleteItemRequest request)
+    public async Task<IActionResult> Delete([FromBody] DeleteItemRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<DeleteItemRequest, DeleteItemCommand>(request, (nameof(DeleteItemCommand.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<DeleteItemResult, DeleteItemSuccessResponse, DeleteItemFailedResponse>(result);
     }

@@ -1,5 +1,6 @@
 ﻿using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
+using Infrastructure.Data;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
@@ -14,8 +15,9 @@ public class IdentityTests : IClassFixture<DatabaseFixture>
     public IdentityTests(DatabaseFixture fixture)
     {
         var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        var dbContext = fixture.GetService<DatabaseContext>();
         var userManager = fixture.GetService<UserManager<User>>();
-        _repository = new IdentityRepository(dbContextWrapper, userManager);
+        _repository = new IdentityRepository(dbContext, dbContextWrapper, userManager);
     }
 
     [Fact]
@@ -216,8 +218,9 @@ public class IdentityTests : IClassFixture<DatabaseFixture>
         // Arrange
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
         var dbContextWrapper = dbFixture.GetService<IDatabaseContextWrapper>();
+        var dbContext = dbFixture.GetService<DatabaseContext>();
         var userManager = dbFixture.GetService<UserManager<User>>();
-        var repository = new IdentityRepository(dbContextWrapper, userManager);
+        var repository = new IdentityRepository(dbContext, dbContextWrapper, userManager);
 
         int expectedUsersCount = 5;
 

@@ -23,25 +23,28 @@ using Domain.Entities.Inventories;
 using Application.Helpers;
 using Application.Behaviors.Inventories.LockItems;
 using Application.Models.TradeItems;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Inventories;
 
-public class InventoryService : IInventoryService, IDisposable
+public class InventoryService : IInventoryService
 {
+    private readonly ILogger<InventoryService> _logger;
     private readonly ICachedInventoryRepository _repository;
     private readonly IClientNotificationService _clientNotificationService;
     private readonly ISender _sender;
     private readonly IMapper _mapper;
 
-    public InventoryService(ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IMapper mapper)
+    public InventoryService(ILogger<InventoryService> logger, ICachedInventoryRepository inventoryRepository, IClientNotificationService clientNotificationService, ISender sender, IMapper mapper)
     {
+        _logger = logger;
         _repository = inventoryRepository;
         _clientNotificationService = clientNotificationService;
         _sender = sender;
         _mapper = mapper;
     }
 
-    public async Task<bool> HasItemAsync(HasItemQuantityQuery model)
+    public async Task<bool> HasItemAsync(HasItemQuantityQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
             return false;
@@ -51,7 +54,7 @@ public class InventoryService : IInventoryService, IDisposable
         return amount >= model.Quantity;
     }
 
-    public async Task<Result<QuantifiedItemResult>> AddItemAsync(AddInventoryItemCommand model)
+    public async Task<Result<QuantifiedItemResult>> AddItemAsync(AddInventoryItemCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return Result<QuantifiedItemResult>.Failure("Something went wrong");
@@ -89,7 +92,90 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<QuantifiedItemResult>> DropItemAsync(DropInventoryItemCommand model)
+    public async Task<Result<QuantifiedItemResult[]>> AddItemsAsync(AddInventoryItemsCommand model, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(model.UserId) || model.Items is null || model.Items.Length == 0)
+            return Result<QuantifiedItemResult[]>.Failure("Something went wrong");
+
+        var itemIds = new string[model.Items.Length];
+
+        for (int i = 0; i < model.Items.Length; i++)
+        {
+            var item = model.Items[i];
+
+            if (item.quantity < 0)
+                return Result<QuantifiedItemResult[]>.Failure("You cannot add a negative amount of an item");
+            else if (item.quantity == 0)
+                return Result<QuantifiedItemResult[]>.Failure("You cannot add an amount of 0 to your inventory");
+        
+            itemIds[i] = item.itemId;
+        }
+
+        var itemsDataResult = await _sender.Send(new GetItemsQuery { ItemIds = itemIds });
+
+        if (!itemsDataResult.IsSuccess)
+            return Result<QuantifiedItemResult[]>.Failure("Item not found");
+
+        var itemsData = itemsDataResult.Content!.ToDictionary(item => item.ItemId, item => item);
+
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
+
+        if (inventory is null)
+        {
+            return Result<QuantifiedItemResult[]>.Failure("Something went wrong");
+        }
+
+        var isInnerTransaction = !await _repository.StartTransactionAsync(cancellationToken);
+
+        try
+        {
+            foreach (var item in model.Items)
+                inventory.AddItem(item.itemId, item.quantity, model.Notify);
+
+            bool modified = await _repository.AddInventoryAsync(inventory);
+            
+            if (!modified)
+            {
+                if (!isInnerTransaction)
+                    await _repository.RollbackTransactionAsync(cancellationToken);
+
+                return Result<QuantifiedItemResult[]>.Failure("Something went wrong");
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            if (!isInnerTransaction)
+                await _repository.RollbackTransactionAsync(cancellationToken);
+            
+            _logger.LogError(ex, "Something went wrong while adding multiple items to the inventory of user with id {userId}", model.UserId);
+
+            return Result<QuantifiedItemResult[]>.Failure(ex.Message);
+        }
+        finally
+        {
+            if (inventory is not null)
+                _repository.DetachEntity(inventory);
+        }
+
+        if (!isInnerTransaction)
+            await _repository.CommitTransactionAsync(cancellationToken);
+
+        var itemResults = model.Items.Select(item => new QuantifiedItemResult
+        {
+            ItemId = item.itemId,
+            ItemName = itemsData[item.itemId].ItemName
+        }).ToArray();
+
+        for (int i = 0; i < itemResults.Length; i++)
+        {
+            var itemResult = itemResults[i];
+            itemResult.Quantity = await _repository.GetAmountOfFreeItemAsync(model.UserId, itemResult.ItemId);
+        }
+
+        return Result<QuantifiedItemResult[]>.Success(itemResults);
+    }
+
+    public async Task<Result<QuantifiedItemResult>> DropItemAsync(DropInventoryItemCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return Result<QuantifiedItemResult>.Failure("Something went wrong");
@@ -128,13 +214,95 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<QuantifiedItemResult>> GetItemAsync(GetInventoryItemQuery model)
+    public async Task<Result<QuantifiedItemResult[]>> DropItemsAsync(DropInventoryItemsCommand model, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(model.UserId) || model.Items is null || model.Items.Length == 0)
+            return Result<QuantifiedItemResult[]>.Failure("Something went wrong");
+
+        foreach (var item in model.Items)
+        {
+            if (item.quantity < 0)
+                return Result<QuantifiedItemResult[]>.Failure("You cannot drop a negative amount of an item");
+            else if (item.quantity == 0)
+                return Result<QuantifiedItemResult[]>.Failure("You cannot drop an amount of 0 from your inventory");
+        }
+
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
+
+        if (inventory is null)
+        {
+            return Result<QuantifiedItemResult[]>.Failure("Something went wrong");
+        }
+
+        var isInnerTransaction = !await _repository.StartTransactionAsync(cancellationToken);
+        
+        try
+        {
+            if (model.Items.Any(item => !inventory.ItemIds.Contains(item.itemId)))
+            {
+                if (!isInnerTransaction)
+                    await _repository.RollbackTransactionAsync(cancellationToken);
+                
+                return Result<QuantifiedItemResult[]>.Failure("Item is not part of the inventory");
+            }
+            
+            foreach (var item in model.Items)
+                inventory.DropItem(item.itemId, item.quantity);
+
+            bool modified = await _repository.DropItemAsync(inventory, model.Items);
+
+            if (!modified)
+            {
+                if (!isInnerTransaction)
+                    await _repository.RollbackTransactionAsync(cancellationToken);
+                
+                return Result<QuantifiedItemResult[]>.Failure("Something went wrong");
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            if (!isInnerTransaction)
+                await _repository.RollbackTransactionAsync(cancellationToken);
+            
+            _logger.LogError(ex, "Something went wrong while dropping multiple items from the inventory of user with id {userId}", model.UserId);
+
+            return Result<QuantifiedItemResult[]>.Failure(ex.Message);
+        }
+        finally
+        {
+            if (inventory is not null)
+                _repository.DetachEntity(inventory);
+        }
+
+        if (!isInnerTransaction)
+            // will commit only if it's not an inner transaction, otherwise we just confirm the execution
+            // and let the main transaction to handle the rest
+            await _repository.CommitTransactionAsync(cancellationToken);
+
+        var itemResults = model.Items.Select(item => new QuantifiedItemResult
+        {
+            ItemId = item.itemId
+        }).ToArray();
+
+        var itemsName = await GetItemsNameAsync(itemResults.Select(x => x.ItemId).ToArray());
+
+        for (int i = 0; i < itemResults.Length; i++)
+        {
+            var itemResult = itemResults[i];
+            itemResult.ItemName = itemsName[itemResult.ItemId];
+            itemResult.Quantity = await _repository.GetAmountOfFreeItemAsync(model.UserId, itemResult.ItemId);
+        }
+
+        return Result<QuantifiedItemResult[]>.Success(itemResults);
+    }
+
+    public async Task<Result<QuantifiedItemResult>> GetItemAsync(GetInventoryItemQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return Result<QuantifiedItemResult>.Failure("Something went wrong");
 
         int amount = await _repository.GetAmountOfFreeItemAsync(model.UserId, model.ItemId);
-        var lockedAmountResult = await GetLockedAmountAsync(_mapper.AdaptToType<GetInventoryItemQuery, GetInventoryItemLockedAmountQuery>(model));
+        var lockedAmountResult = await GetLockedAmountAsync(_mapper.AdaptToType<GetInventoryItemQuery, GetInventoryItemLockedAmountQuery>(model), cancellationToken);
 
         if (!lockedAmountResult.IsSuccess)
             return Result<QuantifiedItemResult>.Failure(lockedAmountResult.Error!);
@@ -158,7 +326,7 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<ItemsResult>> ListItemsAsync(ListInventoryItemsQuery model)
+    public async Task<Result<ItemsResult>> ListItemsAsync(ListInventoryItemsQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId))
             return Result<ItemsResult>.Failure("Something went wrong");
@@ -171,7 +339,7 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<LockItemResult>> LockItemAsync(LockItemCommand model)
+    public async Task<Result<LockItemResult>> LockItemAsync(LockItemCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
             return Result<LockItemResult>.Failure("Invalid input data");
@@ -198,7 +366,7 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<LockItemsResult>> LockItemsAsync(LockItemsCommand model)
+    public async Task<Result<LockItemsResult>> LockItemsAsync(LockItemsCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || model.Items is null || model.Items.Length == 0)
             return Result<LockItemsResult>.Failure("Invalid input data");
@@ -240,7 +408,7 @@ public class InventoryService : IInventoryService, IDisposable
         return Result<LockItemsResult>.Success(new LockItemsResult(model.UserId, items));
     }
 
-    public async Task<Result<LockItemResult>> UnlockItemAsync(UnlockItemCommand model)
+    public async Task<Result<LockItemResult>> UnlockItemAsync(UnlockItemCommand model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId) || model.Quantity < 1)
             return Result<LockItemResult>.Failure("Invalid input data");
@@ -280,7 +448,84 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<LockedItemAmountResult>> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model)
+    public async Task<Result<LockItemResult[]>> UnlockItemsAsync(UnlockItemsCommand model, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(model.UserId) || model.Items is null || model.Items.Length == 0)
+            return Result<LockItemResult[]>.Failure("Invalid input data");
+
+        foreach (var item in model.Items)
+        {
+            if (item.quantity < 0)
+                return Result<LockItemResult[]>.Failure("You cannot unlock a negative amount of an item");
+            else if (item.quantity == 0)
+                return Result<LockItemResult[]>.Failure("You cannot unlock an amount of 0 from your inventory");
+        }
+
+        var inventory = await _repository.LoadInventoryAsync(model.UserId);
+
+        if (inventory is null)
+        {
+            return Result<LockItemResult[]>.Failure("Something went wrong");
+        }
+
+        var isInnerTransaction = !await _repository.StartTransactionAsync(cancellationToken);
+
+        bool modified = false;
+
+        try
+        {
+            if (model.Items.Any(item => !inventory.ItemIds.Contains(item.itemId)))
+            {
+                if (!isInnerTransaction)
+                    await _repository.RollbackTransactionAsync(cancellationToken);
+                
+                return Result<LockItemResult[]>.Failure("Item is not part of the inventory");
+            }
+            
+            foreach (var item in model.Items)
+                inventory.UnlockItem(item.itemId, item.quantity);
+            
+            modified = await _repository.UnlockItemsAsync(inventory, model.Items);
+        }
+        catch (ArgumentException ex)
+        {
+            if (!isInnerTransaction)
+                await _repository.RollbackTransactionAsync(cancellationToken);
+            
+            _logger.LogError(ex, "Something went wrong while unlocking multiple items from the inventory of user with id {userId}", model.UserId);
+
+            return Result<LockItemResult[]>.Failure(ex.Message);
+        }
+        finally
+        {
+            if (inventory is not null)
+                _repository.DetachEntity(inventory);
+        }
+
+        if (!modified)
+            return Result<LockItemResult[]>.Failure("Something went wrong");
+
+        if (!isInnerTransaction)
+            await _repository.CommitTransactionAsync(cancellationToken);
+
+        var itemResults = model.Items.Select(item => new LockItemResult
+        {
+            ItemId = item.itemId,
+            UserId = model.UserId
+        }).ToArray();
+
+        var itemsName = await GetItemsNameAsync(itemResults.Select(x => x.ItemId).ToArray());
+
+        for (int i = 0; i < itemResults.Length; i++)
+        {
+            var itemResult = itemResults[i];
+            itemResult.Quantity = await _repository.GetAmountOfFreeItemAsync(model.UserId, itemResult.ItemId);
+        }
+
+        return Result<LockItemResult[]>.Success(itemResults);
+    }
+
+    public async Task<Result<LockedItemAmountResult>> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.ItemId))
             return Result<LockedItemAmountResult>.Failure("Invalid input data");
@@ -300,14 +545,14 @@ public class InventoryService : IInventoryService, IDisposable
         });
     }
 
-    public async Task<Result<UsersOwningItem>> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model) =>
+    public async Task<Result<UsersOwningItem>> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model, CancellationToken cancellationToken) =>
         Result<UsersOwningItem>.Success(new UsersOwningItem
         {
             UserIds = await _repository.ListUsersThatOwnItemAsync(model.ItemId),
             ItemId = model.ItemId
         });
 
-    public async Task RemoveItemCacheAsync(RemoveItemFromUsersCommand model)
+    public async Task RemoveItemCacheAsync(RemoveItemFromUsersCommand model, CancellationToken cancellationToken)
     {
         var tasks = new Task[model.UserIds.Length];
 
@@ -326,12 +571,6 @@ public class InventoryService : IInventoryService, IDisposable
         var notificationStrategy = NotificationHelper.CreateMultipleUsersNotificationStrategy(model.UserIds);
 
         await _clientNotificationService.SendDeletedNotificationAsync(notificationStrategy, NotificationCategoryTypes.Inventory, model.ItemId);
-    }
-
-    public void Dispose()
-    {
-        _repository.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     private async Task<List<string>> FilterInventoryItems(string userId, string searchString)
@@ -368,4 +607,6 @@ public class InventoryService : IInventoryService, IDisposable
 
         itemIds.Add(inventoryItem.ItemId);
     }
+
+    private Task<Dictionary<string, string>> GetItemsNameAsync(string[] itemIds) => _sender.Send(new GetItemsNameQuery { ItemIds = itemIds });
 }

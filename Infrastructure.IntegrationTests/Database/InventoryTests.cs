@@ -2,11 +2,11 @@
 using Domain.Entities.Identity;
 using Domain.Entities.Items;
 using Domain.Repositories.Inventories;
+using Infrastructure.Data;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Inventories;
-using Infrastructure.Services.DatabaseContextWrapper;
 
 namespace Infrastructure.IntegrationTests.Database;
 public class InventoryTests : IClassFixture<DatabaseFixture>
@@ -16,8 +16,8 @@ public class InventoryTests : IClassFixture<DatabaseFixture>
 
     public InventoryTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
-        _repository = new InventoryRepository(dbContextWrapper);
+        var dbContext = fixture.GetService<DatabaseContext>();
+        _repository = new InventoryRepository(dbContext);
         _serviceProvider = fixture.ServiceProvider!;
     }
 

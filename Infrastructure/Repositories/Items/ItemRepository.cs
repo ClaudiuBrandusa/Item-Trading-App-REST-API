@@ -1,5 +1,4 @@
 ﻿using Infrastructure.Data;
-using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities.Items;
 using Domain.Repositories.Items;
@@ -8,19 +7,41 @@ namespace Infrastructure.Repositories.Items;
 
 public class ItemRepository : RepositoryBase, IItemRepository
 {
-    public ItemRepository(IDatabaseContextWrapper databaseContextWrapper) : base(databaseContextWrapper)
+    public ItemRepository(DatabaseContext context) : base(context)
     {
     }
 
-    public Task<Item[]> ListItemsAsync()
+    public Task<Item[]> ListItemsAsync(string[] itemIds)
     {
-        return context.Items
+        if (itemIds.Length == 0)
+        {
+            return _context.Items
+                .AsNoTracking()
+                .ToArrayAsync();
+        }
+        else
+        {
+            return _context.Items
+                .AsNoTracking()
+                .Where(item => itemIds.Contains(item.ItemId))
+                .ToArrayAsync();
+        }
+    }
+
+    public async Task<Dictionary<string, string>> GetItemsNameAsync(string[] itemIds)
+    {
+        return await _context.Items
             .AsNoTracking()
-            .ToArrayAsync();
+            .Where(item => itemIds.Contains(item.ItemId))
+            .Select(item => new { item.ItemId, item.Name })
+            .ToDictionaryAsync(
+                x => x.ItemId,
+                x => x.Name
+            );
     }
 
     public Task<Item?> GetItemEntityAsync(string itemId) =>
-        GetItemQuery(context, itemId);
+        GetItemQuery(_context, itemId);
 
     #region Queries
 

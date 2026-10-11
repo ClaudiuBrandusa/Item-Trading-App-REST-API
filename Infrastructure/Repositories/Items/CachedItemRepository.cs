@@ -31,16 +31,77 @@ public class CachedItemRepository : CachedRepository, ICachedItemRepository
         );
     }
 
-    public Task<Item[]> ListItemsAsync()
+    public async Task<Dictionary<string, string>> GetItemsNameAsync(string[] itemIds)
+    {
+        var cacheKeys = itemIds.Select(CacheKeys.Item.GetItemNameKey).ToArray();
+
+        var cachedResult = await _cacheService.GetCacheValuesAsync(cacheKeys);
+    
+        if (cachedResult.Count > 0)
+        {
+            // replace the cache key with the item id
+            var resultDictionary = cachedResult.ToDictionary(
+                kvp => CacheKeys.Item.ExtractItemIdFromItemKey(kvp.Key),
+                kvp => kvp.Value
+            );
+
+            if (cachedResult.Count < cacheKeys.Length)
+            {
+                // some cache misses
+                var remainedItemIds = itemIds.Except(cachedResult.Keys).ToArray();
+            
+                var itemNamesMissedFromCache = await _repository.GetItemsNameAsync(remainedItemIds);
+            
+                var newCacheKeys = new string[itemNamesMissedFromCache.Count];
+
+                foreach (var kvp in itemNamesMissedFromCache)
+                {
+                    if (!resultDictionary.TryAdd(kvp.Key, kvp.Value))
+                    {
+                        continue;
+                    }
+                }
+
+                // write to cache the missed names
+                await _cacheService.SetCacheValuesAsync(
+                    itemNamesMissedFromCache.ToDictionary(
+                        kvp => CacheKeys.Item.GetItemNameKey(kvp.Key),
+                        kvp => kvp.Value
+                    )
+                );
+            }
+
+            return resultDictionary;
+        }
+        else
+        {
+            var resultDictionary = await _repository.GetItemsNameAsync(itemIds);
+        
+            return resultDictionary;
+        }
+    }
+
+    public Task<Item[]> ListItemsAsync(string[] itemIds)
     {
         return _cacheService.GetEntitiesAsync(
             CacheKeys.Item.GetItemsKey(),
-            (args) => _repository.ListItemsAsync(),
+            itemIds,
+            (args) => _repository.ListItemsAsync(itemIds),
             convertEntityToCachedEntity: (Item entity) => _mapper.AdaptToType<Item, CachedItem>(entity),
             convertCachedEntityToEntity: (CachedItem cachedEntity) => _mapper.AdaptToType<CachedItem, Item>(cachedEntity),
             true,
             (Item item) => item.ItemId
         );
+    }
+
+    protected override async Task SetCacheAsync(object entity)
+    {
+        if (entity is Item item)
+        {
+            await _cacheService.SetCacheValueAsync(CacheKeys.Item.GetItemNameKey(item.ItemId), item.Name);
+        }
+
+        await base.SetCacheAsync(entity);
     }
 
     protected override string GetCacheKey(object entity)
@@ -49,6 +110,4 @@ public class CachedItemRepository : CachedRepository, ICachedItemRepository
 
         return CacheKeys.Item.GetItemKey(item.ItemId);
     }
-
-    public void Dispose() => _repository.Dispose();
 }

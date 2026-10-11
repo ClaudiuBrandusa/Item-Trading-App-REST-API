@@ -75,7 +75,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Get(expectedTradeOfferResult.TradeId);
+        var result = await sut.Get(expectedTradeOfferResult.TradeId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -114,7 +114,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Get("trade-id");
+        var result = await sut.Get("trade-id", TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -162,7 +162,12 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.List(expectedTradeItemIds, direction.ToString(), responded);
+        var result = await sut.List(
+            expectedTradeItemIds,
+            direction.ToString(),
+            TestContext.Current.CancellationToken,
+            responded
+        );
 
         // Assert
 
@@ -198,7 +203,12 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.List(Array.Empty<string>(), "invalid-direction", false);
+        var result = await sut.List(
+            Array.Empty<string>(),
+            "invalid-direction",
+            TestContext.Current.CancellationToken,
+            false
+        );
 
         // Assert
 
@@ -232,7 +242,12 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.List(Array.Empty<string>(), TradeDirection.All.ToString(), true);
+        var result = await sut.List(
+            Array.Empty<string>(),
+            TradeDirection.All.ToString(),
+            TestContext.Current.CancellationToken,
+            true
+        );
 
         // Assert
 
@@ -312,7 +327,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Offer(request);
+        var result = await sut.Offer(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -367,7 +382,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Offer(request);
+        var result = await sut.Offer(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -427,7 +442,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Accept(request);
+        var result = await sut.Accept(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -470,7 +485,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Accept(request);
+        var result = await sut.Accept(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -535,7 +550,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Reject(request);
+        var result = await sut.Reject(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -578,7 +593,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Reject(request);
+        var result = await sut.Reject(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -637,7 +652,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Cancel(request);
+        var result = await sut.Cancel(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -678,7 +693,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         // Act
 
-        var result = await sut.Cancel(request);
+        var result = await sut.Cancel(request, TestContext.Current.CancellationToken);
 
         // Assert
 

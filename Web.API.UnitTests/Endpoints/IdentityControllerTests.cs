@@ -70,7 +70,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.Register(request);
+        var result = await sut.Register(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -105,7 +105,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.Register(request);
+        var result = await sut.Register(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -138,7 +138,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.Login(request);
+        var result = await sut.Login(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -171,7 +171,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.Login(request);
+        var result = await sut.Login(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -204,7 +204,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.Refresh(request);
+        var result = await sut.Refresh(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -237,7 +237,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.Refresh(request);
+        var result = await sut.Refresh(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -266,7 +266,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.GetUsername(userId);
+        var result = await sut.GetUsername(userId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -294,7 +294,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.GetUsername(userId);
+        var result = await sut.GetUsername(userId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -315,7 +315,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.GetUsername(userId);
+        var result = await sut.GetUsername(userId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -355,7 +355,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.ListUsers(searchString);
+        var result = await sut.ListUsers(searchString, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -390,7 +390,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         // Act
 
-        var result = await sut.ListUsers(searchString);
+        var result = await sut.ListUsers(searchString, TestContext.Current.CancellationToken);
 
         // Assert
 

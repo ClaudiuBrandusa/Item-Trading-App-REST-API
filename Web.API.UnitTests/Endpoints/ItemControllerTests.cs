@@ -30,6 +30,8 @@ public class ItemMappingFixture
 
         var itemMappingConfig = new ItemMappingConfig();
         itemMappingConfig.Register(Mapper.Config);
+        var generalMappingConfig = new GeneralMappingConfig();
+        generalMappingConfig.Register(Mapper.Config);
     }
 }
 
@@ -70,7 +72,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Get(_expectedItemId);
+        var result = await sut.Get(_expectedItemId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -92,7 +94,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Get(string.Empty);
+        var result = await sut.Get(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -111,7 +113,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Get("invalid-id");
+        var result = await sut.Get("invalid-id", TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -142,7 +144,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.List(string.Empty);
+        var result = await sut.List(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -175,7 +177,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.List(expectedSearchstring);
+        var result = await sut.List(expectedSearchstring, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -204,7 +206,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.List(string.Empty);
+        var result = await sut.List(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -232,7 +234,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.GetTradesUsingTheItem(_expectedItemId);
+        var result = await sut.GetTradesUsingTheItem(_expectedItemId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -261,7 +263,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.GetTradesUsingTheItem(_expectedItemId);
+        var result = await sut.GetTradesUsingTheItem(_expectedItemId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -307,7 +309,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Create(request);
+        var result = await sut.Create(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -350,7 +352,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Create(request);
+        var result = await sut.Create(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -397,7 +399,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Update(request);
+        var result = await sut.Update(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -441,7 +443,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Update(request);
+        var result = await sut.Update(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -485,7 +487,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Delete(request);
+        var result = await sut.Delete(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -526,7 +528,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         // Act
 
-        var result = await sut.Delete(request);
+        var result = await sut.Delete(request, TestContext.Current.CancellationToken);
 
         // Assert
 

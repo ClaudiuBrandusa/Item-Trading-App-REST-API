@@ -3,11 +3,13 @@ using Application.Models.Trades;
 using CommonTestUtils.Extensions;
 using CommonTestUtils.Wrappers;
 using Domain.Entities.Identity;
+using Infrastructure.Data;
 using Item_Trading_App_Contracts.Base.Item;
 using Item_Trading_App_Contracts.Requests.Trade;
 using Item_Trading_App_Contracts.Responses.Item;
 using Item_Trading_App_Contracts.Responses.Trade;
 using Item_Trading_App_REST_API.Controllers;
+using Microsoft.Extensions.DependencyInjection;
 using Web.API.IntegrationTests.Common.Factories;
 using Web.API.IntegrationTests.Controllers.Common;
 using static CommonTestUtils.Assertions.HttpResultAssert;
@@ -29,9 +31,10 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     [Fact]
     public async Task Offer_CreateTradeOffer_ShouldCreateSuccessfully()
     {
-        // Arrange
+        // Arrange        
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -41,11 +44,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
@@ -63,7 +66,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Offer(createTradeOfferRequest);
+        var result = await controller.Offer(createTradeOfferRequest, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -75,8 +78,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Offer_TryCreateTradeOfferWithSameSenderAndReceiver_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
         var userId = user.Id;
 
@@ -87,11 +91,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var tradeItems = new ItemWithPrice[]
         {
@@ -106,7 +110,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Offer(createTradeOfferRequest);
+        var result = await controller.Offer(createTradeOfferRequest, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -120,8 +124,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Offer_TryCreateTradeOfferWithoutTradeItems_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -139,7 +144,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Offer(createTradeOfferRequest);
+        var result = await controller.Offer(createTradeOfferRequest, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -153,8 +158,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Get_CreateTradeOfferThenGetTradeById_ShouldGetSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -164,11 +170,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
@@ -178,11 +184,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         // Act
 
-        var result = await controller.Get(createdTrade!.TradeId);
+        var result = await controller.Get(createdTrade!.TradeId, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -194,8 +200,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Get_TryGetTradeThatDoesntExist_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -203,7 +210,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Get(string.Empty);
+        var result = await controller.Get(string.Empty, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -217,19 +224,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Accept_CreateTradeOfferThenAccept_ShouldAcceptSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Quartzite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -242,7 +250,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new AcceptTradeOfferRequest
         {
@@ -251,7 +259,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await receiverController.Accept(request);
+        var result = await receiverController.Accept(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -265,8 +273,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Accept_TryAcceptTradeThatDoesntExist_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -279,7 +288,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Accept(request);
+        var result = await controller.Accept(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -293,19 +302,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Accept_TryAcceptTradeThatWasAlreadyAccepted_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Limestone";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -318,7 +328,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new AcceptTradeOfferRequest
         {
@@ -327,9 +337,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await Scenarios.AcceptTrade(receiverController, createdTrade.TradeId);
+        await Scenarios.AcceptTrade(receiverController, createdTrade.TradeId, TestContext.Current.CancellationToken);
 
-        var result = await receiverController.Accept(request);
+        var result = await receiverController.Accept(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -343,19 +353,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Accept_TryAcceptTradeThatWasCanceled_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Basalt";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -368,7 +379,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var cancelRequest = new CancelTradeOfferRequest
         {
@@ -382,9 +393,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await Scenarios.CancelTrade(_factory, userClaims, createdTrade.TradeId);
+        await Scenarios.CancelTrade(_factory, userClaims, createdTrade.TradeId, TestContext.Current.CancellationToken);
 
-        var result = await receiverController.Accept(acceptRequest);
+        var result = await receiverController.Accept(acceptRequest, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -398,8 +409,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Accept_TryAcceptTheTradeAsSender_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -409,11 +421,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
@@ -423,7 +435,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new AcceptTradeOfferRequest
         {
@@ -432,7 +444,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Accept(request);
+        var result = await controller.Accept(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -446,19 +458,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Reject_CreateTradeOfferThenReject_ShouldRejectSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Calcite";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -471,7 +484,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new RejectTradeOfferRequest
         {
@@ -480,7 +493,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await receiverController.Reject(request);
+        var result = await receiverController.Reject(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -494,8 +507,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Reject_TryRejectTradeThatDoesntExist_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -508,7 +522,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Reject(request);
+        var result = await controller.Reject(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -522,19 +536,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Reject_TryRejectTradeThatWasAlreadyRejected_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Feldspar";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -547,7 +562,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new RejectTradeOfferRequest
         {
@@ -556,9 +571,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await Scenarios.RejectTrade(receiverController, createdTrade.TradeId);
+        await Scenarios.RejectTrade(receiverController, createdTrade.TradeId, TestContext.Current.CancellationToken);
 
-        var result = await receiverController.Reject(request);
+        var result = await receiverController.Reject(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -572,19 +587,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Reject_TryRejectTradeThatWasCanceled_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Gravel";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -597,7 +613,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var cancelRequest = new CancelTradeOfferRequest
         {
@@ -611,9 +627,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await Scenarios.CancelTrade(_factory, userClaims, createdTrade.TradeId);
+        await Scenarios.CancelTrade(_factory, userClaims, createdTrade.TradeId, TestContext.Current.CancellationToken);
 
-        var result = await receiverController.Reject(rejectRequest);
+        var result = await receiverController.Reject(rejectRequest, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -627,8 +643,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Reject_TryRejectTheTradeAsSender_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -638,11 +655,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
@@ -652,7 +669,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new RejectTradeOfferRequest
         {
@@ -661,7 +678,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Reject(request);
+        var result = await controller.Reject(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -675,8 +692,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Cancel_CreateTradeOfferThenCancel_ShouldCancelSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -686,11 +704,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var receiverUser = dbContext.GetUserByName(DefaultsSecondUserName)!;
 
@@ -700,7 +718,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new CancelTradeOfferRequest
         {
@@ -709,7 +727,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Cancel(request);
+        var result = await controller.Cancel(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -723,8 +741,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Cancel_TryCancelTradeThatDoesntExist_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -737,7 +756,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await controller.Cancel(request);
+        var result = await controller.Cancel(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -751,8 +770,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Cancel_TryCancelTradeThatWasAlreadyCanceled_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -762,11 +782,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -776,7 +796,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new CancelTradeOfferRequest
         {
@@ -785,9 +805,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await controller.Cancel(request);
+        await controller.Cancel(request, TestContext.Current.CancellationToken);
 
-        var result = await controller.Cancel(request);
+        var result = await controller.Cancel(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -801,8 +821,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Cancel_TryCancelTradeThatWasAnswered_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -812,11 +833,11 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -826,7 +847,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var acceptRequest = new AcceptTradeOfferRequest
         {
@@ -840,9 +861,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTrade.TradeId);
+        await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTrade.TradeId, TestContext.Current.CancellationToken);
 
-        var result = await controller.Cancel(cancelRequest);
+        var result = await controller.Cancel(cancelRequest, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -856,19 +877,20 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task Cancel_TryCancelTheTradeAsReceiver_ShouldFail()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         var itemName = "Gneiss";
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
 
@@ -881,7 +903,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems);
+        var createdTrade = await Scenarios.CreateTrade(_factory, userClaims, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
 
         var request = new CancelTradeOfferRequest
         {
@@ -890,7 +912,7 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         // Act
 
-        var result = await receiverController.Cancel(request);
+        var result = await receiverController.Cancel(request, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -907,7 +929,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
 
         var expectedTradeDirections = Enum.GetNames(typeof(TradeDirection));
         
-        using var dbContext = _factory.GetDatabaseContext();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+        
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
 
         using var controllerPack = CreateControllerPackWithUser(_factory, userClaims);
@@ -928,8 +952,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task List_CreateSomeTradesThenListThem_ShouldListSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
@@ -941,24 +966,24 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var tradeItems = new ItemWithPrice[]
         {
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
-        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems, TestContext.Current.CancellationToken);
 
         // Act
 
-        var result = await controller.List([createdItem.ItemId], TradeDirection.All.ToString());
+        var result = await controller.List([createdItem.ItemId], TradeDirection.All.ToString(), TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -978,8 +1003,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task List_CreateSomeTradesThenListOnlySentTrades_ShouldListSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
@@ -991,24 +1017,24 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var tradeItems = new ItemWithPrice[]
         {
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
-        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems, TestContext.Current.CancellationToken);
 
         // Act
 
-        var result = await controller.List([createdItem.ItemId], TradeDirection.Sent.ToString());
+        var result = await controller.List([createdItem.ItemId], TradeDirection.Sent.ToString(), TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -1025,8 +1051,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task List_CreateSomeTradesThenListOnlyReceivedTrades_ShouldListSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
@@ -1038,24 +1065,24 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var tradeItems = new ItemWithPrice[]
         {
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
-        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems, TestContext.Current.CancellationToken);
 
         // Act
 
-        var result = await controller.List([createdItem.ItemId], TradeDirection.Received.ToString());
+        var result = await controller.List([createdItem.ItemId], TradeDirection.Received.ToString(), TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -1072,8 +1099,9 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
     public async Task List_CreateSomeTradesAndRespondThemThenListThem_ShouldListSuccessfully()
     {
         // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         
-        using var dbContext = _factory.GetDatabaseContext();
         (var user, var userClaims) = dbContext.GetUserWithClaimsByName(DefaultFirstUserName);
         (var receiverUser, var receiverUserClaims) = dbContext.GetUserWithClaimsByName(DefaultsSecondUserName);
         var receiverUserId = receiverUser.Id;
@@ -1085,27 +1113,27 @@ public class TradeControllerTests : IClassFixture<TestAppFactory>
         var itemDescription = string.Empty;
         var itemQuantity = 10;
 
-        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription);
+        var createdItem = await Scenarios.CreateItem(_factory, itemName, itemDescription, TestContext.Current.CancellationToken);
         
         var itemId = createdItem.ItemId;
         
-        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity);
-        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity);
+        await Scenarios.AddItemToInventory(_factory, userClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
+        await Scenarios.AddItemToInventory(_factory, receiverUserClaims, itemId, itemQuantity, TestContext.Current.CancellationToken);
 
         var tradeItems = new ItemWithPrice[]
         {
             CreateTradeItem(createdItem, 50, itemQuantity)
         };
 
-        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems);
-        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems);
+        var createdTradeFromSender = await Scenarios.CreateTrade(controller, receiverUserId, tradeItems, TestContext.Current.CancellationToken);
+        var createdTradeFromReceiver = await Scenarios.CreateTrade(_factory, receiverUserClaims, user.Id, tradeItems, TestContext.Current.CancellationToken);
 
-        await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTradeFromSender.TradeId);
-        await Scenarios.AcceptTrade(controller, createdTradeFromReceiver.TradeId);
+        await Scenarios.AcceptTrade(_factory, receiverUserClaims, createdTradeFromSender.TradeId, TestContext.Current.CancellationToken);
+        await Scenarios.AcceptTrade(controller, createdTradeFromReceiver.TradeId, TestContext.Current.CancellationToken);
 
         // Act
 
-        var result = await controller.List([createdItem.ItemId], TradeDirection.All.ToString(), true);
+        var result = await controller.List([createdItem.ItemId], TradeDirection.All.ToString(), TestContext.Current.CancellationToken, true);
 
         // Assert
 

@@ -14,13 +14,13 @@ public class ItemsRepositoryTests
     private const string DEFAULT_ITEM_NAME = "DefaultItemName";
     private const string DEFAULT_ITEM_DESCRIPTION = "DefaultItemDescription";
 
-    private IDatabaseContextWrapper _contextWrapper;
+    private DatabaseContext _context;
 
     public ItemsRepositoryTests()
     {
-        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        _context = DatabaseUtils.GetDatabaseContext(Guid.NewGuid().ToString());
 
-        _sut = new ItemRepository(_contextWrapper);
+        _sut = new ItemRepository(_context);
     }
 
     [Fact(DisplayName = "Create a new item and return it")]
@@ -164,9 +164,7 @@ public class ItemsRepositoryTests
 
         // Act
 
-        var dbContext = GetDatabaseContext();
-
-        dbContext.Add(itemStub);
+        _context.Add(itemStub);
 
         int result = await _sut.SaveChangesAsync();
 
@@ -191,7 +189,7 @@ public class ItemsRepositoryTests
 
         // Act
 
-        var result = await _sut.ListItemsAsync();
+        var result = await _sut.ListItemsAsync([]);
 
         // Assert
 
@@ -215,20 +213,11 @@ public class ItemsRepositoryTests
 
         // Act
 
-        var result = await _sut.ListItemsAsync();
+        var result = await _sut.ListItemsAsync([]);
 
         // Assert
 
         Assert.NotNull(result);
         Assert.Equal(length, result.Length);
     }
-
-    #region Utils
-
-    private DatabaseContext GetDatabaseContext()
-    {
-        return _contextWrapper.ProvideDatabaseContext();
-    }
-
-    #endregion Utils
 }

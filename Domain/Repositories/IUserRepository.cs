@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Repositories;
 
-public interface IUserRepository : IRepository, IDisposable
+public interface IUserRepository : IRepository
 {
     /// <param name="userId"></param>
     /// <returns>The user with the given <paramref name="userId"/></returns>
@@ -16,6 +16,10 @@ public interface IUserRepository : IRepository, IDisposable
     /// <param name="userId"></param>
     /// <returns>The username of the user with the given <paramref name="userId"/></returns>
     Task<string> GetUsernameAsync(string userId);
+
+    /// <param name="userIds"></param>
+    /// <returns>The usernames of the users with the given <paramref name="userIds"/></returns>
+    Task<Dictionary<string, string>> GetUsernamesAsync(string[] userIds);
 
     /// <summary>
     /// Creates a new <paramref name="user"/> with the given input

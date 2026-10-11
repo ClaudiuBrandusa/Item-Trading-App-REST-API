@@ -2,7 +2,7 @@
 
 namespace Application.Repositories;
 
-public interface ICachedInventoryRepository : ICachedRepository, IDisposable
+public interface ICachedInventoryRepository : ICachedRepository
 {
     /// <summary>
     /// Retrieves the user's inventory for reading purposes
@@ -35,6 +35,12 @@ public interface ICachedInventoryRepository : ICachedRepository, IDisposable
     Task<bool> DropItemAsync(Inventory inventory, string itemId, int amount);
 
     /// <summary>
+    /// Drops the <paramref name="items"/> items from the user's inventory
+    /// </summary>
+    /// <returns>Operation result</returns>
+    Task<bool> DropItemAsync(Inventory inventory, (string itemId, int quantity)[] items);
+
+    /// <summary>
     /// Locks the amount <paramref name="quantity"/> of item with <paramref name="itemId"/> in the inventory of the user with <paramref name="userId"/>
     /// </summary>
     /// <returns>Operation result</returns>
@@ -51,6 +57,12 @@ public interface ICachedInventoryRepository : ICachedRepository, IDisposable
     /// </summary>
     /// <returns>Operation result</returns>
     Task<bool> UnlockItemAsync(Inventory inventory, string itemId, int quantity);
+
+    /// <summary>
+    /// Unlocks the <paramref name="items"/> from the inventory of the user
+    /// </summary>
+    /// <returns>Operation result</returns>
+    Task<bool> UnlockItemsAsync(Inventory inventory, (string itemId, int quantity)[] items);
 
     /// <returns>The amount of free item with <paramref name="itemId"/> from the inventory of the user with <paramref name="userId"/></returns>
     Task<int> GetAmountOfFreeItemAsync(string userId, string itemId);

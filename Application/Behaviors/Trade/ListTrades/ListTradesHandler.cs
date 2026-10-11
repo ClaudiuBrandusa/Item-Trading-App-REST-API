@@ -15,6 +15,6 @@ public class ListTradesHandler : IRequestHandler<ListTradesQuery, Result<TradeOf
 
     public Task<Result<TradeOffersResult>> Handle(ListTradesQuery request, CancellationToken cancellationToken)
     {
-        return _tradeService.GetTradeOffersAsync(request);
+        return _tradeService.GetTradeOffersAsync(request, cancellationToken);
     }
 }

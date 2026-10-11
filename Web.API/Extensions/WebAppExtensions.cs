@@ -5,6 +5,7 @@ using Infrastructure.Extensions;
 using System;
 using System.Threading.Tasks;
 using Item_Trading_App_REST_API.StartupServices.Common;
+using System.Threading;
 
 namespace Item_Trading_App_REST_API.Extensions;
 
@@ -27,7 +28,7 @@ public static class WebAppExtensions
         }
     }
 
-    public static async Task SeedDatabase(this WebApplication app)
+    public static async Task SeedDatabase(this WebApplication app, CancellationToken cancellationToken)
     {
         using (var scope = app.Services.CreateScope())
         {
@@ -35,7 +36,7 @@ public static class WebAppExtensions
             try
             {
                 var context = services.GetRequiredService<Infrastructure.Data.DatabaseContext>();
-                await context.SeedDatabase(services);
+                await context.SeedDatabase(services, cancellationToken);
             }
             catch (Exception ex)
             {

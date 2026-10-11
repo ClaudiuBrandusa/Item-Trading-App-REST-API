@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
-using Infrastructure.Services.DatabaseContextWrapper;
+using Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +9,7 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
 {
     private readonly UserManager<User> _userManager;
 
-    public RefreshTokenRepository(IDatabaseContextWrapper databaseContextWrapper, UserManager<User> userManager) : base(databaseContextWrapper)
+    public RefreshTokenRepository(DatabaseContext context, UserManager<User> userManager) : base(context)
     {
         _userManager = userManager;
     }
@@ -25,7 +25,7 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
 
     public Task<RefreshToken?> GetRefreshTokenAsync(string refreshTokenId)
     {
-        return context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshTokenId);
+        return _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshTokenId);
     }
 
     public Task<User?> GetUserAsync(string userId)
@@ -35,12 +35,12 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
 
     public Task<string[]> ListUserIdsAsync()
     {
-        return context.Users.Select(x => x.Id).ToArrayAsync();
+        return _context.Users.Select(x => x.Id).ToArrayAsync();
     }
 
     public Task<RefreshToken[]> ListRefreshTokensAsync(string userId)
     {
-        return context.RefreshTokens.Where(x => Equals(x.UserId, userId)).ToArrayAsync();
+        return _context.RefreshTokens.Where(x => Equals(x.UserId, userId)).ToArrayAsync();
     }
 
     public async Task<bool> DeleteRefreshTokenAsync(string refreshTokenId)
@@ -60,7 +60,7 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
 
     public async Task<RefreshToken?> GetLastRefreshTokenAsync(string userId, string jwtTokenId)
     {
-        var tmp = await context.RefreshTokens.AsNoTracking()
+        var tmp = await _context.RefreshTokens.AsNoTracking()
             .Where(x =>
                 Equals(x.UserId, userId) &&
                 x.Used == false &&
@@ -80,7 +80,7 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
 
     public Task<string[]> ListExpiredRefreshTokenIdsAsync()
     {
-        return context.RefreshTokens
+        return _context.RefreshTokens
             .Where(x => x.ExpiryDate < DateTime.UtcNow)
             .Select(x => x.Token)
             .ToArrayAsync();
@@ -88,7 +88,7 @@ public class RefreshTokenRepository : RepositoryBase, IRefreshTokenRepository
 
     public Task<string[]> ListUsedRefreshTokenIdsAsync()
     {
-        return context.RefreshTokens
+        return _context.RefreshTokens
             .Where(x => x.Used)
             .Select(x => x.Token)
             .ToArrayAsync();

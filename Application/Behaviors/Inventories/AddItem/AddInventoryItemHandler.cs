@@ -15,6 +15,6 @@ public class AddInventoryItemHandler : IRequestHandler<AddInventoryItemCommand, 
 
     public Task<Result<QuantifiedItemResult>> Handle(AddInventoryItemCommand request, CancellationToken cancellationToken)
     {
-        return _inventoryService.AddItemAsync(request);
+        return _inventoryService.AddItemAsync(request, cancellationToken);
     }
 }

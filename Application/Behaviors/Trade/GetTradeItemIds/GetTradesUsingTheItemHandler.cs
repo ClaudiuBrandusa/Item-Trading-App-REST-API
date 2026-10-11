@@ -14,6 +14,6 @@ public class GetTradesUsingTheItemHandler : IRequestHandler<GetTradesUsingTheIte
 
     public Task<Result<string[]>> Handle(GetTradesUsingTheItemQuery request, CancellationToken cancellationToken)
     {
-        return _tradeService.GetItemTradeIdsAsync(request);
+        return _tradeService.GetItemTradeIdsAsync(request, cancellationToken);
     }
 }

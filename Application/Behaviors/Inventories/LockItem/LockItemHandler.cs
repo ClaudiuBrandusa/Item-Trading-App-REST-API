@@ -15,6 +15,6 @@ public class LockItemHandler : IRequestHandler<LockItemCommand, Result<LockItemR
 
     public Task<Result<LockItemResult>> Handle(LockItemCommand request, CancellationToken cancellationToken)
     {
-        return _inventoryService.LockItemAsync(request);
+        return _inventoryService.LockItemAsync(request, cancellationToken);
     }
 }

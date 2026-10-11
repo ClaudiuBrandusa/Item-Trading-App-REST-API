@@ -60,6 +60,26 @@ public abstract class CachedRepository : ICachedRepository
         return true;
     }
 
+    public void DetachEntity<T>(T entity) where T : class
+    {
+        _repository.DetachEntity(entity);
+    }
+
+    public async Task<bool> StartTransactionAsync(CancellationToken cancellationToken)
+    {
+        return await _repository.StartTransactionAsync(cancellationToken);
+    }
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken)
+    {
+        await _repository.CommitTransactionAsync(cancellationToken);
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken)
+    {
+        await _repository.RollbackTransactionAsync(cancellationToken);
+    }
+
     public Task<int> SaveChangesAsync() => _repository.SaveChangesAsync();
 
     protected virtual Task SetCacheAsync(object entity)

@@ -17,7 +17,7 @@ using System.Security.Claims;
 
 namespace Application.Services.Identity;
 
-public class IdentityService : IIdentityService, IDisposable
+public class IdentityService : IIdentityService
 {
     private readonly IIdentityRepository _repository;
     private readonly JwtSettings _jwtSettings;
@@ -32,7 +32,7 @@ public class IdentityService : IIdentityService, IDisposable
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<Result<AuthenticationResult>> RegisterAsync(RegisterCommand model)
+    public async Task<Result<AuthenticationResult>> RegisterAsync(RegisterCommand model, CancellationToken cancellationToken)
     {
         var user = await _repository.GetUserByNameAsync(model.Username);
 
@@ -54,10 +54,10 @@ public class IdentityService : IIdentityService, IDisposable
         if (!createdUser.Succeeded)
             return Result<AuthenticationResult>.Failure(createdUser.Errors.Select(x => x.Description).FirstOrDefault()!);
 
-        return await GetToken(newUser.Id);
+        return await GetToken(newUser.Id, cancellationToken);
     }
 
-    public async Task<Result<AuthenticationResult>> LoginAsync(LoginCommand model)
+    public async Task<Result<AuthenticationResult>> LoginAsync(LoginCommand model, CancellationToken cancellationToken)
     {
         var user = await _repository.GetUserByNameAsync(model.Username);
 
@@ -69,10 +69,10 @@ public class IdentityService : IIdentityService, IDisposable
         if (!userMatchPassword)
             return Result<AuthenticationResult>.Failure("Username or password is wrong");
 
-        return await GetToken(user.Id);
+        return await GetToken(user.Id, cancellationToken);
     }
 
-    public async Task<Result<AuthenticationResult>> RefreshTokenAsync(RefreshTokenCommand model)
+    public async Task<Result<AuthenticationResult>> RefreshTokenAsync(RefreshTokenCommand model, CancellationToken cancellationToken)
     {
         var validatedToken = GetPrincipalFromToken(model.Token);
 
@@ -81,7 +81,7 @@ public class IdentityService : IIdentityService, IDisposable
 
         var jti = validatedToken.GetJwtId();
         
-        var storedRefreshTokenResult = await _refreshTokenService.GetRefreshTokenAsync(model.RefreshToken);
+        var storedRefreshTokenResult = await _refreshTokenService.GetRefreshTokenAsync(model.RefreshToken, cancellationToken);
 
         if (!storedRefreshTokenResult.IsSuccess)
             return Result<AuthenticationResult>.Failure("This refresh token does not exist");
@@ -107,10 +107,10 @@ public class IdentityService : IIdentityService, IDisposable
         if (user is null)
             return Result<AuthenticationResult>.Failure("User not found");
 
-        return await GetToken(user.Id);
+        return await GetToken(user.Id, cancellationToken);
     }
 
-    public async Task<Result<string>> GetUsername(GetUsernameQuery model)
+    public async Task<Result<string>> GetUsername(GetUsernameQuery model, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(model.UserId))
             return Result<string>.Failure("Invalid user id");
@@ -118,7 +118,17 @@ public class IdentityService : IIdentityService, IDisposable
         return Result<string>.Success(await _repository.GetUsernameAsync(model.UserId));
     }
 
-    public async Task<Result<UsersResult>> ListUsers(ListUsersQuery model)
+    public async Task<Result<Dictionary<string, string>>> GetUsernames(GetUsernamesQuery model, CancellationToken cancellationToken)
+    {
+        if (model.UserIds is null || !model.UserIds.Any())
+            return Result<Dictionary<string, string>>.Failure("Invalid user ids");
+    
+        var result = await _repository.GetUsernamesAsync(model.UserIds);
+
+        return Result<Dictionary<string, string>>.Success(result);
+    }
+
+    public async Task<Result<UsersResult>> ListUsers(ListUsersQuery model, CancellationToken cancellationToken)
     {
         var list = await _repository.ListUsersAsync(model.SearchString);
 
@@ -132,12 +142,6 @@ public class IdentityService : IIdentityService, IDisposable
         {
             UsersId = list
         });
-    }
-
-    public void Dispose()
-    {
-        _repository.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     private ClaimsPrincipal? GetPrincipalFromToken(string token)
@@ -167,7 +171,7 @@ public class IdentityService : IIdentityService, IDisposable
     private static bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken) =>
         validatedToken is JwtSecurityToken jwtSecurityToken && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
 
-    private async Task<Result<AuthenticationResult>> GetToken(string userId)
+    private async Task<Result<AuthenticationResult>> GetToken(string userId, CancellationToken cancellationToken)
     {
         var user = await _repository.GetUserByIdAsync(userId);
 
@@ -182,7 +186,7 @@ public class IdentityService : IIdentityService, IDisposable
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
 
-        var refreshTokenResult = await GetRefreshToken(userId, token.Id);
+        var refreshTokenResult = await GetRefreshToken(userId, token.Id, cancellationToken);
 
         if (!refreshTokenResult.IsSuccess)
             return Result<AuthenticationResult>.Failure("Something went wrong");
@@ -214,13 +218,13 @@ public class IdentityService : IIdentityService, IDisposable
         return JwtUtils.CreateSecurityTokenDescriptor(claims, expirationTime, signingCredentials);
     }
 
-    private async Task<Result<RefreshTokenResult>> GetRefreshToken(string userId, string jti)
+    private async Task<Result<RefreshTokenResult>> GetRefreshToken(string userId, string jti, CancellationToken cancellationToken)
     {
-        var refreshToken = await _refreshTokenService.GetRecentRefreshTokenAsync(userId, jti);
+        var refreshToken = await _refreshTokenService.GetRecentRefreshTokenAsync(userId, jti, cancellationToken);
 
         if (refreshToken is not null && refreshToken.IsSuccess)
             return refreshToken;
 
-        return await _refreshTokenService.GenerateRefreshTokenAsync(userId, jti);
+        return await _refreshTokenService.GenerateRefreshTokenAsync(userId, jti, cancellationToken);
     }
 }

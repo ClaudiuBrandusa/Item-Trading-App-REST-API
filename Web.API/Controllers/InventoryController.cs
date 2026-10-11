@@ -14,6 +14,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Item_Trading_App_REST_API.Controllers;
@@ -29,33 +30,33 @@ public class InventoryController : BaseController
     }
 
     [HttpPut(Endpoints.Inventory.Add)]
-    public async Task<IActionResult> Add([FromBody] AddItemRequest request)
+    public async Task<IActionResult> Add([FromBody] AddItemRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<AddItemRequest, AddInventoryItemCommand>(request, (nameof(AddInventoryItemCommand.UserId), UserId), (nameof(AddInventoryItemCommand.Notify), true));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<QuantifiedItemResult, AddItemSuccessResponse, AddItemFailedResponse>(result);
     }
 
     [HttpPost(Endpoints.Inventory.Drop)]
-    public async Task<IActionResult> Drop([FromBody] DropItemRequest request)
+    public async Task<IActionResult> Drop([FromBody] DropItemRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
             return BadRequest(AdaptToType<ModelStateDictionary, FailedResponse>(ModelState));
 
         var model = AdaptToType<DropItemRequest, DropInventoryItemCommand>(request, (nameof(DropInventoryItemCommand.UserId), UserId), (nameof(DropInventoryItemCommand.Notify), true));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<QuantifiedItemResult, DropItemSuccessResponse, DropItemFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.Get)]
-    public async Task<IActionResult> Get(string itemId)
+    public async Task<IActionResult> Get(string itemId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(itemId))
             return BadRequest(new FailedResponse
@@ -65,27 +66,27 @@ public class InventoryController : BaseController
 
         var model = AdaptToType<string, GetInventoryItemQuery>(itemId, (nameof(GetInventoryItemQuery.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<QuantifiedItemResult, GetItemSuccessResponse, GetItemFailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.List)]
-    public async Task<IActionResult> List([FromQuery] string searchString)
+    public async Task<IActionResult> List([FromQuery] string searchString, CancellationToken cancellationToken)
     {
         var model = AdaptToType<string, ListInventoryItemsQuery>(searchString, (nameof(ListInventoryItemsQuery.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<ItemsResult, ListItemsSuccessResponse, FailedResponse>(result);
     }
 
     [HttpGet(Endpoints.Inventory.GetLockedAmount)]
-    public async Task<IActionResult> GetLockedAmount(string itemId)
+    public async Task<IActionResult> GetLockedAmount(string itemId, CancellationToken cancellationToken)
     {
         var model = AdaptToType<string, GetInventoryItemLockedAmountQuery>(itemId, (nameof(GetInventoryItemLockedAmountQuery.UserId), UserId));
 
-        var result = await _mediator.Send(model);
+        var result = await _mediator.Send(model, cancellationToken);
 
         return MapResult<LockedItemAmountResult, GetLockedAmountSuccessResponse, GetLockedAmountFailedResponse>(result);
     }

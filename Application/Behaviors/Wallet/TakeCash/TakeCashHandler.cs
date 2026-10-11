@@ -14,6 +14,6 @@ public class TakeCashHandler : IRequestHandler<TakeCashCommand, bool>
 
     public Task<bool> Handle(TakeCashCommand request, CancellationToken cancellationToken)
     {
-        return _walletService.TakeCashAsync(request);
+        return _walletService.TakeCashAsync(request, cancellationToken);
     }
 }

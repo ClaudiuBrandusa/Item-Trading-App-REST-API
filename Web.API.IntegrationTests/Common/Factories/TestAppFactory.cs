@@ -110,7 +110,11 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
                     .ConfigureWarnings(x => x.Ignore(SqlServerEventId.SavepointsDisabledBecauseOfMARS));
                 
                 options.EnableSensitiveDataLogging(true);
-            });
+            }, lifetime: ServiceLifetime.Scoped);
+            services.AddDbContext<DatabaseContext>(
+                contextLifetime: ServiceLifetime.Scoped,
+                optionsLifetime: ServiceLifetime.Scoped
+            );
         }).ConfigureAppConfiguration((context, builder) =>
         {
             var overrides = new Dictionary<string, string?>()
@@ -138,7 +142,9 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public DatabaseContext GetDatabaseContext()
     {
-        var dbContextFactory = Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
-        return dbContextFactory.CreateDbContext();
+        using var scope = Services.CreateScope();
+        return Services.GetRequiredService<DatabaseContext>();
+        // var dbContextFactory = Services.GetRequiredService<IDbContextFactory<DatabaseContext>>();
+        // return dbContextFactory.CreateDbContext();
     }
 }

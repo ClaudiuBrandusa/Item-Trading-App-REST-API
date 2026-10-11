@@ -1,6 +1,7 @@
 ﻿using Application.Utils;
 using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
+using Infrastructure.Data;
 using Infrastructure.IntegrationTests.Common.Fixtures;
 using Infrastructure.IntegrationTests.Utils;
 using Infrastructure.Repositories.Identity;
@@ -22,9 +23,9 @@ public class RefreshTokenTests : IClassFixture<DatabaseFixture>
 
     public RefreshTokenTests(DatabaseFixture fixture)
     {
-        var dbContextWrapper = fixture.GetService<IDatabaseContextWrapper>();
+        var dbContext = fixture.GetService<DatabaseContext>();
         var userManager = fixture.GetService<UserManager<User>>();
-        _repository = new RefreshTokenRepository(dbContextWrapper, userManager);
+        _repository = new RefreshTokenRepository(dbContext, userManager);
         _serviceProvider = fixture.ServiceProvider!;
     }
 
@@ -109,10 +110,10 @@ public class RefreshTokenTests : IClassFixture<DatabaseFixture>
         // Arrange
 
         var dbFixture = await DatabaseFixture.BuildDatabaseFixture();
-        var dbContextWrapper = dbFixture.GetService<IDatabaseContextWrapper>();
+        var dbContext = dbFixture.GetService<DatabaseContext>();
         var userManager = dbFixture.GetService<UserManager<User>>();
         var serviceProvider = dbFixture.ServiceProvider!;
-        var repository = new RefreshTokenRepository(dbContextWrapper, userManager);
+        var repository = new RefreshTokenRepository(dbContext, userManager);
 
         var users = await TestingScenarios.CreateUsers(serviceProvider, DEFAULT_USER_NAME, 3, 3);
         var expectedUserIds = users.Select(x => x.Id).ToArray();

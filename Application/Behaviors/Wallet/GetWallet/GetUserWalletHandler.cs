@@ -15,6 +15,6 @@ public class GetUserWalletHandler : IRequestHandler<GetUserWalletQuery, Result<W
 
     public Task<Result<WalletResult>> Handle(GetUserWalletQuery request, CancellationToken cancellationToken)
     {
-        return _walletService.GetWalletAsync(request);
+        return _walletService.GetWalletAsync(request, cancellationToken);
     }
 }

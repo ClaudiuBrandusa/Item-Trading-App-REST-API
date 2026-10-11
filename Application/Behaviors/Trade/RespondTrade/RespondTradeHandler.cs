@@ -16,8 +16,8 @@ public class RespondTradeHandler : IRequestHandler<RespondTradeCommand, Result<T
     public Task<Result<TradeOfferResult>> Handle(RespondTradeCommand request, CancellationToken cancellationToken)
     {
         if (request.Response)
-            return _tradeService.AcceptTradeOfferAsync(request);
+            return _tradeService.AcceptTradeOfferAsync(request, cancellationToken);
         else
-            return _tradeService.RejectTradeOfferAsync(request);
+            return _tradeService.RejectTradeOfferAsync(request, cancellationToken);
     }
 }

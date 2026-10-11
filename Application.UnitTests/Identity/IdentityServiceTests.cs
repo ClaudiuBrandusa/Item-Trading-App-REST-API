@@ -44,7 +44,7 @@ public class IdentityServiceTests
 
         #region MediatorMocks
 
-        refreshTokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(It.IsAny<string>(), It.IsAny<string>()))
+        refreshTokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string userId, string jti) =>
             {
                 var refreshToken = new RefreshToken(jti, userId, jwtSettings.RefreshTokenLifetime);
@@ -63,7 +63,7 @@ public class IdentityServiceTests
                 });
             });
 
-        refreshTokenServiceMock.Setup(repo => repo.GetRefreshTokenAsync(It.IsAny<string>()))
+        refreshTokenServiceMock.Setup(repo => repo.GetRefreshTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string refreshTokenId) =>
             {
                 var refreshToken = refreshTokens.FirstOrDefault(x => x.Token == refreshTokenId);
@@ -153,7 +153,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.RegisterAsync(commandStub);
+        var result = await _sut.RegisterAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -181,7 +181,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.RegisterAsync(commandStub);
+        var result = await _sut.RegisterAsync(commandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -206,13 +206,13 @@ public class IdentityServiceTests
 
         // Act
 
-        await _sut.RegisterAsync(commandStub);
+        await _sut.RegisterAsync(commandStub, TestContext.Current.CancellationToken);
 
         var result = await _sut.LoginAsync(new LoginCommand
         {
             Username = userName,
             Password = password
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -240,13 +240,13 @@ public class IdentityServiceTests
 
         // Act
 
-        await _sut.RegisterAsync(commandStub);
+        await _sut.RegisterAsync(commandStub, TestContext.Current.CancellationToken);
 
         var result = await _sut.LoginAsync(new LoginCommand
         {
             Username = userName,
             Password = password
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -268,7 +268,7 @@ public class IdentityServiceTests
             Password = password
         };
 
-        var registerResult = await _sut.RegisterAsync(registerCommandStub);
+        var registerResult = await _sut.RegisterAsync(registerCommandStub, TestContext.Current.CancellationToken);
 
         var refreshTokenCommandStub = new RefreshTokenCommand
         {
@@ -278,7 +278,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub);
+        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -304,7 +304,7 @@ public class IdentityServiceTests
             Password = password
         };
 
-        var registerResult = await _sut.RegisterAsync(registerCommandStub);
+        var registerResult = await _sut.RegisterAsync(registerCommandStub, TestContext.Current.CancellationToken);
 
         var token = string.Empty;
         var refreshToken = string.Empty;
@@ -323,7 +323,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub);
+        var result = await _sut.RefreshTokenAsync(refreshTokenCommandStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -345,7 +345,7 @@ public class IdentityServiceTests
             Password = password
         };
 
-        await _sut.RegisterAsync(registerCommandStub);
+        await _sut.RegisterAsync(registerCommandStub, TestContext.Current.CancellationToken);
 
         var userId = GetUserByName(userName)?.Id ?? string.Empty;
 
@@ -353,7 +353,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.GetUsername(usernameQueryStub);
+        var result = await _sut.GetUsername(usernameQueryStub, TestContext.Current.CancellationToken);
 
         // Assert
         
@@ -372,7 +372,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.GetUsername(usernameQueryStub);
+        var result = await _sut.GetUsername(usernameQueryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -396,7 +396,7 @@ public class IdentityServiceTests
                 Username = usernameFormula(i),
                 Email = "Test@a.com",
                 Password = password
-            });
+            }, TestContext.Current.CancellationToken);
         }
 
         string userId = GetUserByName(usernameFormula(0))?.Id ?? string.Empty;
@@ -409,7 +409,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.ListUsers(listUsersQueryStub);
+        var result = await _sut.ListUsers(listUsersQueryStub, TestContext.Current.CancellationToken);
 
         // Assert
 
@@ -434,7 +434,7 @@ public class IdentityServiceTests
                 Username = usernameFormula(i),
                 Email = "Test@a.com",
                 Password = password
-            });
+            }, TestContext.Current.CancellationToken);
 
         string userId = GetUserByName(usernameFormula(0))?.Id ?? string.Empty;
 
@@ -446,7 +446,7 @@ public class IdentityServiceTests
 
         // Act
 
-        var result = await _sut.ListUsers(listUsersQueryStub);
+        var result = await _sut.ListUsers(listUsersQueryStub, TestContext.Current.CancellationToken);
 
         // Assert
 

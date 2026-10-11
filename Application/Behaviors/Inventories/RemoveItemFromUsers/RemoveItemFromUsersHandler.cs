@@ -14,6 +14,6 @@ public class RemoveItemFromUsersHandler : IRequestHandler<RemoveItemFromUsersCom
 
     public Task Handle(RemoveItemFromUsersCommand request, CancellationToken cancellationToken)
     {
-        return _inventoryService.RemoveItemCacheAsync(request);
+        return _inventoryService.RemoveItemCacheAsync(request, cancellationToken);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
+using Infrastructure.Data;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ public class IdentityRepository : RepositoryBase, IIdentityRepository
 {
     private readonly UserManager<User> _userManager;
 
-    public IdentityRepository(IDatabaseContextWrapper databaseContextWrapper, UserManager<User> userManager) : base(databaseContextWrapper)
+    public IdentityRepository(DatabaseContext context, IDatabaseContextWrapper databaseContextWrapper, UserManager<User> userManager) : base(context)
     {
         _userManager = userManager;
     }
@@ -27,22 +28,29 @@ public class IdentityRepository : RepositoryBase, IIdentityRepository
 
     public async Task<string> GetUsernameAsync(string userId)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var user = await dbContext.Users.FindAsync(userId);
+        var user = await _context.Users.FindAsync(userId);
 
         if (user is null)
             return "";
 
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
-
         return user.UserName ?? string.Empty;
+    }
+
+    public async Task<Dictionary<string, string>> GetUsernamesAsync(string[] userIds)
+    {
+        var rows = await _context.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.UserName })
+            .ToListAsync();
+
+        return rows.ToDictionary(u => u.Id, u => u.UserName!);
     }
 
     public async Task<IdentityResult> CreateUserAsync(User user, string password)
     {
         var createdUser = await _userManager.CreateAsync(user, password);
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         return createdUser;
     }
 
@@ -63,18 +71,18 @@ public class IdentityRepository : RepositoryBase, IIdentityRepository
 
     public Task<RefreshToken?> GetRefreshTokenAsync(string refreshTokenId)
     {
-        return context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshTokenId);
+        return _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshTokenId);
     }
 
     public Task<List<string>> ListUsersAsync(string searchString)
     {
         return string.IsNullOrEmpty(searchString) ?
-            context.Users
+            _context.Users
                 .AsNoTracking()
                 .Select(u => u.Id)
                 .ToListAsync()
                 :
-            context.Users
+            _context.Users
                 .AsNoTracking()
                 .Where(u => u.UserName!.StartsWith(searchString))
                 .Select(u => u.Id)

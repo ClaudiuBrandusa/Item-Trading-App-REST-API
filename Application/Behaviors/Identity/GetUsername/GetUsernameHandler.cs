@@ -14,6 +14,6 @@ public class GetUsernameHandler : IRequestHandler<GetUsernameQuery, Result<strin
 
     public Task<Result<string>> Handle(GetUsernameQuery request, CancellationToken cancellationToken)
     {
-        return _identityService.GetUsername(request);
+        return _identityService.GetUsername(request, cancellationToken);
     }
 }

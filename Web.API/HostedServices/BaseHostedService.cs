@@ -20,7 +20,7 @@ public abstract class BaseHostedService : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        timer = new Timer(async x => { await ExecuteAsync(); },
+        timer = new Timer(async x => { await ExecuteAsync(cancellationToken); },
             null,
             TimeSpan.Zero,
             step);
@@ -40,7 +40,7 @@ public abstract class BaseHostedService : IHostedService
         timer?.Dispose();
     }
 
-    protected abstract Task ExecuteAsync();
+    protected abstract Task ExecuteAsync(CancellationToken cancellationToken);
 
     protected void Log(string message)
     {

@@ -12,25 +12,30 @@ public interface IIdentityService
     /// <summary>
     /// Registers the user only if the input data is valid
     /// </summary>
-    Task<Result<AuthenticationResult>> RegisterAsync(RegisterCommand model);
+    Task<Result<AuthenticationResult>> RegisterAsync(RegisterCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Connects the user if the input data matches with a registered account
     /// </summary>
-    Task<Result<AuthenticationResult>> LoginAsync(LoginCommand model);
+    Task<Result<AuthenticationResult>> LoginAsync(LoginCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Refreshes the user's token only if it has expired
     /// </summary>
-    Task<Result<AuthenticationResult>> RefreshTokenAsync(RefreshTokenCommand model);
+    Task<Result<AuthenticationResult>> RefreshTokenAsync(RefreshTokenCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the username with the given user id
     /// </summary>
-    Task<Result<string>> GetUsername(GetUsernameQuery model);
+    Task<Result<string>> GetUsername(GetUsernameQuery model, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns the usernames as a batch operation for more efficient lookup
+    /// </summary>
+    Task<Result<Dictionary<string, string>>> GetUsernames(GetUsernamesQuery model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list with all of the users besides the user requesting the service
     /// </summary>
-    Task<Result<UsersResult>> ListUsers(ListUsersQuery model);
+    Task<Result<UsersResult>> ListUsers(ListUsersQuery model, CancellationToken cancellationToken);
 }

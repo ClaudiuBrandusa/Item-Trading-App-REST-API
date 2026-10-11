@@ -39,7 +39,7 @@ public class ProgramTests
             }.AsReadOnly())
             .Build();
         
-        await Task.WhenAll(sqlContainer.StartAsync(), redisContainer.StartAsync());
+        await Task.WhenAll(sqlContainer.StartAsync(TestContext.Current.CancellationToken), redisContainer.StartAsync(TestContext.Current.CancellationToken));
         
         var disposables = new List<IDisposable>();
 
@@ -83,12 +83,12 @@ public class ProgramTests
 
         if (sqlContainer is not null)
         {
-            await sqlContainer.StopAsync();
+            await sqlContainer.StopAsync(TestContext.Current.CancellationToken);
         }
 
         if (redisContainer is not null)
         {
-            await redisContainer.StopAsync();
+            await redisContainer.StopAsync(TestContext.Current.CancellationToken);
         }
 
         instance.Dispose();
@@ -100,15 +100,15 @@ public class ProgramTests
         var serviceProviderType = serviceProvider.GetType();
 
         var callSiteFactoryType = serviceProviderType.GetProperty("CallSiteFactory", BindingFlags.NonPublic | BindingFlags.Instance);
-        var callSiteFactory = callSiteFactoryType.GetValue(serviceProvider);
+        var callSiteFactory = callSiteFactoryType!.GetValue(serviceProvider);
 
-        var descriptorsType = callSiteFactory.GetType().GetProperty("Descriptors", BindingFlags.NonPublic | BindingFlags.Instance);
-        var descriptors = descriptorsType.GetValue(callSiteFactory) as IEnumerable<ServiceDescriptor>;
+        var descriptorsType = callSiteFactory!.GetType().GetProperty("Descriptors", BindingFlags.NonPublic | BindingFlags.Instance);
+        var descriptors = descriptorsType!.GetValue(callSiteFactory) as IEnumerable<ServiceDescriptor>;
     
-        return descriptors;
+        return descriptors!;
     }
 
-    private static Dictionary<Type, List<Type>> ListExpectedDependencies(Assembly assembly, Dictionary<Type, List<Type>> interfacesAndImplementations, List<Type> excludedTypes = null, string[]? assemblySubstrings = null)
+    private static Dictionary<Type, List<Type>> ListExpectedDependencies(Assembly assembly, Dictionary<Type, List<Type>> interfacesAndImplementations, List<Type> excludedTypes, string[]? assemblySubstrings = null)
     {
         if (excludedTypes is null)
         {
@@ -121,7 +121,7 @@ public class ProgramTests
         if (assemblySubstrings is not null)
             foreach (var assemblySubstring in assemblySubstrings)
             {
-                query = query.Where(x => x.AssemblyQualifiedName.Contains(assemblySubstring));
+                query = query.Where(x => x.AssemblyQualifiedName!.Contains(assemblySubstring));
             }
 
         var interfaces = query.ToArray();

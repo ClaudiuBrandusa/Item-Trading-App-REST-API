@@ -1,6 +1,7 @@
 ﻿using CommonTestUtils.MockedServices;
 using Domain.Aggregates.Inventories;
 using Domain.Repositories.Inventories;
+using Infrastructure.Data;
 using Infrastructure.Repositories.Inventories;
 using Infrastructure.Services.DatabaseContextWrapper;
 
@@ -12,13 +13,15 @@ public class InventoryRepositoryTests
     private readonly string DEFAULT_USER_ID = Guid.NewGuid().ToString();
     private readonly string DEFAULT_ITEM_ID = Guid.NewGuid().ToString();
 
-    private IDatabaseContextWrapper _contextWrapper;
+    private DatabaseContext _context;
 
     public InventoryRepositoryTests()
     {
-        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
+        var guid = Guid.NewGuid().ToString();
 
-        _sut = new InventoryRepository(_contextWrapper);
+        _context = DatabaseUtils.GetDatabaseContext(guid);
+
+        _sut = new InventoryRepository(_context);
     }
 
     [Fact(DisplayName = "Create several inventory items then list them")]
@@ -99,15 +102,13 @@ public class InventoryRepositoryTests
 
         inventory.DropItem(itemToDrop.ItemId, quantityToDrop);
         
-        var dropItemResult = await _sut.DropItemAsync(inventory, itemToDrop.ItemId, quantityToDrop);
-
-        
+        var dropItemResult = await _sut.DropItemAsync(inventory);
 
         // Assert
 
         Assert.NotNull(inventoryResult);
-
         Assert.Equal(count, inventoryResult.OwnedItems.Count);
+        Assert.True(dropItemResult);
     }
 
     /*[Fact(DisplayName = "Create an item then lock a given amount")]

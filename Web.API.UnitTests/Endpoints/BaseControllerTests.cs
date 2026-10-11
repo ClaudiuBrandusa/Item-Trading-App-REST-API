@@ -77,6 +77,7 @@ public class BaseControllerTests
         Assert.Throws<NullReferenceException>(action);
     }
 
+    [Fact]
     public void AdaptToType_AdaptFromInputTypeToSpecifiedType_ShouldAdaptToSpecifiedType()
     {
         // Arrange
@@ -417,20 +418,20 @@ public class BaseControllerTests
             return UserId;
         }
 
-        public R AdaptToType<T, R>(T request, params (string, object)[] parameters) =>
+        public new R AdaptToType<T, R>(T request, params (string, object)[] parameters) =>
             base.AdaptToType<T,R>(request, parameters);
 
-        public ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result)
+        public new ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result)
             where SucceededType : class
             where FailedType : FailedResponse
             => base.MapResult<InputType, SucceededType, FailedType>(result);
 
-        public ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, Func<InputType, SucceededType> conversionMethod)
+        public new ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, Func<InputType, SucceededType> conversionMethod)
             where SucceededType : class
             where FailedType : FailedResponse
             => base.MapResult<InputType, SucceededType, FailedType>(result, conversionMethod);
 
-        public ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, params (string, object)[] parameters)
+        public new ObjectResult MapResult<InputType, SucceededType, FailedType>(Result<InputType> result, params (string, object)[] parameters)
             where SucceededType : class
             where FailedType : class
             => base.MapResult<InputType, SucceededType, FailedType>(result, parameters);
@@ -445,6 +446,6 @@ public class BaseControllerTests
     {
         public int Parameter { get; set; }
 
-        public string SecondParameter { get; set; }
+        public string? SecondParameter { get; set; }
     }
 }

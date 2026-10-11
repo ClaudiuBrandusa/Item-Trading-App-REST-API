@@ -136,8 +136,6 @@ public class CachedTradeRepository : CachedRepository, ICachedTradeRepository
         return await _repository.MoveTradeContentToHistory(tradeId);
     }
 
-    public void Dispose() => _repository.Dispose();
-
     protected override string GetCacheKey(object entity)
     {
         if (entity is not Trade trade) return string.Empty;

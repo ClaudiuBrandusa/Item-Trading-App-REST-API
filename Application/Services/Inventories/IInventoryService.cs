@@ -20,55 +20,70 @@ public interface IInventoryService
     /// <summary>
     /// Tells if the user has the quantity of the item
     /// </summary>
-    Task<bool> HasItemAsync(HasItemQuantityQuery model);
+    Task<bool> HasItemAsync(HasItemQuantityQuery model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Adds the quantity of the item to the user
     /// </summary>
-    Task<Result<QuantifiedItemResult>> AddItemAsync(AddInventoryItemCommand model);
+    Task<Result<QuantifiedItemResult>> AddItemAsync(AddInventoryItemCommand model, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds the quantity of the items to the user
+    /// </summary>
+    Task<Result<QuantifiedItemResult[]>> AddItemsAsync(AddInventoryItemsCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Drops the quantity of the item from the inventory of the user
     /// </summary>
-    Task<Result<QuantifiedItemResult>> DropItemAsync(DropInventoryItemCommand model);
+    Task<Result<QuantifiedItemResult>> DropItemAsync(DropInventoryItemCommand model, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Drops the quantity of the items from the inventory of the user
+    /// </summary>
+    Task<Result<QuantifiedItemResult[]>> DropItemsAsync(DropInventoryItemsCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the quantity of the item of the given user
     /// </summary>
-    Task<Result<QuantifiedItemResult>> GetItemAsync(GetInventoryItemQuery model);
+    Task<Result<QuantifiedItemResult>> GetItemAsync(GetInventoryItemQuery model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a list of all items from the user's inventory
     /// </summary>
-    Task<Result<ItemsResult>> ListItemsAsync(ListInventoryItemsQuery model);
+    Task<Result<ItemsResult>> ListItemsAsync(ListInventoryItemsQuery model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Locks a given quantity of the item from the user's inventory
     /// </summary>
-    Task<Result<LockItemResult>> LockItemAsync(LockItemCommand model);
+    Task<Result<LockItemResult>> LockItemAsync(LockItemCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Locks a given set of items from the user's inventory
     /// </summary>
-    Task<Result<LockItemsResult>> LockItemsAsync(LockItemsCommand model);
+    Task<Result<LockItemsResult>> LockItemsAsync(LockItemsCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Unlocks a given quantity of the item from the user's inventory
     /// </summary>
-    Task<Result<LockItemResult>> UnlockItemAsync(UnlockItemCommand model);
+    Task<Result<LockItemResult>> UnlockItemAsync(UnlockItemCommand model, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Unlocks a given quantity of the items from the user's inventory
+    /// </summary>
+    Task<Result<LockItemResult[]>> UnlockItemsAsync(UnlockItemsCommand model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the amount of the item with the given itemId for the user with the given id
     /// </summary>
-    Task<Result<LockedItemAmountResult>> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model);
+    Task<Result<LockedItemAmountResult>> GetLockedAmountAsync(GetInventoryItemLockedAmountQuery model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the user ids that own the item with the given itemId
     /// </summary>
-    Task<Result<UsersOwningItem>> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model);
+    Task<Result<UsersOwningItem>> GetUsersOwningThisItemAsync(GetUserIdsOwningItemQuery model, CancellationToken cancellationToken);
 
     /// <summary>
     /// Sends the notifications and clears the cached used by the deleted item
     /// </summary>
-    Task RemoveItemCacheAsync(RemoveItemFromUsersCommand model);
+    Task RemoveItemCacheAsync(RemoveItemFromUsersCommand model, CancellationToken cancellationToken);
 }

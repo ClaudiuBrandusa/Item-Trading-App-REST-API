@@ -1,39 +1,31 @@
 ﻿using Domain.Repositories;
 using Infrastructure.Data;
-using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace Infrastructure.Repositories;
 
-public abstract class RepositoryBase : IRepository, IDisposable
+public abstract class RepositoryBase : IRepository
 {
-    protected IDatabaseContextWrapper DatabaseContextWrapper { get; init; }
-    protected readonly DatabaseContext context;
+    protected readonly DatabaseContext _context;
 
-    public RepositoryBase(IDatabaseContextWrapper databaseContextWrapper)
+    public RepositoryBase(DatabaseContext context)
     {
-        DatabaseContextWrapper = databaseContextWrapper;
-        context = databaseContextWrapper.ProvideDatabaseContext();
+        _context = context;
     }
 
     public async Task<bool> AddEntityAsync<T>(T entity) where T : class
     {
-        var context = DatabaseContextWrapper.ProvideDatabaseContext();
         try
         {
             if (!IsEntityValid(entity)) return false;
-            await context.AddAsync(entity);
-            var added = await context.SaveChangesAsync();
-            context.Entry(entity).State = EntityState.Detached;
+            await _context.AddAsync(entity);
+            var added = await _context.SaveChangesAsync();
+            _context.Entry(entity).State = EntityState.Detached;
             return added > 0;
         }
         catch (InvalidOperationException)
         {
-        }
-        finally
-        {
-            DatabaseContextWrapper.DisposeDatabaseContext(context);
         }
 
         return false;
@@ -44,9 +36,9 @@ public abstract class RepositoryBase : IRepository, IDisposable
         try
         {
             if (!IsEntityValid(entity)) return false;
-            context.Update(entity);
-            var updated = await context.SaveChangesAsync();
-            context.Entry(entity).State = EntityState.Detached;
+            _context.Update(entity);
+            var updated = await _context.SaveChangesAsync();
+            _context.Entry(entity).State = EntityState.Detached;
             return updated > 0;
         }
         catch (DbUpdateException)
@@ -60,9 +52,9 @@ public abstract class RepositoryBase : IRepository, IDisposable
     {
         try
         {
-            context.Remove(entity);
-            var removed = await context.SaveChangesAsync();
-            context.Entry(entity).State = EntityState.Detached;
+            _context.Remove(entity);
+            var removed = await _context.SaveChangesAsync();
+            _context.Entry(entity).State = EntityState.Detached;
             return removed > 0;
         }
         catch (DbUpdateConcurrencyException)
@@ -84,15 +76,9 @@ public abstract class RepositoryBase : IRepository, IDisposable
         }
     }
 
-    public Task<int> SaveChangesAsync()
+    public void DetachEntity<T>(T entity) where T : class
     {
-        return context.SaveChangesAsync();
-    }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        DatabaseContextWrapper.DisposeDatabaseContext(context);
+        _context.Entry(entity).State = EntityState.Detached;
     }
 
     private bool IsEntityValid<T>(T entity)
@@ -105,5 +91,34 @@ public abstract class RepositoryBase : IRepository, IDisposable
         bool isValid = Validator.TryValidateObject(entity, validationContext, validationResults, true);
 
         return isValid;
+    }
+
+    /// <returns>True means that new transaction was created;
+    /// False means that a transaction was already active so the current transaction 
+    /// was joined as an inner transaction</returns>
+    public async Task<bool> StartTransactionAsync(CancellationToken cancellationToken)
+    {
+        if (_context.Database.CurrentTransaction is null)
+        {
+            await _context.Database.BeginTransactionAsync(cancellationToken);
+            return true;
+        }
+
+        return false;
+    }
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken)
+    {
+        await _context.Database.CommitTransactionAsync(cancellationToken);
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken)
+    {
+        await _context.Database.RollbackTransactionAsync(cancellationToken);
+    }
+
+    public Task<int> SaveChangesAsync()
+    {
+        return _context.SaveChangesAsync();
     }
 }

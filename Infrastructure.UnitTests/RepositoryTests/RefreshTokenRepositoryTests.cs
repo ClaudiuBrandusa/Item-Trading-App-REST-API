@@ -2,6 +2,7 @@
 using CommonTestUtils.MockedServices;
 using Domain.Entities.Identity;
 using Domain.Repositories.Identity;
+using Infrastructure.Data;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Services.DatabaseContextWrapper;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -19,14 +20,15 @@ public class RefreshTokenRepositoryTests
     private readonly TimeSpan DEFAULT_REFRESH_TOKEN_LIFETIME = TimeSpan.FromSeconds(5);
     private const string JWT_SECRET = "0";
 
-    private IDatabaseContextWrapper _contextWrapper;
+    private DatabaseContext _context;
 
     private readonly SecurityTokenDescriptor tokenDescriptor;
 
     public RefreshTokenRepositoryTests()
     {
-        _contextWrapper = DatabaseUtils.GetDatabaseContextWrapper(Guid.NewGuid().ToString());
-        var userManagerMock = DatabaseUtils.GetUserManager(new UserStore<User>(_contextWrapper.ProvideDatabaseContext()));
+        _context = DatabaseUtils.GetDatabaseContext(Guid.NewGuid().ToString());
+
+        var userManagerMock = DatabaseUtils.GetUserManager(new UserStore<User>(_context));
 
         var key = JwtUtils.CreateKeyByteArrayFromJwtSecret(JWT_SECRET);
         var signingCredentials = JwtUtils.CreateSigningCredentials(key);
@@ -35,7 +37,7 @@ public class RefreshTokenRepositoryTests
 
         tokenDescriptor = JwtUtils.CreateSecurityTokenDescriptor(claims, DateTimeUtils.DateTimeWithTimeSpanFromUtcNow(DEFAULT_TOKEN_LIFETIME), signingCredentials);
 
-        _sut = new RefreshTokenRepository(_contextWrapper, userManagerMock);
+        _sut = new RefreshTokenRepository(_context, userManagerMock);
     }
 
     [Fact(DisplayName = "Generate a refresh token")]

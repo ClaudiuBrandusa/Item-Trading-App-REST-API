@@ -4,6 +4,10 @@ public interface ICacheService
 {
     Task<string> GetCacheValueAsync(string key);
 
+    Task<Dictionary<string, string>> GetCacheValuesAsync(string[] keys);
+
+    Task SetCacheValuesAsync(Dictionary<string, string> keyValuePairs);
+
     Task<T?> GetCacheValueAsync<T>(string key);
 
     Task<long> CountSetMembers(string key);
@@ -23,6 +27,8 @@ public interface ICacheService
     Task<bool?> SetContainsValue(string key, string value);
 
     Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, bool removePrefix = false);
+
+    Task<Dictionary<string, T>> ListWithPrefix<T>(string prefix, string[] selectedIds, bool removePrefix = false);
 
     Task<string[]> ListSetValuesAsync(string key);
 

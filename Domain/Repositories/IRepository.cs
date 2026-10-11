@@ -27,6 +27,29 @@ public interface IRepository
     Task<bool> RemoveEntityAsync<T>(T entity) where T : class;
 
     /// <summary>
+    /// Detaches a tracked entity from the current context
+    /// </summary>
+    void DetachEntity<T>(T entity) where T : class;
+
+    /// <summary>
+    /// Starts a new transaction executing on the current database context instance.
+    /// </summary>
+    /// <returns></returns>
+    Task<bool> StartTransactionAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Commit the current transaction.
+    /// </summary>
+    /// <returns></returns>
+    Task CommitTransactionAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Rollback the current transaction.
+    /// </summary>
+    /// <returns></returns>
+    Task RollbackTransactionAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Saves the changes
     /// </summary>
     /// <returns>The number of state entries written to the database</returns>

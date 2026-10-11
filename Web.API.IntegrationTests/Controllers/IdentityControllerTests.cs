@@ -37,7 +37,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             ConfirmPassword = DefaultPassword
         };
 
-        var registerResult = await controller.Register(request);
+        var registerResult = await controller.Register(request, TestContext.Current.CancellationToken);
         var receivedResponseDateTime = DateTime.UtcNow;
 
         var authenticationResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(registerResult);
@@ -64,7 +64,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             ConfirmPassword = DefaultPassword
         };
 
-        await controller.Register(registerRequest);
+        await controller.Register(registerRequest, TestContext.Current.CancellationToken);
 
         var loginRequest = new UserLoginRequest
         {
@@ -72,7 +72,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             Password = DefaultPassword  
         };
 
-        var loginResult = await controller.Login(loginRequest);
+        var loginResult = await controller.Login(loginRequest, TestContext.Current.CancellationToken);
         var receivedResponseDateTime = DateTime.UtcNow;
 
         var authenticationResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(loginResult);
@@ -94,7 +94,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             Password = DefaultPassword  
         };
 
-        var loginResult = await controller.Login(loginRequest);
+        var loginResult = await controller.Login(loginRequest, TestContext.Current.CancellationToken);
 
         var authenticationResponse = AssertActionResultAsFailedResponse<AuthenticationFailedResponse>(loginResult);
         AssertHasOnlyOneError(authenticationResponse);
@@ -117,13 +117,13 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             ConfirmPassword = DefaultPassword
         };
 
-        var registerResult = await controller.Register(registerRequest);
+        var registerResult = await controller.Register(registerRequest, TestContext.Current.CancellationToken);
         var receivedResponseDateTime = DateTime.UtcNow;
         var registerResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(registerResult);
         
         var userId = _factory.GetUserIdFromToken(registerResponse!.Token);
 
-        var getUsernameResult = await controller.GetUsername(userId);
+        var getUsernameResult = await controller.GetUsername(userId, TestContext.Current.CancellationToken);
 
         var getUsernameResponse = AssertActionResultAsResponse<UsernameSuccessResponse>(getUsernameResult);
         Assert.NotNull(getUsernameResponse);
@@ -148,7 +148,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             ConfirmPassword = DefaultPassword
         };
 
-        var registerResult = await controller.Register(registerRequest);
+        var registerResult = await controller.Register(registerRequest, TestContext.Current.CancellationToken);
         var registerResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(registerResult);
         
         var refreshTokenRequest = new RefreshTokenRequest
@@ -157,7 +157,7 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             RefreshToken = registerResponse.RefreshToken
         };
 
-        var refreshResult = await controller.Refresh(refreshTokenRequest);
+        var refreshResult = await controller.Refresh(refreshTokenRequest, TestContext.Current.CancellationToken);
         var receivedResponseDateTime = DateTime.UtcNow;
 
         var refreshTokenResponse = AssertActionResultAsResponse<AuthenticationSuccessResponse>(refreshResult);
@@ -189,9 +189,9 @@ public class IdentityControllerTests : IClassFixture<TestAppFactory>
             ConfirmPassword = DefaultPassword
         };
 
-        await controller.Register(registerRequest);
+        await controller.Register(registerRequest, TestContext.Current.CancellationToken);
         
-        var listUsersResult = await controller.ListUsers(string.Empty);
+        var listUsersResult = await controller.ListUsers(string.Empty, TestContext.Current.CancellationToken);
 
         var listUsersResponse = AssertActionResultAsResponse<UsersSuccessResponse>(listUsersResult);
         Assert.NotNull(listUsersResponse);

@@ -15,6 +15,6 @@ public class DropInventoryItemHandler : IRequestHandler<DropInventoryItemCommand
 
     public Task<Result<QuantifiedItemResult>> Handle(DropInventoryItemCommand request, CancellationToken cancellationToken)
     {
-        return _inventoryService.DropItemAsync(request);
+        return _inventoryService.DropItemAsync(request, cancellationToken);
     }
 }

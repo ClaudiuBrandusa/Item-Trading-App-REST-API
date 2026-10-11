@@ -35,7 +35,7 @@ public class DatabaseSeedingTests : IClassFixture<DatabaseFixture>
 
         // Act
 
-        await databaseContext.SeedDatabase(serviceProvider);
+        await databaseContext.SeedDatabase(serviceProvider, TestContext.Current.CancellationToken);
         var consoleContent = output.ToString();
 
         // Assert

@@ -5,7 +5,7 @@ using Application.Options;
 
 namespace Application.Services.RefreshToken;
 
-public class RefreshTokenService : IRefreshTokenService, IDisposable
+public class RefreshTokenService : IRefreshTokenService
 {
     private readonly IRefreshTokenRepository _repository;
     private readonly IUnitOfWorkService _unitOfWorkService;
@@ -18,7 +18,7 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
         _jwtSettings = jwtSettings;
     }
 
-    public async Task<Result<RefreshTokenResult>> GenerateRefreshTokenAsync(string userId, string jti)
+    public async Task<Result<RefreshTokenResult>> GenerateRefreshTokenAsync(string userId, string jti, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(jti))
             return Result<RefreshTokenResult>.Failure("Invalid input data");
@@ -42,7 +42,7 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
         });
     }
 
-    public async Task<Result<RefreshTokenResult>> GetRefreshTokenAsync(string refreshTokenId)
+    public async Task<Result<RefreshTokenResult>> GetRefreshTokenAsync(string refreshTokenId, CancellationToken cancellationToken)
     {
         var refreshToken = await _repository.GetRefreshTokenAsync(refreshTokenId);
 
@@ -61,19 +61,19 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
         });
     }
 
-    public Task<bool> RemoveRefreshTokenAsync(string refreshTokenId)
+    public Task<bool> RemoveRefreshTokenAsync(string refreshTokenId, CancellationToken cancellationToken)
     {
         return _repository.DeleteRefreshTokenAsync(refreshTokenId);
     }
 
-    public async Task ClearRefreshTokensAsync()
+    public async Task ClearRefreshTokensAsync(CancellationToken cancellationToken)
     {
         await ClearExpiredRefreshTokens();
         await ClearUsedRefreshTokens();
         await ClearOldRefreshTokens();
     }
 
-    public async Task<Result<RefreshTokenResult>> GetRecentRefreshTokenAsync(string userId, string jti)
+    public async Task<Result<RefreshTokenResult>> GetRecentRefreshTokenAsync(string userId, string jti, CancellationToken cancellationToken)
     {
         var lastRefreshToken = await _repository.GetLastRefreshTokenAsync(userId, jti);
 
@@ -190,11 +190,5 @@ public class RefreshTokenService : IRefreshTokenService, IDisposable
                 return false;
             }
         });
-    }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        _repository.Dispose();
     }
 }

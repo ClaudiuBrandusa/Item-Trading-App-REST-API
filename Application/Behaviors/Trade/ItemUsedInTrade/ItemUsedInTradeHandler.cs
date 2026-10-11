@@ -14,6 +14,6 @@ public class ItemUsedInTradeHandler : IRequestHandler<ItemUsedInTradeQuery, bool
 
     public async Task<bool> Handle(ItemUsedInTradeQuery request, CancellationToken cancellationToken)
     {
-        return await _tradeService.IsItemUsedInTrade(request);
+        return await _tradeService.IsItemUsedInTrade(request, cancellationToken);
     }
 }

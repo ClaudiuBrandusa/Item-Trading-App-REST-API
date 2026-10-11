@@ -12,7 +12,7 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 {
     private readonly ISender _sender;
 
-    public TradeRepository(IDatabaseContextWrapper databaseContextWrapper, ISender sender) : base(databaseContextWrapper)
+    public TradeRepository(DatabaseContext context, ISender sender) : base(context)
     {
         _sender = sender;
     }
@@ -21,50 +21,42 @@ public class TradeRepository : RepositoryBase, ITradeRepository
     {
         if (responded)
         {
-            var queryResult = await GetTradeItemHistoryQuery(context, tradeId);
+            var queryResult = await GetTradeItemHistoryQuery(_context, tradeId);
 
             return queryResult.Select(x =>
                 new TradeItem(tradeId, x.ItemId, x.Quantity, x.Price)
             ).ToArray();
         }
         
-        var trade = await GetTradeQuery(context, tradeId);
+        var trade = await GetTradeQuery(_context, tradeId);
 
         return trade!.TradeContents.ToArray();
     }
 
     public async Task<Trade?> GetTradeAsync(string tradeId)
     {
-        var trade = await GetTradeTrackingQuery(context, tradeId);
+        var trade = await GetTradeTrackingQuery(_context, tradeId);
         
         return trade;
     }
 
     public async Task<bool?> GetTradeResponseAsync(string tradeId)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var response = await GetTradeResponseQuery(dbContext, tradeId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+        var response = await GetTradeResponseQuery(_context, tradeId);
 
         return response;
     }
 
     public async Task<Trade?> GetTradeEntityAsync(string tradeId)
     {
-        var dbContext = await DatabaseContextWrapper.ProvideDatabaseContextAsync();
-
-        var tradeEntity = await GetTradeQuery(dbContext, tradeId);
-
-        DatabaseContextWrapper.DisposeDatabaseContext(dbContext);
+        var tradeEntity = await GetTradeQuery(_context, tradeId);
 
         return tradeEntity;
     }
 
     public Task<string[]> GetTradeIdsUsingItemAsync(string itemId)
     {
-        return context.TradeContent
+        return _context.TradeContent
             .AsNoTracking()
             .Where(x => x.ItemId == itemId)
             .Select(x => x.TradeId)
@@ -73,7 +65,7 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 
     public Task<string[]> ListReceivedTradeIdsAsync(string userId)
     {
-        return context.ReceivedTrades
+        return _context.ReceivedTrades
                 .AsNoTracking()
                 .Where(o => Equals(userId, o.ReceiverId))
                 .Select(t => t.TradeId)
@@ -82,7 +74,7 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 
     public Task<string[]> ListSentTradeIdsAsync(string userId)
     {
-        return context.SentTrades
+        return _context.SentTrades
                 .AsNoTracking()
                 .Where(st => Equals(st.SenderId, userId))
                 .Select(t => t.TradeId)
@@ -91,17 +83,17 @@ public class TradeRepository : RepositoryBase, ITradeRepository
 
     public async Task<bool> HasTradeItemAsync(string tradeId, string itemId)
     {
-        return await HasTradeItemQuery(context, tradeId, itemId);
+        return await HasTradeItemQuery(_context, tradeId, itemId);
     }
 
     public async Task<bool> HasTradeItemHistoryAsync(string tradeId, string itemId)
     {
-        return await HasTradeItemHistoryQuery(context, tradeId, itemId);
+        return await HasTradeItemHistoryQuery(_context, tradeId, itemId);
     }
 
     public async Task<bool> IsItemUsedInTrade(string itemId)
     {
-        return await IsItemUsedInTradeQuery(context, itemId);
+        return await IsItemUsedInTradeQuery(_context, itemId);
     }
 
     public async Task<bool> MoveTradeContentToHistory(string tradeId)

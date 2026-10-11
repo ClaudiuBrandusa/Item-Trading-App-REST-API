@@ -5,6 +5,7 @@ using Domain.Entities.Inventories;
 using Domain.Entities.Items;
 using Domain.Entities.Trades;
 using Domain.Repositories.Inventories;
+using Infrastructure.Data;
 using Infrastructure.IntegrationTests.Common;
 using Infrastructure.Repositories.Identity;
 using Infrastructure.Repositories.Inventories;
@@ -43,8 +44,9 @@ public static class TestingScenarios
     public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var dbContext = GetDatabaseContext(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new IdentityRepository(dbContextWrapper, userManager);
+        var repository = new IdentityRepository(dbContext, dbContextWrapper, userManager);
 
         var userToBeCreated = new User
         {
@@ -57,16 +59,15 @@ public static class TestingScenarios
 
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
 
-        repository.Dispose();
-
         return response!;
     }
 
     public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName, string email)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var dbContext = GetDatabaseContext(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new IdentityRepository(dbContextWrapper, userManager);
+        var repository = new IdentityRepository(dbContext, dbContextWrapper, userManager);
 
         var userToBeCreated = new User
         {
@@ -79,16 +80,15 @@ public static class TestingScenarios
 
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
 
-        repository.Dispose();
-
         return response!;
     }
 
     public static async Task<User> CreateUser(IServiceProvider serviceProvider, string userName, string email, string password)
     {
         var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var dbContext = GetDatabaseContext(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new IdentityRepository(dbContextWrapper, userManager);
+        var repository = new IdentityRepository(dbContext, dbContextWrapper, userManager);
         
         var userToBeCreated = new User
         {
@@ -100,8 +100,6 @@ public static class TestingScenarios
         await repository.CreateUserAsync(userToBeCreated, password);
 
         var response = await repository.GetUserByIdAsync(userToBeCreated.Id);
-
-        repository.Dispose();
 
         return response!;
     }
@@ -118,17 +116,15 @@ public static class TestingScenarios
 
     public static async Task<Item> CreateItemAsync(IServiceProvider serviceProvider, string itemName, string itemDescription)
     {
-        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var dbContext = GetDatabaseContext(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new ItemRepository(dbContextWrapper);
+        var repository = new ItemRepository(dbContext);
 
         var itemToBeCreated = new Item(itemName, itemDescription);
 
         await repository.AddEntityAsync(itemToBeCreated);
 
         var response = await repository.GetItemEntityAsync(itemToBeCreated.ItemId);
-
-        repository.Dispose();
 
         return response!;
     }
@@ -146,15 +142,13 @@ public static class TestingScenarios
     /// <returns></returns>
     public static async Task<Inventory> GetInventory(IServiceProvider serviceProvider, string userId)
     {
-        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
-        var repository = new InventoryRepository(dbContextWrapper);
+        var dbContext = GetDatabaseContext(serviceProvider);
+        var repository = new InventoryRepository(dbContext);
         
         var inventory = await repository.GetInventoryAsync(userId);
 
         if (inventory is null)
             inventory = new Inventory(userId);
-
-        repository.Dispose();
 
         return inventory;
     }
@@ -171,15 +165,13 @@ public static class TestingScenarios
     
     public static async Task<Inventory> LoadInventory(IServiceProvider serviceProvider, string userId)
     {
-        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
-        var repository = new InventoryRepository(dbContextWrapper);
+        var dbContext = GetDatabaseContext(serviceProvider);
+        var repository = new InventoryRepository(dbContext);
         
         var inventory = await repository.LoadInventoryAsync(userId);
 
         if (inventory is null)
             inventory = new Inventory(userId);
-
-        repository.Dispose();
 
         return inventory;
     }
@@ -196,9 +188,9 @@ public static class TestingScenarios
 
     public static async Task<InventoryItem> AddItemToUser(IServiceProvider serviceProvider, Item item, User user, int quantity)
     {
-        var dbContextWrapper = GetDatabaseContextWrapper(serviceProvider);
+        var dbContext = GetDatabaseContext(serviceProvider);
         var userManager = GetUserManager(serviceProvider);
-        var repository = new InventoryRepository(dbContextWrapper);
+        var repository = new InventoryRepository(dbContext);
 
         var inventory = await LoadInventory(repository, user.Id);
 
@@ -211,8 +203,6 @@ public static class TestingScenarios
         var newInventory = await GetInventory(repository, user.Id);
 
         var response = newInventory.GetItem(item.ItemId);
-
-        repository.Dispose();
 
         return response!;
     }
@@ -238,6 +228,11 @@ public static class TestingScenarios
     private static IDatabaseContextWrapper GetDatabaseContextWrapper(IServiceProvider serviceProvider)
     {
         return serviceProvider.GetRequiredService<IDatabaseContextWrapper>();
+    }
+
+    private static DatabaseContext GetDatabaseContext(IServiceProvider serviceProvider)
+    {
+        return serviceProvider.GetRequiredService<DatabaseContext>();
     }
 
     private static UserManager<User> GetUserManager(IServiceProvider serviceProvider)

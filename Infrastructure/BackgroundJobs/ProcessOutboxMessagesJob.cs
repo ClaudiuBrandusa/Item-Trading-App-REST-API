@@ -53,7 +53,7 @@ public sealed class ProcessOutboxMessagesJob : IJob
 			}
 
 			var domainEvent = JsonSerializer.Deserialize(outboxMessage.Content, type) as IDomainEvent;
-				
+
 			if (domainEvent is null)
 			{
 				continue;
@@ -64,8 +64,8 @@ public sealed class ProcessOutboxMessagesJob : IJob
 			outboxMessage.ProcessedOnUtc = DateTime.UtcNow;
 		}
 		
-		await dbContext.SaveChangesAsync();
-		await transaction.CommitAsync();
+		await dbContext.SaveChangesAsync(context.CancellationToken);
+		await transaction.CommitAsync(context.CancellationToken);
 
 		_dbContextWrapper.DisposeDatabaseContext(dbContext);
 	}
