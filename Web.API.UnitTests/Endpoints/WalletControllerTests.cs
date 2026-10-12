@@ -12,6 +12,7 @@ using Item_Trading_App_REST_API.Controllers;
 using Item_Trading_App_REST_API.MappingConfigs;
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Web.API.UnitTests.Endpoints;
@@ -33,10 +34,12 @@ public class WalletMappingFixture
 
 public class WalletControllerTests : IClassFixture<WalletMappingFixture>
 {
+    private readonly ILogger<WalletController> _logger;
     private readonly Mapper _mapper;
     
     public WalletControllerTests(WalletMappingFixture fixture)
     {
+        _logger = new Mock<ILogger<WalletController>>().Object;
         _mapper = fixture.Mapper;
     }
 
@@ -66,7 +69,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new WalletController(_mapper, mediator);
+        var sut = new WalletController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -106,7 +109,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new WalletController(_mapper, mediator);
+        var sut = new WalletController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -146,7 +149,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new WalletController(_mapper, mediator);
+        var sut = new WalletController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -185,7 +188,7 @@ public class WalletControllerTests : IClassFixture<WalletMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new WalletController(_mapper, mediator);
+        var sut = new WalletController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 

@@ -15,6 +15,7 @@ using Item_Trading_App_REST_API.Controllers;
 using Item_Trading_App_REST_API.MappingConfigs;
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Web.API.UnitTests.Endpoints;
@@ -36,10 +37,12 @@ public class IdentityMappingFixture
 
 public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 {
+    private readonly ILogger<IdentityController> _logger;
     private readonly Mapper _mapper;
     
     public IdentityControllerTests(IdentityMappingFixture fixture)
     {
+        _logger = new Mock<ILogger<IdentityController>>().Object;
         _mapper = fixture.Mapper;
     }
 
@@ -58,7 +61,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var request = new UserRegisterRequest
         {
@@ -93,7 +96,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var request = new UserRegisterRequest
         {
@@ -128,7 +131,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var request = new UserLoginRequest
         {
@@ -161,7 +164,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var request = new UserLoginRequest
         {
@@ -194,7 +197,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var request = new RefreshTokenRequest
         {
@@ -227,7 +230,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var request = new RefreshTokenRequest
         {
@@ -260,7 +263,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var userId = "user-id";
         
@@ -288,7 +291,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var userId = "user-id";
         
@@ -309,7 +312,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
         
         var mediator = new Mock<IMediator>().Object;
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         var userId = string.Empty;
         
@@ -347,7 +350,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -382,7 +385,7 @@ public class IdentityControllerTests : IClassFixture<IdentityMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new IdentityController(_mapper, mediator);
+        var sut = new IdentityController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 

@@ -9,6 +9,7 @@ using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +20,7 @@ public class WalletController : BaseController
 {
     private readonly IMediator _mediator;
 
-    public WalletController(IMapper mapper, IMediator mediator) : base(mapper)
+    public WalletController(ILogger<WalletController> logger, IMapper mapper, IMediator mediator) : base(logger, mapper)
     {
         _mediator = mediator;
     }

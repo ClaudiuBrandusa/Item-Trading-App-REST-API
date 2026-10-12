@@ -8,16 +8,19 @@ using Item_Trading_App_REST_API.MappingConfigs;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Web.API.UnitTests.Endpoints;
 
 public class BaseControllerTests
 {
+    private readonly ILogger<BaseController> _logger;
     private readonly IMapper _mapper;
 
     public BaseControllerTests()
     {
+        _logger = new Mock<ILogger<BaseController>>().Object;
         _mapper = new Mock<IMapper>().Object;
     }
 
@@ -26,7 +29,7 @@ public class BaseControllerTests
     {
         // Arrange
 
-        var controller = new BaseControllerTestImpl(_mapper);
+        var controller = new BaseControllerTestImpl(_logger, _mapper);
         
         // Act
 
@@ -48,7 +51,7 @@ public class BaseControllerTests
             UserName = string.Empty
         };
 
-        var controller = new BaseControllerTestImpl(_mapper);
+        var controller = new BaseControllerTestImpl(_logger, _mapper);
 
         controller.SetSenderUser(user);
 
@@ -66,7 +69,7 @@ public class BaseControllerTests
     {
         // Arrange
 
-        var controller = new BaseControllerTestImpl(_mapper);
+        var controller = new BaseControllerTestImpl(_logger, _mapper);
 
         // Act
 
@@ -85,7 +88,7 @@ public class BaseControllerTests
         var input = 10;
         var expectedOutput = (float)input;
 
-        var controller = new BaseControllerTestImpl(_mapper);
+        var controller = new BaseControllerTestImpl(_logger, _mapper);
 
         // Act
 
@@ -120,7 +123,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         // Act
 
@@ -156,7 +159,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         // Act
 
@@ -191,7 +194,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         var inputResult = Result<ExampleInputClass>.Success(input);
 
@@ -234,7 +237,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         var inputResult = Result<ExampleInputClass>.Failure("Something went wrong");
 
@@ -266,7 +269,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         var inputResult = Result<ExampleInputClass>.Success(input);
 
@@ -304,7 +307,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         var inputResult = Result<ExampleInputClass>.Failure("Something went wrong");
 
@@ -347,7 +350,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         var inputResult = Result<ExampleInputClass>.Success(input);
 
@@ -388,7 +391,7 @@ public class BaseControllerTests
             SecondParameter = "value"
         };
 
-        var controller = new BaseControllerTestImpl(mapper);
+        var controller = new BaseControllerTestImpl(_logger, mapper);
 
         var inputResult = Result<ExampleInputClass>.Failure("Something went wrong");
 
@@ -404,7 +407,7 @@ public class BaseControllerTests
 
     public class BaseControllerTestImpl : BaseController
     {
-        public BaseControllerTestImpl(IMapper mapper) : base(mapper)
+        public BaseControllerTestImpl(ILogger<BaseController> logger, IMapper mapper) : base(logger, mapper)
         {
         }
 

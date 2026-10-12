@@ -16,6 +16,7 @@ using Item_Trading_App_REST_API.Controllers;
 using Item_Trading_App_REST_API.MappingConfigs;
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Web.API.UnitTests.Endpoints;
@@ -37,6 +38,7 @@ public class ItemMappingFixture
 
 public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 {
+    private readonly ILogger<ItemController> _logger;
     private readonly Mapper _mapper;
 
     private readonly string _expectedItemId = "item-id";
@@ -46,6 +48,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
     public ItemControllerTests(ItemMappingFixture fixture)
     {
+        _logger = new Mock<ILogger<ItemController>>().Object;
         _mapper = fixture.Mapper;
     }
 
@@ -68,7 +71,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -90,7 +93,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = new Mock<IMediator>().Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -109,7 +112,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = new Mock<IMediator>().Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -140,7 +143,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -173,7 +176,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -202,7 +205,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -230,7 +233,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -259,7 +262,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         // Act
 
@@ -291,7 +294,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         var user = new User
         {
@@ -334,7 +337,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         var user = new User
         {
@@ -380,7 +383,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         var user = new User
         {
@@ -424,7 +427,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         var user = new User
         {
@@ -470,7 +473,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         var user = new User
         {
@@ -511,7 +514,7 @@ public class ItemControllerTests : IClassFixture<ItemMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new ItemController(_mapper, mediator);
+        var sut = new ItemController(_logger, _mapper, mediator);
 
         var user = new User
         {

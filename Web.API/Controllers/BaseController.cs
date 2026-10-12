@@ -5,15 +5,18 @@ using System.Linq;
 using Application.Models.Common;
 using Item_Trading_App_Contracts.Responses.Base;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
 public class BaseController : Controller
 {
     protected readonly IMapper _mapper;
+    protected readonly ILogger<BaseController> _logger;
 
-    public BaseController(IMapper mapper)
+    public BaseController(ILogger<BaseController> logger, IMapper mapper)
     {
+        _logger = logger;
         _mapper = mapper;
     }
 
@@ -45,6 +48,8 @@ public class BaseController : Controller
             return Ok(mapped);
         }
 
+        _logger.LogWarning("Request error: {error}", result.Error);
+
         return BadRequest(_mapper.From(result.Error).AdaptToType<FailedType>());
     }
     
@@ -54,6 +59,8 @@ public class BaseController : Controller
     {
         if (result is null)
         {
+            _logger.LogError("Something went wrong with the current request as the given result object was null");
+
             return BadRequest(new FailedResponse
             {
                 Errors = ["Something went wrong"]
@@ -69,7 +76,13 @@ public class BaseController : Controller
         var response = new FailedResponse { Errors = [result.Error]};
 
         if (typeof(FailedType) == typeof(FailedResponse))
+        {
+            _logger.LogWarning("Request error: {error}", result.Error);
+
             return BadRequest(response);
+        }
+
+        _logger.LogWarning("Request error: {error}", result.Error);
 
         return BadRequest(_mapper.From(response).AdaptToType<FailedType>());
     }
@@ -84,6 +97,8 @@ public class BaseController : Controller
         }
         else
         {
+            _logger.LogWarning("Request error: {error}", result.Error);
+
             return BadRequest(_mapper.From(result.Error).AdaptToType<FailedType>());
         }
     }

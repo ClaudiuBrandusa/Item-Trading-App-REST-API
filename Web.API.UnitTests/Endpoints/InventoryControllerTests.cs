@@ -16,6 +16,7 @@ using Item_Trading_App_REST_API.Controllers;
 using Item_Trading_App_REST_API.MappingConfigs;
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Web.API.UnitTests.Endpoints;
@@ -37,10 +38,12 @@ public class InventoryMappingFixture
 
 public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
 {
+    private readonly ILogger<InventoryController> _logger;
     private readonly Mapper _mapper;
     
     public InventoryControllerTests(InventoryMappingFixture fixture)
     {
+        _logger = new Mock<ILogger<InventoryController>>().Object;
         _mapper = fixture.Mapper;
     }
 
@@ -71,7 +74,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -112,7 +115,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -159,7 +162,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -200,7 +203,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -247,7 +250,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -282,7 +285,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -320,7 +323,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -353,7 +356,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -393,7 +396,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -428,7 +431,7 @@ public class InventoryControllerTests : IClassFixture<InventoryMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new InventoryController(_mapper, mediator);
+        var sut = new InventoryController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 

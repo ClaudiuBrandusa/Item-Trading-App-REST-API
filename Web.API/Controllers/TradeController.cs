@@ -17,6 +17,7 @@ using Application.Behaviors.Trade.GetTrade;
 using Application.Results.Trades;
 using Application.Models.Trades;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Item_Trading_App_REST_API.Controllers;
 
@@ -25,7 +26,7 @@ public class TradeController : BaseController
 {
     private readonly IMediator _mediator;
 
-    public TradeController(IMapper mapper, IMediator mediator) : base(mapper)
+    public TradeController(ILogger<TradeController> logger, IMapper mapper, IMediator mediator) : base(logger, mapper)
     {
         _mediator = mediator;
     }

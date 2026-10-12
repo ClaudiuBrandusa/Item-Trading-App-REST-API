@@ -14,6 +14,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,7 +25,7 @@ public class InventoryController : BaseController
 {
     private readonly IMediator _mediator;
 
-    public InventoryController(IMapper mapper, IMediator mediator) : base(mapper)
+    public InventoryController(ILogger<InventoryController> logger, IMapper mapper, IMediator mediator) : base(logger, mapper)
     {
         _mediator = mediator;
     }

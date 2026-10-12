@@ -18,6 +18,7 @@ using Item_Trading_App_REST_API.Controllers;
 using Item_Trading_App_REST_API.MappingConfigs;
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Web.API.UnitTests.Endpoints;
@@ -39,10 +40,12 @@ public class TradeMappingFixture
 
 public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 {
+    private readonly ILogger<TradeController> _logger;
     private readonly Mapper _mapper;
     
     public TradeControllerTests(TradeMappingFixture fixture)
     {
+        _logger = new Mock<ILogger<TradeController>>().Object;
         _mapper = fixture.Mapper;
     }
 
@@ -71,7 +74,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         // Act
 
@@ -110,7 +113,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         // Act
 
@@ -156,7 +159,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -197,7 +200,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -236,7 +239,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -264,7 +267,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
 
         var mediator = mediatorMock.Object;
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         // Act
 
@@ -315,7 +318,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -370,7 +373,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -431,7 +434,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -474,7 +477,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -539,7 +542,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -582,7 +585,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -641,7 +644,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
@@ -682,7 +685,7 @@ public class TradeControllerTests : IClassFixture<TradeMappingFixture>
             UserName = string.Empty
         };
 
-        var sut = new TradeController(_mapper, mediator);
+        var sut = new TradeController(_logger, _mapper, mediator);
 
         sut.SetSenderUser(user);
 
